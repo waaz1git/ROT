@@ -69,6 +69,11 @@ img,video{max-width:100%}
 #edge{z-index:3;box-shadow:inset 0 0 120px 20px rgba(0,0,0,.55)}
 body.no-grain #grain,body.no-grain #scan{display:none}
 body.safe #scan{opacity:.08}
+#emptyHint{position:fixed;inset:0;z-index:2;display:grid;place-content:center;text-align:center;pointer-events:none;padding:24px;transition:opacity .45s var(--ease),visibility .45s}
+#emptyHint.off{opacity:0;visibility:hidden}
+#emptyHint .eh-k{font:500 9px var(--fm);letter-spacing:.52em;color:var(--acc);margin-bottom:13px}
+#emptyHint .eh-t{font:800 clamp(22px,4.2vw,56px)/1 var(--fd);letter-spacing:.06em;color:var(--tx);text-shadow:0 0 46px rgba(0,0,0,.9)}
+#emptyHint .eh-s{font:400 9px var(--fm);letter-spacing:.26em;color:var(--dim);margin-top:15px}
 
 /* ==========================================================================
    03 — TOP BAR / BRAND / HUD
@@ -204,6 +209,8 @@ body.safe #scan{opacity:.08}
 .btn-row>*{flex:1}
 .btn .k{font:400 7px var(--fm);color:var(--dim);border:1px solid var(--line);padding:1px 3px;margin-left:2px;letter-spacing:.05em}
 .btn.hot .k{border-color:rgba(0,0,0,.3);color:rgba(0,0,0,.55)}
+.btn.recording{animation:recPulse 1.05s steps(2) infinite;box-shadow:0 0 18px rgba(255,43,85,.35)}
+@keyframes recPulse{50%{opacity:.5}}
 .glitch-hover:hover{animation:btnJitter .18s steps(2) infinite}
 @keyframes btnJitter{0%{transform:translate(0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,0)}100%{transform:translate(0)}}
 
@@ -213,6 +220,9 @@ body.safe #scan{opacity:.08}
 .ctrl-label{font:400 8.5px/1.3 var(--fm);letter-spacing:.1em;color:var(--mu);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ctrl-val{font:400 8.5px/1 var(--fm);letter-spacing:.04em;color:var(--tx);min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
 .ctrl-sub{font:400 7px/1.3 var(--fm);color:var(--dim);letter-spacing:.06em;margin-top:2px}
+.lock-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:7px 8px;border:1px solid var(--line2);background:rgba(255,255,255,.02);border-radius:2px}
+.lock-row b{font:500 9px var(--fm);letter-spacing:.12em;color:var(--tx);font-variant-numeric:tabular-nums}
+.lock-row span{font:400 7px var(--fm);letter-spacing:.08em;color:var(--dim);text-transform:uppercase;text-align:right}
 input[type=range]{
   appearance:none;-webkit-appearance:none;width:100%;height:17px;margin:0;background:transparent;cursor:ew-resize;display:block;
 }
@@ -786,6 +796,11 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
      ATMOSPHERE
      ========================================================================== -->
 <canvas id="cv" aria-label="Live distortion canvas"></canvas>
+<div id="emptyHint" aria-hidden="true">
+  <div class="eh-k">NO SOURCE</div>
+  <div class="eh-t">DROP AN IMAGE OR VIDEO</div>
+  <div class="eh-s">OR USE SOURCE → UPLOAD</div>
+</div>
 <audio id="musicAudio" preload="auto" crossorigin="anonymous"></audio>
 <div id="grain" aria-hidden="true"></div>
 <div id="scan" aria-hidden="true"></div>
@@ -805,7 +820,7 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
   </div>
   <div id="ticker" aria-hidden="true">
     <span class="live"></span>
-    <b id="tickerSrc">DEMO FEED</b><span class="sep">/</span>
+    <b id="tickerSrc">NO SOURCE</b><span class="sep">/</span>
     <span id="tickerState">LIVE DISTORTION</span><span class="sep">/</span>
     <span id="tickerClock">00:00:00</span><span class="sep">/</span>
     <span id="tickerHint">R RANDOMIZE · H HYPNOSIS · A ANIMATE</span>
@@ -853,17 +868,17 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
     <div class="section">
       <div class="section-head">
         <div class="section-title"><b>A</b> SOURCE</div>
-        <div class="section-note" id="srcInfo">DEMO / PROCEDURAL</div>
+        <div class="section-note" id="srcInfo">NO SOURCE</div>
       </div>
       <div class="drop-mini" id="dropMini" role="button" tabindex="0" aria-label="Drop or choose an image or video">
         DROP IMAGE / VIDEO HERE<br><span style="color:var(--dim);font-size:6.5px">OR CLICK TO BROWSE</span>
       </div>
       <div class="btn-grid" style="margin-top:5px">
         <button class="btn" id="btnUpload">UPLOAD</button>
-        <button class="btn" id="btnDemo">DEMO FEED</button>
+        <button class="btn dark" id="btnClearSource">CLEAR</button>
       </div>
       <input type="file" id="fileInput" accept="image/*,video/*" hidden>
-      <div class="source-meter"><span id="srcDims">1280 × 720</span><span class="bar"></span><span id="srcType">PROCEDURAL</span></div>
+      <div class="source-meter"><span id="srcDims">— × —</span><span class="bar"></span><span id="srcType">EMPTY</span></div>
     </div>
 
     <div class="section">
@@ -957,47 +972,32 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
 
     <section class="pane" data-pane="output" role="tabpanel" aria-label="Output">
       <div class="section" style="padding-top:2px">
-        <div class="section-head"><div class="section-title"><b>OUTPUT</b> <span class="line"></span></div><div class="section-note">H.264 / VP9 / GIF</div></div>
+        <div class="section-head"><div class="section-title"><b>OUTPUT</b> <span class="line"></span></div><div class="section-note">MP4 / H.264 / 1080P60</div></div>
         <div class="ctrl">
-          <div class="ctrl-top"><span class="ctrl-label">Resolution</span><span class="ctrl-val" id="resNote">1080P</span></div>
-          <select id="exportRes" aria-label="Export resolution">
-            <option value="1280x720">720p · 16:9 · 1280×720</option>
-            <option value="1920x1080" selected>1080p · 16:9 · 1920×1080</option>
-            <option value="3840x2160">4K · 16:9 · 3840×2160</option>
-            <option value="1080x1920">Vertical · 9:16 · 1080×1920</option>
-            <option value="1080x1080">Square · 1:1 · 1080×1080</option>
-          </select>
+          <div class="ctrl-top"><span class="ctrl-label">Resolution</span><span class="ctrl-val" id="resNote">1080P · LOCKED</span></div>
+          <div class="lock-row"><b>1920 × 1080</b><span>16:9 / MP4 only</span></div>
         </div>
         <div class="ctrl">
           <div class="ctrl-top"><span class="ctrl-label">Duration</span><span class="ctrl-val" id="durNote">06 S</span></div>
-          <input type="range" id="exportDur" min="3" max="30" step="1" value="6" aria-label="Video duration in seconds">
+          <input type="range" id="exportDur" min="3" max="120" step="1" value="6" aria-label="Maximum recording duration in seconds">
         </div>
         <div class="ctrl">
-          <div class="ctrl-top"><span class="ctrl-label">Frame rate</span><span class="ctrl-val" id="fpsNote">30 FPS</span></div>
-          <div class="btn-grid tri" id="fpsGroup" role="group" aria-label="Frame rate">
-            <button class="btn sm on" data-fps="30">30</button>
-            <button class="btn sm" data-fps="60">60</button>
-            <button class="btn sm" data-fps="24">24</button>
-          </div>
+          <div class="ctrl-top"><span class="ctrl-label">Frame rate</span><span class="ctrl-val" id="fpsNote">60 FPS · LOCKED</span></div>
+          <div class="lock-row"><b>60 FPS</b><span>constant for the whole take</span></div>
         </div>
         <div class="ctrl">
-          <div class="ctrl-top"><span class="ctrl-label">Container</span><span class="ctrl-val">AUTO</span></div>
-          <select id="exportFormat" aria-label="Export format">
-            <option value="auto" selected>Auto (best supported)</option>
-            <option value="webm">WebM · VP9</option>
-            <option value="mp4">MP4 · H.264 (if supported)</option>
-            <option value="gif">Animated GIF (max 8s)</option>
-          </select>
+          <div class="ctrl-top"><span class="ctrl-label">Container</span><span class="ctrl-val">MP4 · LOCKED</span></div>
+          <div class="lock-row"><b>MP4 / H.264</b><span>no WebM, no GIF</span></div>
         </div>
         <label class="switch"><span>Include audio if present</span><input type="checkbox" id="chkAudio" checked></label>
         <div class="btn-grid" style="margin-top:8px">
           <button class="btn" id="btnPNG">FRAME PNG</button>
-          <button class="btn hot" id="btnRec">RECORD</button>
+          <button class="btn hot" id="btnRec">● START REC</button>
           <button class="btn full" id="btnShareLast" disabled>SHARE LAST EXPORT</button>
         </div>
         <div class="j-bar" style="margin-top:10px;height:3px"><i id="exportBar"></i></div>
-        <div class="j-meta" style="margin-top:5px"><span id="exportStatus">READY / EXPORT AT CURRENT LOOK</span><span id="exportETA"></span></div>
-        <p class="section-desc" style="margin-top:10px">Recording re-renders at the selected resolution, so the file is not an upscale. 4K video is heavy — 1080p is the sweet spot. GIF ignores audio.</p>
+        <div class="j-meta" style="margin-top:5px"><span id="exportStatus">READY / PRESS START REC</span><span id="exportETA"></span></div>
+        <p class="section-desc" style="margin-top:10px">Press <b style="color:var(--acc)">START REC</b> to begin and <b style="color:var(--acc)">STOP REC</b> to export the take. Recording is capped at the duration above, even when the music is longer. The file is rendered at 1920×1080 / 60 FPS and saved as MP4.</p>
       </div>
       <div class="section">
         <div class="section-head"><div class="section-title"><b>QUICK</b></div><div class="section-note">KEYBOARD</div></div>
@@ -1005,7 +1005,7 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
           <button class="btn" id="btnSaveFrame2">FRAME PNG</button>
           <button class="btn dark" id="btnFullscreen">FULLSCREEN</button>
         </div>
-        <p class="section-desc" style="margin-top:8px"><kbd>P</kbd> frame · <kbd>V</kbd> record · <kbd>Space</kbd> music / performance · <kbd>T</kbd> tap · <kbd>←</kbd><kbd>→</kbd> seek · <kbd>Esc</kbd> close.</p>
+        <p class="section-desc" style="margin-top:8px"><kbd>P</kbd> frame · <kbd>V</kbd> start/stop rec · <kbd>Space</kbd> music / performance · <kbd>T</kbd> tap · <kbd>←</kbd><kbd>→</kbd> seek · <kbd>Esc</kbd> close.</p>
       </div>
     </section>
 
@@ -1166,9 +1166,9 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
 <div id="hud" aria-hidden="true">
   <span class="h"><span class="sig" id="hudSig"></span><span id="hudSigTxt">LIVE</span></span>
   <span class="h"><span>FPS</span><b id="hudFps">60</b></span>
-  <span class="h"><span>RES</span><b id="hudRes">120P</b></span>
+  <span class="h"><span>RES</span><b id="hudRes">1080P</b></span>
   <span class="h"><span>ENTROPY</span><span class="bar"><i id="hudDecay"></i></span><b id="hudDecayTxt">0%</b></span>
-  <span class="h"><span>SRC</span><b id="hudSrc">DEMO</b></span>
+  <span class="h"><span>SRC</span><b id="hudSrc">NO SOURCE</b></span>
 </div>
 
 <div id="timeline" aria-label="Performance timeline">
@@ -1599,7 +1599,7 @@ const MASTERMAP=Object.fromEntries(MASTER.map(m=>[m.id,m]));
 const GRADE_NAMES=['NONE','BLEACH','CYANOSIS','INFRARED','SEPIA','ACID'];
 
 function defaultP(){
-  const p={intensity:1,speed:1,chaos:.4,mix:1,org:.5,eyef:.5,grain:.35,rnd:.5,gfreq:.45,hueShift:0,zoom:1,res:120,pix:0,autoQ:true,skip:true,grade:0,asciiMode:0,decayAmt:0,on:{},fx:{}};
+  const p={intensity:1,speed:1,chaos:.4,mix:1,org:.5,eyef:.5,grain:.35,rnd:.5,gfreq:.45,hueShift:0,zoom:1,res:1080,pix:0,autoQ:true,skip:true,grade:0,asciiMode:0,decayAmt:0,on:{},fx:{}};
   FX.forEach(f=>{p.on[f.id]=!!f.on;p.fx[f.id]=f.def});
   return p;
 }
@@ -2064,7 +2064,7 @@ void main(){
 const DEFAULT_SETTINGS={
   theme:'void',grain:true,cursor:true,safe:false,
   reduce:false,mute:true,audioSrc:'ambient',audioReact:false,haptics:true,
-  includeAudio:true,exportRes:'1920x1080',fps:30,duration:6,format:'auto',
+  includeAudio:true,exportRes:'1920x1080',fps:60,duration:6,format:'mp4',
   reducedByOS:(matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false
 };
 
@@ -2079,7 +2079,7 @@ const DATA={
   bootAt:nowMs(),
   lastExport:null,
   lastExportBlob:null,
-  lastExportName:'rot-export.webm',
+  lastExportName:'rot-export.mp4',
   aiPhoto:null,
   aiUrl:null,
   aiGenerating:false,
@@ -2090,6 +2090,12 @@ const DATA={
   activePanel:null
 };
 if(DATA.settings.reducedByOS)DATA.settings.reduce=true;
+/* export contract is fixed: 1920x1080 / 60 fps / MP4 only */
+DATA.settings.exportRes='1920x1080';
+DATA.settings.fps=60;
+DATA.settings.format='mp4';
+DATA.settings.duration=clamp(Math.round(+DATA.settings.duration||6),3,120);
+DATA.recording=false;
 const P=defaultP();
 const A=deep(P);
 let syncUI=()=>{};
@@ -2127,6 +2133,8 @@ function applyPreset(src,instant){
     P.asciiMode=src.asciiMode!=null?(+src.asciiMode?1:0):0;
   }
   if(DATA.settings.safe)capForSafeMode(P);
+  /* the render pipeline is locked to 1080p; presets may carry legacy values */
+  P.res=1080;
   if(instant){
     Object.assign(A,deep(P));
     FX.forEach(f=>A.fx[f.id]=P.on[f.id]?P.fx[f.id]:0);
@@ -2226,7 +2234,7 @@ const Engine=(()=>{
   let internalW=320,internalH=180,quality=1;
   let exporting=false,exportW=0,exportH=0;
   let asciiTex=null,lastFrame=null;
-  const src={texture:null,w:1280,h:720,video:null,demo:true,label:'DEMO'};
+  const src={texture:null,w:1280,h:720,video:null,empty:true,label:'NO SOURCE'};
 
   const U={
     uTex:{value:null},uPrev:{value:null},uT:{value:0},uAsp:{value:1.78},
@@ -2290,7 +2298,8 @@ const Engine=(()=>{
   function calcInternal(){
     let base;
     if(P.res===0)base=stageH;
-    else base=Math.max(40,+P.res||120);
+    else base=Math.max(40,+P.res||1080);
+    base=Math.min(base,Math.max(40,stageH));
     base=base/(1+(+P.pix||0)*3.2);
     if(P.autoQ)base*=quality;
     internalH=clamp(Math.round(base),40,2160);
@@ -2328,7 +2337,7 @@ const Engine=(()=>{
   function setSource(tex,w,h,opts){
     opts=opts||{};
     if(src.video&&src.video!==opts.video){try{src.video.pause()}catch(e){}}
-    src.texture=tex;src.w=Math.max(1,w||1);src.h=Math.max(1,h||1);src.video=opts.video||null;src.demo=!!opts.demo;src.label=opts.label||(opts.demo?'DEMO':(opts.video?'VIDEO':'IMAGE'));
+    src.texture=tex;src.w=Math.max(1,w||1);src.h=Math.max(1,h||1);src.video=opts.video||null;src.empty=!!opts.empty;src.label=opts.label||(opts.empty?'NO SOURCE':(opts.video?'VIDEO':'IMAGE'));
     U.uTex.value=tex;U.uSA.value=src.w/src.h;
     firstFrame=true;
   }
@@ -2357,7 +2366,6 @@ const Engine=(()=>{
   function draw(){
     if(!R)return;
     if(!lastFrame)return;
-    if(src.texture&&src.texture.needsUpdate===false&&src.demo){/* canvas texture is flagged by app */ }
     U.uPrev.value=rtScene[cur].texture;
     const next=1-cur;
     R.setRenderTarget(rtScene[next]);R.render(sceneMain,cam);
@@ -2385,7 +2393,7 @@ const Engine=(()=>{
     exporting=true;exportW=w;exportH=h;quality=1;
     R.setSize(w,h,false);
     stageW=w;stageH=h;U.uAsp.value=w/h;
-    let base=P.res===0?h:Math.max(60,(+P.res||120)*(h/720));
+    let base=P.res===0?h:Math.max(60,Math.min(h,(+P.res||1080)));
     base=base/(1+(+P.pix||0)*3.2);
     internalH=clamp(Math.round(base),60,Math.min(2160,h));
     internalW=Math.max(8,Math.round(internalH*(w/h)/2)*2);
@@ -2438,12 +2446,8 @@ function buildQuality(){
   const host=$id('qualityFields');
   host.innerHTML=`
    <div class="ctrl">
-     <div class="ctrl-top"><span class="ctrl-label">Internal resolution</span><span class="ctrl-val" id="resVal">120P</span></div>
-     <select id="resSel" aria-label="Internal render resolution">
-       <option value="90">90p · grime</option><option value="120" selected>120p · default</option><option value="144">144p · soft</option>
-       <option value="240">240p · clean</option><option value="360">360p · crisp</option><option value="480">480p · sharp</option>
-       <option value="720">720p · heavy</option><option value="1080">1080p · brutal</option><option value="0">Native display</option>
-     </select>
+     <div class="ctrl-top"><span class="ctrl-label">Render resolution</span><span class="ctrl-val">1080P · LOCKED</span></div>
+     <div class="lock-row"><b>1920 × 1080</b><span>output / mp4</span></div>
    </div>
    <div class="ctrl">
      <div class="ctrl-top"><span class="ctrl-label">Pixelation</span><span class="ctrl-val" id="pixVal">0.00</span></div>
@@ -2460,13 +2464,12 @@ function buildQuality(){
      <div class="ctrl-top"><span class="ctrl-label">ASCII mode</span><span class="ctrl-val">GLYPH</span></div>
      <select id="asciiModeSel" aria-label="ASCII or halftone mode"><option value="0">ASCII glyphs</option><option value="1">Halftone dots</option></select>
    </div>`;
-  const res=$id('resSel'),pix=$id('pixRange'),pixVal=$id('pixVal'),grade=$id('gradeSel'),amode=$id('asciiModeSel');
-  res.addEventListener('change',()=>{P.res=+res.value;Engine.resize();markDirty();queueSaveLook();updateHUD(true)});
+  const pix=$id('pixRange'),pixVal=$id('pixVal'),grade=$id('gradeSel'),amode=$id('asciiModeSel');
   pix.addEventListener('input',()=>{P.pix=+pix.value;pixVal.textContent=P.pix.toFixed(2);fillRange(pix);Engine.resize();markDirty();queueSaveLook()});
   grade.addEventListener('change',()=>{P.grade=+grade.value;markDirty();queueSaveLook()});
   amode.addEventListener('change',()=>{P.asciiMode=+amode.value;markDirty();queueSaveLook()});
   fillRange(pix);
-  UI.els.resSel=res;UI.els.pixRange=pix;UI.els.pixVal=pixVal;UI.els.gradeSel=grade;UI.els.asciiModeSel=amode;UI.els.asciiModeWrap=$id('asciiModeWrap');
+  UI.els.pixRange=pix;UI.els.pixVal=pixVal;UI.els.gradeSel=grade;UI.els.asciiModeSel=amode;UI.els.asciiModeWrap=$id('asciiModeWrap');
 }
 function buildEffects(){
   const host=$id('effectList');host.innerHTML='';
@@ -2650,10 +2653,12 @@ function bindPanels(){
 
 /* --- source management --- */
 let currentObjectURL=null;
-function setDemoSource(){
+function setPlaceholderSource(quiet){
   try{if(Engine.src.video)Engine.src.video.pause()}catch(e){}
-  Engine.setSource(DEMO.texture,DEMO.canvas.width,DEMO.canvas.height,{demo:true,label:'DEMO'});
-  updateSourceInfo();toast('<b>DEMO FEED</b> — procedural face');
+  if(currentObjectURL){try{URL.revokeObjectURL(currentObjectURL)}catch(e){}currentObjectURL=null;}
+  Engine.setSource(PLACEHOLDER.texture,PLACEHOLDER.canvas.width,PLACEHOLDER.canvas.height,{empty:true,label:'NO SOURCE'});
+  updateSourceInfo();
+  if(!quiet)toast('<b>SOURCE CLEARED</b> — upload an image or video to begin');
 }
 function handleSourceFile(file){
   if(!file)return;
@@ -2693,18 +2698,20 @@ function handleSourceFile(file){
 }
 function updateSourceInfo(){
   const s=Engine.getSrc();
-  const label=s.demo?'DEMO FEED':(s.video?'VIDEO':'IMAGE');
-  const dims=(s.w||1280)+' × '+(s.h||720);
+  const empty=!!s.empty;
+  const label=empty?'NO SOURCE':(s.video?'VIDEO':'IMAGE');
+  const dims=empty?'— × —':(s.w||1280)+' × '+(s.h||720);
   if($id('srcInfo'))$id('srcInfo').textContent=label;
   if($id('srcDims'))$id('srcDims').textContent=dims;
-  if($id('srcType'))$id('srcType').textContent=s.demo?'PROCEDURAL':(s.video?'PLAYING':'STILL');
-  if($id('hudSrc'))$id('hudSrc').textContent=s.demo?'DEMO':(s.video?'VIDEO':'IMAGE');
+  if($id('srcType'))$id('srcType').textContent=empty?'EMPTY':(s.video?'PLAYING':'STILL');
+  if($id('hudSrc'))$id('hudSrc').textContent=empty?'NO SOURCE':(s.video?'VIDEO':'IMAGE');
   if($id('tickerSrc'))$id('tickerSrc').textContent=label;
+  const hint=$id('emptyHint');if(hint)hint.classList.toggle('off',!empty);
 }
 function bindSource(){
   const fi=$id('fileInput');
   $id('btnUpload').addEventListener('click',()=>fi.click());
-  $id('btnDemo').addEventListener('click',setDemoSource);
+  const clear=$id('btnClearSource');if(clear)clear.addEventListener('click',()=>setPlaceholderSource());
   $id('dropMini').addEventListener('click',()=>fi.click());
   $id('dropMini').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click()}});
   fi.addEventListener('change',()=>{handleSourceFile(fi.files&&fi.files[0]);fi.value=''});
@@ -2718,7 +2725,7 @@ function bindSource(){
 function syncAllUI(){
   MASTER.forEach(m=>{const u=UI.master[m.id];if(u){u.input.value=P[m.id];u.out.textContent=(+P[m.id]).toFixed(2);fillRange(u.input)}});
   FX.forEach(f=>{const u=UI.fx[f.id];if(u){u.cb.checked=!!P.on[f.id];u.rng.value=P.fx[f.id];u.val.textContent=(+P.fx[f.id]).toFixed(2);u.row.classList.toggle('off',!P.on[f.id]);fillRange(u.rng)}});
-  if(UI.els.resSel){UI.els.resSel.value=String(P.res);UI.els.pixRange.value=P.pix;UI.els.pixVal.textContent=(+P.pix).toFixed(2);fillRange(UI.els.pixRange);UI.els.gradeSel.value=String(P.grade||0);UI.els.asciiModeSel.value=String(P.asciiMode||0);UI.els.asciiModeWrap.hidden=!P.on.ascii;}
+  if(UI.els.pixRange){UI.els.pixRange.value=P.pix;UI.els.pixVal.textContent=(+P.pix).toFixed(2);fillRange(UI.els.pixRange);UI.els.gradeSel.value=String(P.grade||0);UI.els.asciiModeSel.value=String(P.asciiMode||0);UI.els.asciiModeWrap.hidden=!P.on.ascii;}
   const auto=$id('autoQ'),skip=$id('skipAllowed');if(auto)auto.checked=!!P.autoQ;if(skip)skip.checked=!!P.skip;
   updateFxCount();applyFxFilter();
   const active=FX.filter(f=>P.on[f.id]).map(f=>f.name).slice(0,2).join(' + ');
@@ -3012,7 +3019,7 @@ function updateHUD(force){
   lastHudAt=now;
   const fps=Math.round(1000/Math.max(1,DATA.fpsEMA));
   const fpsEl=$id('hudFps');if(fpsEl)fpsEl.textContent=String(Math.min(999,Math.max(0,fps))).padStart(2,'0');
-  const resEl=$id('hudRes');if(resEl)resEl.textContent=P.res===0?'NATIVE':P.res+'P';
+  const resEl=$id('hudRes');if(resEl)resEl.textContent='1080P';
   const pct=Math.round(clamp(DATA.entropy,0,1)*100);
   const bar=$id('hudDecay');if(bar)bar.style.transform='scaleX('+(pct/100)+')';
   const txt=$id('hudDecayTxt');if(txt)txt.textContent=pct+'%';
@@ -3020,7 +3027,7 @@ function updateHUD(force){
   if(sig){sig.classList.toggle('bad',fps<28);sig.classList.toggle('off',DATA.fpsEMA>200)}
   const st=$id('hudSigTxt');if(st)st.textContent=fps<28?'STRAIN':'LIVE';
   const state=$id('tickerState');
-  if(state)state.textContent=DATA.hypno?'HYPNOSIS CYCLE':(DATA.extreme?'EXTREME FEED':(DATA.exporting?'EXPORTING':'LIVE DISTORTION'));
+  if(state)state.textContent=DATA.recording?'RECORDING':(DATA.hypno?'HYPNOSIS CYCLE':(DATA.extreme?'EXTREME FEED':(DATA.exporting?'EXPORTING':'LIVE DISTORTION')));
   const clock=$id('tickerClock');
   if(clock){const up=Math.max(0,Math.floor((Date.now()-DATA.bootAt)/1000));clock.textContent=fmtTime(up)}
   if(typeof syncPerfUI==='function')syncPerfUI();
@@ -3059,7 +3066,7 @@ document.addEventListener('keydown',e=>{
   else if(key==='a'){e.preventDefault();openAI()}
   else if(key==='m'){e.preventDefault();$id('btnAudio').click()}
   else if(key==='p'){e.preventDefault();exportPNG()}
-  else if(key==='v'){e.preventDefault();exportVideo()}
+  else if(key==='v'){e.preventDefault();toggleRecording()}
   else if(key===' '){e.preventDefault();if(typeof togglePerformance==='function')togglePerformance()}
   else if(k==='/'){
     e.preventDefault();
@@ -3325,7 +3332,7 @@ const Music=(()=>{
   function presetRoutes(p){return p.routes.map(r=>mkr(r[0],r[1],r[2],r[3],r[4],r[5]))}
 
   const DEFAULTS={
-    volume:.8,mute:false,loop:true,rate:1,latency:0,sensitivity:1,smoothing:.72,
+    volume:.8,mute:false,loop:true,rate:1,latency:0,sensitivity:1,smoothing:.45,
     threshold:1.2,dropSens:.55,reactOn:true,reduceFlash:false,
     bpm:120,gridOffset:0,bpmSource:'manual',confidence:0,
     division:1,tempoLock:false,
@@ -3359,6 +3366,7 @@ const Music=(()=>{
   let saveTimer=0,uiAt=0,spectrumAt=0,resizeTimer=0;
   let kickedAt=0,snaredAt=0,hatAt=0,onsetAt=0,dropAt=0,dropShownAt=0;
   let fluxMean=0,fluxVar=0,lowMean=0,shortEnergy=0,longEnergy=0;
+  let rawLowMean=0,rawLowPrev=0;
   let hypnoBar=-1;
   const smoothLv={bass:0,mid:0,high:0,energy:0,flux:0};
   const modM={},modF={},quantF={};
@@ -3399,8 +3407,8 @@ const Music=(()=>{
     try{
       ctx=new AC();
       analyser=ctx.createAnalyser();
-      analyser.fftSize=2048;
-      analyser.smoothingTimeConstant=.72;
+      analyser.fftSize=1024;
+      analyser.smoothingTimeConstant=0;
       freq=new Uint8Array(analyser.frequencyBinCount);
       prevSpec=new Float32Array(analyser.frequencyBinCount);
       binHz=ctx.sampleRate/analyser.fftSize;
@@ -3590,6 +3598,7 @@ const Music=(()=>{
       const ch=buffer.getChannelData(0);
       const hop=512;
       const frames=Math.floor(ch.length/hop);
+      const fps=sr/hop;
       if(frames<64)throw new Error('Track too short to analyse');
       const energy=new Float32Array(frames);
       const chunk=7000;
@@ -3622,7 +3631,20 @@ const Music=(()=>{
       const fstd=Math.sqrt(fvar)||1e-6;
       for(let i=0;i<frames;i++)flux[i]/=fstd;
 
-      const fps=sr/hop;
+      /* low-passed energy flux: emphasises kick thumps for a tighter grid phase */
+      const kickFlux=new Float32Array(frames);
+      const lpA=1-Math.exp(-2*Math.PI*12/fps);
+      let lpE=energy[0]||0,lpPrev=lpE,kmean=0;
+      for(let i=1;i<frames;i++){
+        lpE+=(energy[i]-lpE)*lpA;
+        const kd=lpE-lpPrev;
+        kickFlux[i]=kd>0?kd:0;
+        kmean+=kickFlux[i];
+        lpPrev=lpE;
+      }
+      kmean/=Math.max(1,frames-1);
+      const kinv=1/(kmean||1);
+
       const lagMin=Math.max(2,Math.floor(fps*60/180));
       const lagMax=Math.min(frames-2,Math.ceil(fps*60/70));
       if(lagMax<=lagMin)throw new Error('Track too short for tempo analysis');
@@ -3687,7 +3709,7 @@ const Music=(()=>{
         for(let k=0;;k++){
           const idx=Math.round(off+k*period);
           if(idx>=frames)break;
-          e+=fluxPos[idx]||0;
+          e+=((fluxPos[idx]||0)/(fmean||1))*0.65+((kickFlux[idx]||0)*kinv)*1.35;
           count++;
           if(count>1024)break;
         }
@@ -4017,109 +4039,6 @@ const Music=(()=>{
     return exportDest?exportDest.stream:null;
   }
 
-  async function exportVideo(opts){
-    opts=opts||{};
-    if(!loaded){toast('<b>NO MUSIC TRACK</b> — load music first');return}
-    if(exportBusy||Engine.isExporting()){toast('<b>BUSY</b> — wait for the current export');return}
-    if((DATA.settings.format||'auto')==='gif')return exportGIF();
-    if(!window.MediaRecorder){toast('<b>RECORDING UNSUPPORTED</b> — use Frame PNG');return}
-    const mime=chooseRecorderMime(DATA.settings.format==='mp4'?'mp4':'webm');
-    if(!mime){toast('<b>NO VIDEO CODEC</b> — try WebM or PNG');return}
-    ensureCtx();
-    if(!ctx){toast('<b>AUDIO UNAVAILABLE</b> — cannot prepare music export');return}
-    const size=parseExportSize();
-    const fps=clamp(+DATA.settings.fps||30,12,60);
-    let start=0,end=duration;
-    if(settings.useRange&&settings.range){start=settings.range.a;end=settings.range.b}
-    start=clamp(start,0,duration);end=clamp(end,0,duration);
-    if(end-start<.2){toast('<b>RANGE TOO SHORT</b> — select at least 0.2 s');return}
-    const wasPlaying=!el.paused;
-    const oldTime=el.currentTime,oldLoop=el.loop,oldRate=el.playbackRate;
-    const audioWanted=!opts.videoOnly&&!!DATA.settings.includeAudio;
-    let stream=null,rec=null,audioAttached=false,fallback=false;
-    let chunks=[];
-    exportBusy=true;DATA.exporting=true;setExportButtons(true);
-    setExportProgress(.02,'PREPARING MUSIC EXPORT / '+(end-start).toFixed(1)+'S','');
-    try{
-      Engine.beginExport(size.w,size.h);
-      await sleep(360);
-      pause();
-      el.loop=false;
-      el.playbackRate=settings.rate;
-      await seekTo(start);
-      await sleep(140);
-      stream=streamFromCanvas(fps);
-      if(!stream)throw new Error('canvas.captureStream unavailable');
-      if(audioWanted){
-        const aud=getRecordStream();
-        if(aud&&aud.getAudioTracks){
-          aud.getAudioTracks().forEach(t=>{try{stream.addTrack(t);audioAttached=true}catch(e){}});
-        }
-        if(!audioAttached)toast('<b>VIDEO ONLY</b> — no music audio track could be attached');
-      }
-      const bitrate=clamp(Math.round(size.w*size.h*fps*.16),4e6,48e6);
-      let mimeUsed=mime;
-      try{rec=new MediaRecorder(stream,{mimeType:mimeUsed,videoBitsPerSecond:bitrate})}
-      catch(e){
-        try{rec=new MediaRecorder(stream,{videoBitsPerSecond:bitrate});mimeUsed=''}
-        catch(e2){throw new Error('MediaRecorder rejected the stream')}
-      }
-      rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
-      const stopped=new Promise((resolve,reject)=>{
-        rec.onstop=()=>resolve();
-        rec.onerror=e=>reject(new Error('Recorder error: '+(e.error&&e.error.name||'unknown')));
-      });
-      rec.start(250);
-      if(ctx.state==='suspended')await ctx.resume().catch(()=>{});
-      try{await el.play()}catch(e){throw new Error('Playback blocked — start the track once, then export')}
-      const wall=(end-start)/Math.max(.5,settings.rate);
-      const t0=performance.now();
-      let lastSec=-1;
-      while(true){
-        const cur=el.currentTime;
-        const p=clamp((cur-start)/(end-start),0,1);
-        const now=performance.now();
-        const left=Math.max(0,Math.ceil(((end-cur)/Math.max(.5,settings.rate))));
-        if(left!==lastSec){lastSec=left}
-        setExportProgress(.03+p*.94,'RECORDING MUSIC / '+Math.round(p*100)+'%',left+' S LEFT');
-        if(cur>=end-.04||now-t0>wall*1000+2600)break;
-        await sleep(85);
-      }
-      pause();
-      if(rec.state!=='inactive')rec.stop();
-      await stopped;
-      stream.getVideoTracks().forEach(t=>{try{t.stop()}catch(e){}});
-      const blob=new Blob(chunks,{type:mimeUsed||'video/webm'});
-      if(!blob.size)throw new Error('Recorder produced an empty file');
-      const ext=(mimeUsed||'').indexOf('mp4')>=0?'mp4':'webm';
-      const name='rot-music-'+safeName($id('musicName')?$id('musicName').textContent:'track')+'-'+exportTimestamp()+'.'+ext;
-      const url=URL.createObjectURL(blob);
-      setExportProgress(1,'MUSIC EXPORT READY / '+byteSize(blob.size),'');
-      openViewer({url:url,blob:blob,name:name,type:mimeUsed||'video/webm',chainable:true,
-        meta:'MUSIC VIDEO / '+size.w+'×'+size.h+' / '+(end-start).toFixed(1)+'S / '+fps+'FPS / '+byteSize(blob.size)});
-      toast('<b>MUSIC VIDEO EXPORTED</b> — '+name);
-    }catch(e){
-      fallback=audioAttached&&!opts.videoOnly;
-      if(!fallback){
-        setExportProgress(0,'EXPORT FAILED','');
-        toast('<b>MUSIC EXPORT FAILED</b> — '+esc(String(e&&e.message||e).slice(0,140)));
-      }
-      if(stream&&stream.getVideoTracks)stream.getVideoTracks().forEach(t=>{try{t.stop()}catch(_){}});
-    }finally{
-      try{pause()}catch(e){}
-      el.loop=oldLoop;
-      el.playbackRate=oldRate;
-      try{el.currentTime=clamp(oldTime,0,Math.max(0,duration-.03))}catch(e){}
-      if(wasPlaying&&!fallback){try{el.play().catch(()=>{})}catch(e){}}
-      DATA.exporting=false;exportBusy=false;
-      setTimeout(()=>{try{Engine.endExport()}catch(e){}setExportButtons(false);setExportProgress(0,'READY / EXPORT AT CURRENT LOOK','')},100);
-      if(fallback){
-        toast('<b>AUDIO MUX FAILED</b> — retrying as video-only');
-        setTimeout(()=>{if(wasPlaying){try{el.play().catch(()=>{})}catch(e){}};exportVideo({videoOnly:true})},180);
-      }
-    }
-  }
-
   function bind(){
     const drop=$id('musicDrop'),file=$id('musicFile'),wrap=$id('musicWaveWrap');
     if(drop){
@@ -4306,6 +4225,8 @@ const Music=(()=>{
     mid/=(Math.max(1,midEnd-lowEnd))*255;
     high/=(Math.max(1,highEnd-midEnd))*255;
     const sens=settings.sensitivity;
+    /* raw low-band energy drives kick detection; the smoothed envelope is for visuals only */
+    const rawLow=clamp(low*1.6*sens,0,1);
     const sm=1-Math.exp(-dt*(4+settings.smoothing*14));
     smoothLv.bass+=(clamp(low*1.5*sens,0,1)-smoothLv.bass)*sm;
     smoothLv.mid+=(clamp(mid*2.1*sens,0,1)-smoothLv.mid)*sm;
@@ -4327,10 +4248,13 @@ const Music=(()=>{
     const fstd=Math.sqrt(Math.max(.000001,fluxVar-fluxMean*fluxMean));
     smoothLv.flux+=(flux-smoothLv.flux)*.3;
     lowMean+=(smoothLv.bass-lowMean)*.03;
+    const lowRise=rawLow-rawLowPrev;
+    rawLowPrev=rawLow;
+    rawLowMean+=(rawLow-rawLowMean)*.05;
 
     const disc=settings.dropDetect&&settings.reactOn;
     if(disc){
-      if(smoothLv.bass>Math.max(.2,lowMean*1.35)&&now-kickedAt>110){kickedAt=now;pulse.kick=1}
+      if(lowRise>.07&&rawLow>Math.max(.10,rawLowMean*1.12)&&now-kickedAt>110){kickedAt=now;pulse.kick=1}
       if(flux>fluxMean+fstd*settings.threshold&&now-onsetAt>90){
         onsetAt=now;pulse.onset=1;
         if(smoothLv.mid>.10&&now-snaredAt>150){snaredAt=now;pulse.snare=1}
@@ -4383,7 +4307,8 @@ const Music=(()=>{
       return out;
     }
     ensureCtx();
-    const mediaT=clamp(el.currentTime-settings.latency/1000,0,Math.max(0,duration));
+    const outLat=ctx?((ctx.outputLatency||ctx.baseLatency||0)):0;
+    const mediaT=clamp(el.currentTime-outLat-settings.latency/1000,0,Math.max(0,duration));
     const period=60/settings.bpm;
     const bf=(mediaT-settings.gridOffset)/period;
     const idx=Math.floor(bf);
@@ -4402,7 +4327,11 @@ const Music=(()=>{
       realtime(dt,now);
     }else{
       lastBeatIndex=idx;
-      if(analyser&&freq){analyser.getByteFrequencyData(freq);}
+      if(analyser&&freq){
+        analyser.getByteFrequencyData(freq);
+        if(prevSpec){for(let i=0;i<freq.length;i++)prevSpec[i]=freq[i]/255;}
+      }
+      rawLowPrev=0;
     }
     sig.kick=pulse.kick;sig.snare=pulse.snare;sig.hihat=pulse.hihat;
     sig.energy=level.energy;sig.beat=clamp(out.beatPhase,0,1);sig.bar=clamp(out.barPhase,0,1);
@@ -4468,7 +4397,7 @@ const Music=(()=>{
   return {
     init:bind,loadFile:loadFile,play:play,pause:pause,stop:stop,toggle:toggle,toggleMute:toggleMute,seek:seek,nudge:nudge,
     analyze:analyze,tap:tapTempo,setBpm:setBpm,half:halfBpm,double:doubleBpm,
-    getRecordStream:getRecordStream,exportVideo:exportVideo,
+    getRecordStream:getRecordStream,
     update:update,syncUI:syncUI,
     hasTrack:()=>loaded,isPlaying:()=>playing,
     currentTime:()=>el?el.currentTime:0,duration:()=>duration,
@@ -4903,7 +4832,7 @@ async function localGenerate(job){
   }
   const prevLook=snapshotLook();
   const prevSrc=Engine.getSrc();
-  const prev={texture:prevSrc.texture,w:prevSrc.w,h:prevSrc.h,video:prevSrc.video,demo:prevSrc.demo,label:prevSrc.label};
+  const prev={texture:prevSrc.texture,w:prevSrc.w,h:prevSrc.h,video:prevSrc.video,empty:prevSrc.empty,label:prevSrc.label};
   let photoTex=null,stream=null,rec=null,stopped=false;
   try{
     showSynth('PREPARING PHOTO');
@@ -4978,7 +4907,7 @@ async function localGenerate(job){
     setTimeout(()=>{
       try{applyPreset(prevLook,true)}catch(e){}
       try{
-        Engine.setSource(prev.texture,prev.w,prev.h,{video:prev.video,demo:prev.demo,label:prev.label});
+        Engine.setSource(prev.texture,prev.w,prev.h,{video:prev.video,empty:prev.empty,label:prev.label});
         if(prev.video)prev.video.play().catch(()=>{});
         updateSourceInfo();
       }catch(e){}
@@ -5330,45 +5259,62 @@ function initAILab(){
 function bindAI(){bindAILab()}
 
 /* ==========================================================================
-   20 — EXPORT: PNG / WEBM / MP4 / GIF, VIEWER, SHARE
+   20 — EXPORT: MANUAL MP4 RECORDING (1920×1080 / 60 FPS) + PNG
    ========================================================================== */
 let exportBusy=false;
 let exportViewerLastFocus=null;
 
+const EXPORT_W=1920, EXPORT_H=1080, EXPORT_FPS=60;
+const REC={
+  active:false,starting:false,stopping:false,finalizing:false,
+  rec:null,stream:null,chunks:[],mime:'',stopped:null,
+  startedAt:0,maxMs:0,timer:0,
+  music:false,musicWasPlaying:false
+};
+
 function parseExportSize(){
-  const v=(DATA.settings.exportRes||'1920x1080').split('x');
-  return {w:Math.max(2,parseInt(v[0],10)||1920),h:Math.max(2,parseInt(v[1],10)||1080)};
+  return {w:EXPORT_W,h:EXPORT_H};
 }
 function resLabel(){
-  const s=parseExportSize();
-  if(s.w===3840)return '4K';
-  if(s.w===1080&&s.h===1920)return '9:16';
-  if(s.w===1080&&s.h===1080)return '1:1';
-  return String(s.h)+'P';
+  return '1080P';
+}
+function chooseMp4Mime(){
+  if(!window.MediaRecorder)return '';
+  const list=[
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4;codecs=avc1',
+    'video/mp4'
+  ];
+  for(const m of list){try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}}
+  return '';
 }
 function syncExportUI(){
-  const size=parseExportSize();
-  const res=$id('exportRes');if(res)res.value=DATA.settings.exportRes||'1920x1080';
-  const rn=$id('resNote');if(rn)rn.textContent=resLabel();
-  const dur=$id('exportDur');if(dur){dur.value=String(DATA.settings.duration||6);fillRange(dur)}
-  const dn=$id('durNote');if(dn)dn.textContent=String(DATA.settings.duration||6).padStart(2,'0')+' S';
-  const fps=$id('fpsGroup');
-  if(fps)$$('.btn',fps).forEach(b=>b.classList.toggle('on',+b.dataset.fps===(+DATA.settings.fps||30)));
-  const fn=$id('fpsNote');if(fn)fn.textContent=(DATA.settings.fps||30)+' FPS';
-  const fmt=$id('exportFormat');if(fmt)fmt.value=DATA.settings.format||'auto';
+  const rn=$id('resNote');if(rn)rn.textContent='1080P · LOCKED';
+  const dur=$id('exportDur');
+  if(dur){const v=clamp(Math.round(+DATA.settings.duration||6),3,120);dur.value=String(v);fillRange(dur)}
+  const dn=$id('durNote');if(dn)dn.textContent=String(clamp(Math.round(+DATA.settings.duration||6),3,120)).padStart(2,'0')+' S';
+  const fn=$id('fpsNote');if(fn)fn.textContent='60 FPS · LOCKED';
   const au=$id('chkAudio');if(au)au.checked=!!DATA.settings.includeAudio;
   const share=$id('btnShareLast');if(share)share.disabled=!DATA.lastExport;
+  setExportButtons(REC.active||REC.starting||REC.finalizing);
 }
 function setExportProgress(p,status,eta){
   const bar=$id('exportBar');if(bar)bar.style.transform='scaleX('+clamp(p,0,1)+')';
   const st=$id('exportStatus');if(st&&status)st.textContent=status;
   const e=$id('exportETA');if(e)e.textContent=eta||'';
 }
-function setExportButtons(recording){
+function setExportButtons(busy){
   const rec=$id('btnRec');
-  if(rec){rec.disabled=recording;rec.textContent=recording?'RECORDING…':'RECORD'}
-  const png=$id('btnPNG');if(png)png.disabled=recording;
-  const png2=$id('btnSaveFrame2');if(png2)png2.disabled=recording;
+  if(rec){
+    const active=REC.active&&!REC.finalizing;
+    rec.classList.toggle('recording',active);
+    rec.disabled=!!busy&&!active;
+    rec.textContent=active?'■ STOP REC':'● START REC';
+    rec.setAttribute('aria-pressed',String(active));
+  }
+  const png=$id('btnPNG');if(png)png.disabled=!!busy;
+  const png2=$id('btnSaveFrame2');if(png2)png2.disabled=!!busy;
 }
 function canvasToBlob(cv,type,quality){
   return new Promise((resolve,reject)=>{
@@ -5389,18 +5335,32 @@ function exportTimestamp(){
   return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+
     String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+String(d.getSeconds()).padStart(2,'0');
 }
+function buildRecordStream(){
+  const stream=streamFromCanvas(EXPORT_FPS);
+  if(!stream)return null;
+  if(!DATA.settings.includeAudio)return stream;
+  let audioStream=null;
+  try{
+    if(typeof Music!=='undefined'&&Music.hasTrack())audioStream=Music.getRecordStream();
+    else if(typeof AudioBus!=='undefined'&&AudioBus.audioAvailable())audioStream=AudioBus.getRecordStream();
+  }catch(e){}
+  if(audioStream&&audioStream.getAudioTracks){
+    audioStream.getAudioTracks().forEach(t=>{try{stream.addTrack(t)}catch(e){}});
+  }
+  return stream;
+}
 async function exportPNG(){
   if(exportBusy||Engine.isExporting()){toast('<b>BUSY</b> — wait for the current export');return}
   exportBusy=true;
   const size=parseExportSize();
-  setExportProgress(.06,'RENDERING '+resLabel()+' FRAME','');
+  setExportProgress(.06,'RENDERING 1080P FRAME','');
   try{
     Engine.beginExport(size.w,size.h);
     await sleep(180);
     Engine.renderNow();
     await sleep(40);
     const blob=await canvasToBlob(Engine.getCanvas(),'image/png');
-    const name='rot-frame-'+resLabel().replace(':','x')+'-'+exportTimestamp()+'.png';
+    const name='rot-frame-1080p-'+exportTimestamp()+'.png';
     const url=URL.createObjectURL(blob);
     setExportProgress(1,'FRAME READY / '+byteSize(blob.size),'');
     openViewer({url,blob,name,type:'image/png',chainable:false,meta:'PNG / '+size.w+'×'+size.h+' / '+byteSize(blob.size)});
@@ -5411,147 +5371,118 @@ async function exportPNG(){
   }finally{
     Engine.endExport();
     exportBusy=false;
-    setTimeout(()=>setExportProgress(0,'READY / EXPORT AT CURRENT LOOK',''),900);
+    setTimeout(()=>setExportProgress(0,'READY / PRESS START REC',''),900);
   }
 }
 
-async function exportVideo(){
-  if(typeof Music!=='undefined'&&Music.hasTrack()&&(DATA.settings.format||'auto')!=='gif'){
-    return Music.exportVideo();
-  }
+function tickRecording(){
+  if(!REC.active)return;
+  const elapsed=performance.now()-REC.startedAt;
+  const p=clamp(elapsed/REC.maxMs,0,1);
+  const left=Math.max(0,REC.maxMs-elapsed)/1000;
+  setExportProgress(.02+p*.96,'RECORDING / 1080P60 / MP4',left.toFixed(1)+' S LEFT');
+  if(elapsed>=REC.maxMs)stopRecording('limit');
+}
+
+async function startRecording(){
+  if(REC.active||REC.starting||REC.finalizing)return;
   if(exportBusy||Engine.isExporting()){toast('<b>BUSY</b> — wait for the current export');return}
-  if((DATA.settings.format||'auto')==='gif')return exportGIF();
-  if(!window.MediaRecorder){
-    toast('<b>RECORDING UNSUPPORTED</b> — use Frame PNG in this browser');
-    return;
-  }
-  const mime=chooseRecorderMime(DATA.settings.format==='mp4'?'mp4':'webm');
-  if(!mime){
-    toast('<b>NO VIDEO CODEC</b> — try WebM, or Frame PNG');
-    return;
-  }
+  if(!window.MediaRecorder){toast('<b>RECORDING UNSUPPORTED</b> — use FRAME PNG in this browser');return}
+  const mime=chooseMp4Mime();
+  if(!mime){toast('<b>MP4 UNAVAILABLE</b> — this browser cannot record H.264 MP4. Use Chrome or Edge.');return}
   const size=parseExportSize();
-  const fps=clamp(+DATA.settings.fps||30,12,60);
-  const duration=clamp(+DATA.settings.duration||6,3,30);
-  let stream=null,rec=null,chunks=[];
-  exportBusy=true;DATA.exporting=true;
+  const maxSec=clamp(Math.round(+DATA.settings.duration||6),3,120);
+  REC.starting=true;REC.finalizing=false;
+  REC.chunks=[];REC.mime=mime;REC.maxMs=maxSec*1000;
+  exportBusy=true;DATA.exporting=true;DATA.recording=true;
   setExportButtons(true);
-  setExportProgress(.02,'PREPARING '+resLabel()+' / '+duration+'S','');
+  setExportProgress(.01,'PREPARING 1080P60 / MP4','');
   try{
+    try{if(typeof AudioBus!=='undefined')AudioBus.resume()}catch(e){}
     Engine.beginExport(size.w,size.h);
     await sleep(360);
-    stream=streamFromCanvas(fps);
-    if(!stream)throw new Error('canvas.captureStream unavailable');
-    stream=mergeAudio(stream);
-    if(DATA.settings.includeAudio&&typeof AudioBus!=='undefined'&&AudioBus.audioAvailable()){
-      toast('<b>AUDIO TRACK</b> — attached to recording');
-    }
-    const bitrate=clamp(Math.round(size.w*size.h*fps*.16),4e6,48e6);
-    let mimeUsed=mime;
-    try{rec=new MediaRecorder(stream,{mimeType:mimeUsed,videoBitsPerSecond:bitrate})}
+    REC.stream=buildRecordStream();
+    if(!REC.stream)throw new Error('canvas.captureStream unavailable');
+    const bitrate=clamp(Math.round(size.w*size.h*EXPORT_FPS*.14),8e6,48e6);
+    const mimeUsed=mime;
+    try{REC.rec=new MediaRecorder(REC.stream,{mimeType:mimeUsed,videoBitsPerSecond:bitrate,audioBitsPerSecond:192000})}
     catch(e){
-      try{rec=new MediaRecorder(stream,{videoBitsPerSecond:bitrate});mimeUsed=''}
-      catch(e2){throw new Error('MediaRecorder rejected this stream')}
+      try{REC.rec=new MediaRecorder(REC.stream,{mimeType:mimeUsed,videoBitsPerSecond:bitrate})}
+      catch(e2){throw new Error('MediaRecorder rejected the MP4 stream')}
     }
-    rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
-    const stopped=new Promise((resolve,reject)=>{
-      rec.onstop=()=>resolve();
-      rec.onerror=e=>reject(new Error('Recorder error: '+(e.error&&e.error.name||'unknown')));
+    REC.rec.ondataavailable=e=>{if(e.data&&e.data.size)REC.chunks.push(e.data)};
+    REC.stopped=new Promise((resolve,reject)=>{
+      REC.rec.onstop=()=>resolve();
+      REC.rec.onerror=e=>reject(new Error('Recorder error: '+(e.error&&e.error.name||'unknown')));
     });
-    rec.start(250);
-    const t0=performance.now();
-    const total=duration*1000;
-    let lastSec=-1;
-    const timer=setInterval(()=>{
-      const p=clamp((performance.now()-t0)/total,0,1);
-      const left=Math.max(0,Math.ceil((total-(performance.now()-t0))/1000));
-      setExportProgress(.03+p*.94,'RECORDING '+resLabel()+' / '+Math.round(p*fps*duration)+' FRAMES',left+' S LEFT');
-      if(left!==lastSec){lastSec=left}
-    },200);
-    await sleep(total);
-    clearInterval(timer);
-    setExportProgress(.98,'FINALISING '+resLabel(),'');
-    if(rec.state!=='inactive')rec.stop();
-    await stopped;
-    stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}});
-    const blob=new Blob(chunks,{type:mimeUsed||'video/webm'});
-    if(!blob.size)throw new Error('Recorder produced an empty file');
-    const ext=(mimeUsed||'').indexOf('mp4')>=0?'mp4':'webm';
-    const name='rot-export-'+resLabel().replace(':','x')+'-'+fps+'fps-'+exportTimestamp()+'.'+ext;
-    const url=URL.createObjectURL(blob);
-    setExportProgress(1,'EXPORT READY / '+byteSize(blob.size),'');
-    openViewer({url,blob,name,type:mimeUsed||'video/webm',chainable:true,
-      meta:'VIDEO / '+size.w+'×'+size.h+' / '+duration+'S / '+fps+'FPS / '+byteSize(blob.size)});
-    toast('<b>VIDEO EXPORTED</b> — '+name);
+    REC.rec.start(200);
+    REC.active=true;REC.starting=false;
+    REC.startedAt=performance.now();
+    DATA.recording=true;
+    setExportButtons(true);
+    setExportProgress(.02,'RECORDING / 1080P60 / MP4',maxSec.toFixed(1)+' S LEFT');
+    REC.timer=setInterval(tickRecording,100);
+    toast('<b>RECORDING</b> — press STOP REC to export the take');
+    if(typeof Music!=='undefined'&&Music.hasTrack()){
+      REC.music=true;
+      REC.musicWasPlaying=!!Music.isPlaying();
+      if(!REC.musicWasPlaying){try{Music.play()}catch(e){}}
+    }
   }catch(e){
-    setExportProgress(0,'EXPORT FAILED','');
-    toast('<b>VIDEO FAILED</b> — '+esc(String(e&&e.message||e).slice(0,150)));
-    if(stream&&stream.getTracks)stream.getTracks().forEach(t=>{try{t.stop()}catch(_){}});
-  }finally{
-    DATA.exporting=false;
-    exportBusy=false;
-    setTimeout(()=>{Engine.endExport();setExportButtons(false);setTimeout(()=>setExportProgress(0,'READY / EXPORT AT CURRENT LOOK',''),800)},80);
+    REC.starting=false;REC.active=false;
+    DATA.recording=false;DATA.exporting=false;exportBusy=false;
+    try{REC.stream&&REC.stream.getTracks().forEach(t=>{try{t.stop()}catch(_){}})}catch(_){}
+    try{Engine.endExport()}catch(_){}
+    setExportButtons(false);
+    setExportProgress(0,'RECORD FAILED','');
+    toast('<b>REC FAILED</b> — '+esc(String(e&&e.message||e).slice(0,160)));
   }
 }
 
-async function exportGIF(){
-  exportBusy=true;DATA.exporting=true;
+async function stopRecording(reason){
+  if(!REC.active||REC.stopping)return;
+  REC.stopping=true;REC.finalizing=true;
+  if(REC.timer){clearInterval(REC.timer);REC.timer=0}
+  const elapsed=Math.max(0,performance.now()-REC.startedAt);
+  const rec=REC.rec,stream=REC.stream;
+  DATA.recording=false;
   setExportButtons(true);
-  setExportProgress(.02,'PREPARING GIF','');
-  const size=parseExportSize();
-  const maxW=360;
-  const scale=Math.min(1,maxW/size.w);
-  const gw=Math.max(2,Math.round(size.w*scale/2)*2);
-  const gh=Math.max(2,Math.round(size.h*scale/2)*2);
-  const fps=Math.min(12,Math.max(8,+DATA.settings.fps||30));
-  const duration=Math.min(8,Math.max(3,+DATA.settings.duration||6));
-  const frames=Math.max(8,Math.round(duration*fps));
-  let mod=null;
+  setExportProgress(.98,'FINALISING MP4','');
   try{
-    mod=await import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js');
-  }catch(e){
-    exportBusy=false;DATA.exporting=false;setExportButtons(false);
-    Engine.endExport&&Engine.endExport();
-    setExportProgress(0,'GIF ENCODER OFFLINE','');
-    toast('<b>GIF ENCODER UNAVAILABLE</b> — no network. Use WebM or PNG.');
-    return;
-  }
-  const {GIFEncoder,quantize,applyPalette}=mod;
-  Engine.beginExport(gw,gh);
+    if(rec&&rec.state!=='inactive')rec.stop();
+    if(REC.stopped)await REC.stopped;
+  }catch(e){}
+  try{stream&&stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}})}catch(e){}
   try{
-    await sleep(260);
-    const cv=Engine.getCanvas();
-    const c=document.createElement('canvas');c.width=gw;c.height=gh;
-    const ctx=c.getContext('2d',{willReadFrequently:true});
-    const gif=GIFEncoder();
-    const delay=Math.round(1000/fps);
-    for(let i=0;i<frames;i++){
-      Engine.renderNow();
-      ctx.drawImage(cv,0,0,gw,gh);
-      const rgba=ctx.getImageData(0,0,gw,gh).data;
-      const palette=quantize(rgba,256);
-      const index=applyPalette(rgba,palette);
-      gif.writeFrame(index,gw,gh,{palette,delay});
-      setExportProgress(.04+(i/frames)*.8,'CAPTURING GIF · '+(i+1)+' / '+frames,'');
-      await sleep(delay);
-    }
-    setExportProgress(.9,'ENCODING GIF','');
-    gif.finish();
-    const bytes=gif.bytesView();
-    const blob=new Blob([bytes],{type:'image/gif'});
-    const name='rot-'+gw+'x'+gh+'-'+fps+'fps-'+exportTimestamp()+'.gif';
+    const blob=new Blob(REC.chunks,{type:REC.mime||'video/mp4'});
+    if(!blob.size)throw new Error('Recorder produced an empty file');
+    const name='rot-export-1080p60-'+exportTimestamp()+'.mp4';
     const url=URL.createObjectURL(blob);
-    setExportProgress(1,'GIF READY / '+byteSize(blob.size),'');
-    openViewer({url,blob,name,type:'image/gif',chainable:false,
-      meta:'GIF / '+gw+'×'+gh+' / '+frames+' frames / '+byteSize(blob.size)});
-    toast('<b>GIF EXPORTED</b> — '+name);
+    setExportProgress(1,'MP4 READY / '+byteSize(blob.size),'');
+    openViewer({url,blob,name,type:'video/mp4',chainable:true,
+      meta:'MP4 / 1920×1080 / 60 FPS / '+(elapsed/1000).toFixed(1)+'S / '+byteSize(blob.size)});
+    toast('<b>MP4 EXPORTED</b> — '+name);
   }catch(e){
-    setExportProgress(0,'GIF FAILED','');
-    toast('<b>GIF FAILED</b> — '+esc(String(e&&e.message||e).slice(0,150)));
+    setExportProgress(0,'EXPORT FAILED','');
+    toast('<b>EXPORT FAILED</b> — '+esc(String(e&&e.message||e).slice(0,160)));
   }finally{
-    DATA.exporting=false;exportBusy=false;
-    setTimeout(()=>{try{Engine.endExport()}catch(e){};setExportButtons(false);setTimeout(()=>setExportProgress(0,'READY / EXPORT AT CURRENT LOOK',''),800)},90);
+    try{Engine.endExport()}catch(e){}
+    try{
+      if(REC.music&&typeof Music!=='undefined'&&!REC.musicWasPlaying)Music.pause();
+    }catch(e){}
+    REC.active=false;REC.starting=false;REC.stopping=false;REC.finalizing=false;
+    REC.rec=null;REC.stream=null;REC.stopped=null;REC.chunks=[];REC.mime='';
+    REC.music=false;REC.musicWasPlaying=false;
+    exportBusy=false;DATA.exporting=false;DATA.recording=false;
+    setExportButtons(false);
+    setTimeout(()=>setExportProgress(0,'READY / PRESS START REC',''),900);
   }
+}
+function toggleRecording(){
+  if(REC.stopping||REC.finalizing)return;
+  if(REC.active)return stopRecording('manual');
+  if(REC.starting)return;
+  startRecording();
 }
 
 /* ---------------- viewer ---------------- */
@@ -5598,7 +5529,7 @@ async function shareMedia(media){
   if(!media)return;
   const blob=media.blob||null;
   const name=media.fileName||media.name||'rot-export';
-  const type=media.mime||media.type||'video/webm';
+  const type=media.mime||media.type||'video/mp4';
   try{
     if(blob&&navigator.canShare){
       const file=new File([blob],name,{type});
@@ -5660,22 +5591,16 @@ document.addEventListener('fullscreenchange',()=>setTimeout(()=>Engine.resize(),
 
 /* ---------------- bindings ---------------- */
 function bindExport(){
-  const res=$id('exportRes');
-  if(res)res.addEventListener('change',()=>{DATA.settings.exportRes=res.value;saveSettings();syncExportUI()});
   const dur=$id('exportDur');
-  if(dur)dur.addEventListener('input',()=>{DATA.settings.duration=+dur.value;fillRange(dur);saveSettings();syncExportUI()});
-  const fps=$id('fpsGroup');
-  if(fps)fps.addEventListener('click',e=>{
-    const b=e.target.closest('[data-fps]');if(!b)return;
-    DATA.settings.fps=+b.dataset.fps;saveSettings();syncExportUI();
+  if(dur)dur.addEventListener('input',()=>{
+    DATA.settings.duration=clamp(Math.round(+dur.value||6),3,120);
+    fillRange(dur);saveSettings();syncExportUI();
   });
-  const fmt=$id('exportFormat');
-  if(fmt)fmt.addEventListener('change',()=>{DATA.settings.format=fmt.value;saveSettings();syncExportUI()});
   const au=$id('chkAudio');
   if(au)au.addEventListener('change',()=>{DATA.settings.includeAudio=au.checked;saveSettings()});
   $id('btnPNG').addEventListener('click',exportPNG);
   $id('btnSaveFrame2').addEventListener('click',exportPNG);
-  $id('btnRec').addEventListener('click',exportVideo);
+  $id('btnRec').addEventListener('click',toggleRecording);
   $id('btnShareLast').addEventListener('click',shareLast);
   $id('btnFullscreen').addEventListener('click',toggleFullscreen);
   $id('viewerClose').addEventListener('click',closeViewer);
@@ -5917,9 +5842,9 @@ function togglePerformance(){Performance.togglePlay()}
 function bindTimeline(){Performance.initBindings()}
 
 /* ==========================================================================
-   22 — DEMO FEED (preserved procedural face)
+   22 — NEUTRAL PLACEHOLDER SOURCE (no built-in demo image)
    ========================================================================== */
-const DEMO=(()=>{
+const PLACEHOLDER=(()=>{
   const canvas=document.createElement('canvas');
   canvas.width=1280;canvas.height=720;
   const ctx=canvas.getContext('2d');
@@ -5928,52 +5853,22 @@ const DEMO=(()=>{
   texture.magFilter=THREE.LinearFilter;
   texture.generateMipmaps=false;
 
-  function face(t){
-    const cx=640+Math.sin(t*.6)*18,cy=372+Math.sin(t*.45)*10,pulse=Math.pow(Math.max(0,Math.sin(t*1.7)),8),fk=Math.random()<.05?.5:1;
-    const rn=(i,m)=>{const u=Math.sin(i*12.9898)*43758.5453;return((u%1)+1)%1*m};
-    ctx.save();ctx.globalAlpha=fk;ctx.translate(cx,cy);ctx.beginPath();
-    for(let i=0;i<56;i++){const a=i/56*6.2832,s=Math.sin(a),r=1+.07*Math.sin(a*3+t*.7)+.05*Math.sin(a*5-t*1.1)+.03*Math.sin(a*9+t*2);
-      const x=Math.cos(a)*165*(s>0?1-.45*s:1)*r,y=s*(s>0?300:335)*r;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
-    ctx.closePath();ctx.shadowColor='#2a0508';ctx.shadowBlur=45;ctx.fillStyle='#0d0204';ctx.fill();ctx.shadowBlur=0;
-    ctx.save();ctx.clip();
-    const g=ctx.createLinearGradient(-120,-330,120,300);g.addColorStop(0,'rgba(150,60,50,.55)');g.addColorStop(.5,'rgba(70,8,10,.35)');g.addColorStop(1,'rgba(0,0,0,.6)');ctx.fillStyle=g;ctx.fillRect(-300,-400,600,800);
-    for(let i=0;i<90;i++){ctx.fillStyle=i%3?'rgba(90,6,8,.35)':'rgba(0,0,0,.45)';ctx.beginPath();ctx.arc(rn(i,330)-165+Math.sin(t*.8+i)*6,rn(i+99,640)-320+Math.cos(t*.6+i*1.3)*8,8+(i*37)%26,0,7);ctx.fill();}
-    ctx.strokeStyle='#000';ctx.lineCap='round';
-    for(let i=0;i<8;i++){ctx.lineWidth=2+i%3*2;ctx.beginPath();const x0=rn(i+300,200)-100;ctx.moveTo(x0,-320);ctx.bezierCurveTo(x0+60*Math.sin(t+i),-180,x0-70*Math.cos(t*.8+i),-60,x0+30*Math.sin(t*1.3+i),40+i*10);ctx.stroke();}
-    ctx.restore();
-    for(const s of[-1,1]){const ex=s*88,ey=-60+s*10;ctx.save();ctx.translate(ex,ey);ctx.rotate(s*.3);
-      const rx=s>0?74:58,ry=50;ctx.fillStyle='rgba(0,0,0,.92)';ctx.shadowColor='#000';ctx.shadowBlur=28;ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,7);ctx.fill();ctx.shadowBlur=0;
-      const er=22+14*pulse,eh=er*(.3+.55*Math.abs(Math.sin(t*.9+s*2)))+pulse*10;
-      const gg=ctx.createRadialGradient(0,4,2,0,4,er*2.8);gg.addColorStop(0,'rgba(255,90,60,1)');gg.addColorStop(.25,'rgba(225,10,10,.95)');gg.addColorStop(.6,'rgba(120,0,0,.5)');gg.addColorStop(1,'rgba(60,0,0,0)');
-      ctx.fillStyle=gg;ctx.beginPath();ctx.arc(0,4,er*2.8,0,7);ctx.fill();
-      ctx.fillStyle='#ff2a18';ctx.beginPath();ctx.ellipse(0,4,er*1.2,eh,0,0,7);ctx.fill();
-      ctx.fillStyle='#100';ctx.beginPath();ctx.ellipse(0,4,2+pulse*6,eh*1.3,0,0,7);ctx.fill();ctx.restore();
-      ctx.strokeStyle='rgba(150,0,10,.8)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(ex,ey+55);ctx.quadraticCurveTo(ex+20*Math.sin(t+s),ey+130,ex+8*s,ey+170+90*(.5+.5*Math.sin(t*.7+s)));ctx.stroke();}
-    ctx.fillStyle='#000';for(const s of[-1,1]){ctx.beginPath();ctx.ellipse(s*14,55,5,22,s*.25,0,7);ctx.fill();}
-    const op=14+30*(.5+.5*Math.sin(t*.8))+pulse*25;
-    ctx.save();ctx.translate(0,170+10*Math.sin(t*.5));ctx.beginPath();ctx.moveTo(-130,0);ctx.quadraticCurveTo(0,-op,130,0);ctx.quadraticCurveTo(0,op*1.6,-130,0);ctx.fillStyle='#050001';ctx.fill();
-    ctx.fillStyle='#b7a692';
-    for(let i=0;i<17;i++){const x=-120+i*15,u=(x+130)/260,k=2*u*(1-u)*op,l=10+(i*53)%14+op*.25;
-      ctx.beginPath();ctx.moveTo(x-6,-k);ctx.lineTo(x+6,-k);ctx.lineTo(x+(i%3-1)*3,-k+l);ctx.fill();
-      ctx.beginPath();ctx.moveTo(x-6,k*1.6);ctx.lineTo(x+6,k*1.6);ctx.lineTo(x+(i%2?3:-3),k*1.6-l*.8);ctx.fill();}
-    ctx.restore();
-    for(let i=0;i<9;i++){const a=i/9*6.2832+t*.05,sx=Math.cos(a)*150,sy=Math.sin(a)*300,ex2=Math.cos(a)*(330+60*Math.sin(t+i)),ey2=Math.sin(a)*(420+40*Math.cos(t*.7+i));
-      ctx.beginPath();ctx.moveTo(sx,sy);ctx.bezierCurveTo(sx+80*Math.sin(t+i),sy*1.3,ex2*.7+60*Math.cos(t*.8+i),ey2*.8,ex2,ey2);
-      ctx.strokeStyle='#030001';ctx.lineWidth=4+i%3*3;ctx.stroke();ctx.strokeStyle='rgba(120,0,10,.45)';ctx.lineWidth=1.5;ctx.stroke();}
-    ctx.restore();
-    const kk=Math.floor(t*6);if(kk%2==0)for(let j=0;j<5;j++){const sy=60+rn(kk*7+j,600),sh=6+rn(kk+j*5,24),off=(rn(kk*3+j,1)-.5)*120;ctx.drawImage(canvas,cx-200,sy,400,sh,cx-200+off,sy,400,sh);}
-  }
-
-  function draw(t){
-    ctx.fillStyle='#120e10';ctx.fillRect(0,0,1280,720);
-    for(let i=0;i<7;i++){const x=640+Math.sin(t*.5+i*1.9)*380,y=360+Math.cos(t*.4+i*2.3)*200,r=110+i*22;
-      const g=ctx.createRadialGradient(x,y,4,x,y,r);g.addColorStop(0,i%2?'#e8c9b8':'#b0453f');g.addColorStop(1,'#12090a00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();}
-    ctx.strokeStyle='#d9d4cc';ctx.lineWidth=6;for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(640,360,120+i*70+Math.sin(t+i)*20,60+i*40,t*.2*(i%2?1:-1),0,7);ctx.stroke();}
-    face(t);
+  function paint(){
+    const w=canvas.width,h=canvas.height;
+    ctx.fillStyle='#0b0a10';ctx.fillRect(0,0,w,h);
+    const g=ctx.createRadialGradient(w/2,h/2,40,w/2,h/2,w*.72);
+    g.addColorStop(0,'#17141d');g.addColorStop(.55,'#0d0b12');g.addColorStop(1,'#07060a');
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='rgba(255,255,255,.035)';ctx.lineWidth=1;
+    for(let x=0;x<w;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+    for(let y=0;y<h;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+    ctx.strokeStyle='rgba(255,45,85,.22)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(w/2-40,h/2);ctx.lineTo(w/2+40,h/2);ctx.moveTo(w/2,h/2-40);ctx.lineTo(w/2,h/2+40);ctx.stroke();
+    for(let i=0;i<1800;i++){const a=Math.random()*.05;ctx.fillStyle='rgba(255,255,255,'+a+')';ctx.fillRect(Math.random()*w,Math.random()*h,1,1)}
     texture.needsUpdate=true;
   }
-
-  return {canvas,ctx,texture,draw};
+  paint();
+  return {canvas,ctx,texture,paint};
 })();
 
 /* ==========================================================================
@@ -5981,7 +5876,7 @@ const DEMO=(()=>{
    ========================================================================== */
 const EXTREME={on:false,cur:FX.map(()=>0),tgt:FX.map(()=>0),next:0,nuke:0};
 const jn=x=>(Math.sin(x*1.7)+Math.sin(x*2.9+1.3)+.5*Math.sin(x*4.3+.7))/5+.5;
-const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false};
+const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false,drawAt:0};
 /* music modulation / flash state kept outside the frame loop (no per-frame allocs) */
 let MM=null;
 let musicFlash=0,musicFlashTarget=0,musicDropPrev=0,musicExtremePrev=0;
@@ -6210,8 +6105,7 @@ function loop(now){
   frame.kaleidoSeg=mus&&mus.loaded?mus.kaleidoSeg:0;
   frame.flash=clamp(musicFlash*(DATA.settings.reduce?.55:1),0,1);
 
-  /* demo feed is procedural; video textures update inside the engine */
-  if(Engine.getSrc().demo)DEMO.draw(T);
+  /* the neutral placeholder is a static texture; no per-frame canvas work */
 
   /* frame skip / strobe (disabled in safe + reduced motion + export) */
   if(VIEW.hold>0)VIEW.hold--;
@@ -6220,8 +6114,15 @@ function loop(now){
   }
 
   if(!document.hidden){
-    Engine.uploadFrame(frame);
-    if(VIEW.hold<=0||Engine.isExporting())Engine.draw();
+    /* cap live rendering at ~60 fps so 120/144 Hz displays do not waste GPU time.
+       during recording/export every animation frame is drawn, so the capture stays smooth */
+    const frameMs=1000/60;
+    const exporting=Engine.isExporting();
+    if(exporting||now-VIEW.drawAt>=frameMs*.9){
+      VIEW.drawAt=now;
+      Engine.uploadFrame(frame);
+      if(VIEW.hold<=0||exporting)Engine.draw();
+    }
   }
 
   /* hypnosis cycle: on music it mutates on bars, otherwise free-running every few seconds */
@@ -6356,8 +6257,7 @@ function startApp(){
     bootFail(err);
     return;
   }
-  Engine.setSource(DEMO.texture,DEMO.canvas.width,DEMO.canvas.height,{demo:true,label:'DEMO'});
-  DEMO.draw(0);
+  Engine.setSource(PLACEHOLDER.texture,PLACEHOLDER.canvas.width,PLACEHOLDER.canvas.height,{empty:true,label:'NO SOURCE'});
 
   /* UI construction + bindings */
   try{
