@@ -861,6 +861,14 @@ body.reduce-motion #tourRing,body.reduce-motion #tourCard{transition-duration:.0
 body.reduce-motion #tourRing::after,body.reduce-motion .tc-flow span,body.reduce-motion .tc-keys .kc,body.reduce-motion .tc-next.ready{animation:none}
 body.reduce-motion .tc-body>*{animation-duration:.01s}
 
+/* ─── readability on phones & tablets: the micro labels (6–9px) scaled ~1.2×, min 9px ─── */
+@media(max-width:900px),(pointer:coarse){
+  .brand-word sup,.brand-sub,.ph-label small,.section-note,.btn.sm,.btn.xs,.btn .k,.ctrl-sub,.lock-row span,.source-meter,.chip,.fx-cat,.fx-row.new .fx-name::after,.preset .p-num,.preset .p-tag,.big-action .ba-s,.tab,#hud,.tl-title,.tl-btn,.tl-hint,.bnav,.drawer-sub,.drawer-foot,.j-meta,.set-group h3::before,.set-note,.snippet,details.adv summary,.viewer-meta,.viewer-bar .btn,.intro-kicker,.intro-sub,.intro-meta,#introLog,#skipIntro,.gate-kicker,.gate-card .warn-list,.gate-check,.gate-foot,.music-drop span,.music-zip span,.music-zip-note,.music-track-sub,.music-wave-hint,.music-range-row,.music-transport .btn,.music-bpm small,.music-bar span,.music-visual,.music-analyze-meta,.music-presets .btn,.music-route-head select,.music-route-grid select,.music-route-grid.two label,.music-empty,#hypnoExit{font-size:9px}
+  #ticker,.tbtn,.section-title,.section-desc kbd,.drop-mini,.search,.fx-empty,.preset .p-name,.set-group h3,.set-row,.toast,.gate-actions .btn,.music-drop,.music-zip b{font-size:9.5px}
+  .section-desc,.btn,.ctrl-label,.switch,.fx-name,.music-track-name{font-size:10px}
+  #emptyHint .eh-k,#emptyHint .eh-s,input[type="text"], input[type="number"], input[type="password"], textarea, select,.big-action .ba-k,.gate-card p{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -868,12 +876,12 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
 <canvas id="cv" aria-label="Live distortion canvas"></canvas>
 <div id="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 <div id="emptyHint" aria-hidden="true">
-  <div class="eh-k">NO SOURCE</div>
-  <div class="eh-t">DROP AN IMAGE<br>OR A VIDEO</div>
-  <div class="eh-s">OR START HERE <b>↓</b></div>
+  <div class="eh-k" data-i18n="eh.k">NO SOURCE</div>
+  <div class="eh-t" data-i18n="eh.t">DROP AN IMAGE<br>OR A VIDEO</div>
+  <div class="eh-s" data-i18n="eh.s">OR START HERE <b>↓</b></div>
   <div class="eh-actions">
-    <button class="btn hot" id="ehUpload" type="button">Upload file</button>
-    <button class="btn acid" id="ehSample" type="button">Try a sample</button>
+    <button class="btn hot" id="ehUpload" type="button" data-i18n="eh.up">Upload file</button>
+    <button class="btn acid" id="ehSample" type="button" data-i18n="eh.sample">Try a sample</button>
   </div>
 </div>
 <audio id="musicAudio" preload="auto" crossorigin="anonymous"></audio>
@@ -1267,6 +1275,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   <div class="drawer-body">
     <div class="set-group">
       <h3>Appearance</h3>
+      <div class="set-row"><span data-i18n="set.lang">Language</span><select id="setLang"><option value="en">English</option><option value="it">Italiano</option></select></div>
       <div class="set-row"><span>Surface</span><select id="setTheme"><option value="void">Void / dark</option><option value="bone">Bone / light</option></select></div>
       <label class="set-row"><span>Scanlines</span><input type="checkbox" id="setGrain" checked></label>
       <div class="set-row"><span>Reset floating panels</span><button class="btn xs" id="setResetPanels">RESET</button></div>
@@ -1276,8 +1285,8 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <label class="set-row"><span>Safe mode (caps flicker/strobe)</span><input type="checkbox" id="setSafe"></label>
       <label class="set-row"><span>Reduce UI motion</span><input type="checkbox" id="setReduce"></label>
       <div class="set-row"><span>Show photosensitivity warning</span><button class="btn xs" id="setShowGate">SHOW</button></div>
-      <div class="set-row"><span>How ROT works (tour)</span><button class="btn xs" id="setShowTour">REPLAY</button></div>
-      <div class="set-row"><span>Keyboard shortcuts</span><button class="btn xs" id="setShowKeys">SHOW · ?</button></div>
+      <div class="set-row"><span data-i18n="set.tour">How ROT works (tour)</span><button class="btn xs" id="setShowTour">REPLAY</button></div>
+      <div class="set-row"><span data-i18n="set.keys">Keyboard shortcuts</span><button class="btn xs" id="setShowKeys">SHOW · ?</button></div>
       <div class="set-row"><span>Entropy / decay</span><button class="btn xs" id="setResetDecay">RESET</button></div>
       <p class="set-note">Safe mode lowers strobe-prone effects, disables frame skipping bursts, caps speed and removes hue strobing.</p>
     </div>
@@ -1335,7 +1344,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <span class="logo-aurora" aria-hidden="true"></span>
       <h1 class="logo-big" data-text="ROT">ROT</h1>
     </div>
-    <div class="intro-sub">AN INSTRUMENT FOR BEAUTIFUL DAMAGE<em>press anywhere to skip</em></div>
+    <div class="intro-sub"><span data-i18n="intro.sub">AN INSTRUMENT FOR BEAUTIFUL DAMAGE</span><em data-i18n="intro.skip">press anywhere to skip</em></div>
     <div class="intro-bar"><i id="introBar"></i></div>
     <div class="intro-meta"><span id="introPct">00%</span><span>BUILD 2.1.0 / WEBGL</span></div>
     <div id="introLog">BOOTING SHADER CORE…</div>
@@ -1345,22 +1354,22 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
 
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
   <div class="gate-card">
-    <div class="gate-kicker">SAFETY PROTOCOL / READ ONCE</div>
+    <div class="gate-kicker" data-i18n="gate.kick">SAFETY PROTOCOL / READ ONCE</div>
     <div class="gate-icon" aria-hidden="true">✦</div>
-    <h2 id="gateTitle">THIS THING<br>FLASHES.</h2>
-    <p>ROT is a distortion instrument. It intentionally produces <b>rapid flashing, high-contrast strobing, flicker, chromatic aberration and moving patterns</b>. That is the point.</p>
+    <h2 id="gateTitle" data-i18n="gate.title">THIS THING<br>FLASHES.</h2>
+    <p data-i18n="gate.p">ROT is a distortion instrument. It intentionally produces <b>rapid flashing, high-contrast strobing, flicker, chromatic aberration and moving patterns</b>. That is the point.</p>
     <ul class="warn-list">
-      <li>If you have photosensitive epilepsy or are prone to seizures, do not use the full-effect mode.</li>
-      <li>Stop immediately if you feel dizzy, nauseated, disoriented or unwell.</li>
-      <li>Safe mode caps the worst strobe effects. It is still intense, just less violent.</li>
-      <li>Sound is off by default. You can enable a low ambient drone in Setup.</li>
+      <li data-i18n="gate.w1">If you have photosensitive epilepsy or are prone to seizures, do not use the full-effect mode.</li>
+      <li data-i18n="gate.w2">Stop immediately if you feel dizzy, nauseated, disoriented or unwell.</li>
+      <li data-i18n="gate.w3">Safe mode caps the worst strobe effects. It is still intense, just less violent.</li>
+      <li data-i18n="gate.w4">Sound is off by default. You can enable a low ambient drone in Setup.</li>
     </ul>
-    <label class="gate-check"><input type="checkbox" id="gateSafe"> Start in <b style="color:var(--acc)">SAFE MODE</b> — recommended for first-timers and large screens.</label>
+    <label class="gate-check"><input type="checkbox" id="gateSafe"> <span data-i18n="gate.check">Start in <b style="color:var(--acc)">SAFE MODE</b> — recommended for first-timers and large screens.</span></label>
     <div class="gate-actions">
-      <button class="btn hot" id="gateEnter">ENTER / I UNDERSTAND</button>
-      <button class="btn" id="gateSafeEnter">ENTER IN SAFE MODE</button>
+      <button class="btn hot" id="gateEnter" data-i18n="gate.enter">ENTER / I UNDERSTAND</button>
+      <button class="btn" id="gateSafeEnter" data-i18n="gate.safe">ENTER IN SAFE MODE</button>
     </div>
-    <div class="gate-foot">By entering you confirm you have read this warning. Reopen it any time from Setup → Motion &amp; safety.</div>
+    <div class="gate-foot" data-i18n="gate.foot">By entering you confirm you have read this warning. Reopen it any time from Setup → Motion &amp; safety.</div>
   </div>
 </div>
 
@@ -1372,11 +1381,11 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <div class="tc-top">
         <span class="tc-step" id="tcStep">01 / 07</span>
         <div class="tc-prog" id="tcProg" aria-hidden="true"></div>
-        <button class="tc-skip" id="tcSkip" type="button">Skip</button>
+        <button class="tc-skip" id="tcSkip" type="button" data-i18n="tour.skip">Skip</button>
       </div>
       <div class="tc-body" id="tcBody"></div>
       <div class="tc-foot">
-        <button class="btn dark" id="tcBack" type="button">Back</button>
+        <button class="btn dark" id="tcBack" type="button" data-i18n="tour.back">Back</button>
         <button class="btn hot tc-next" id="tcNext" type="button">Next</button>
       </div>
     </div>
@@ -1387,21 +1396,22 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   <div class="dz-in">
     <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg></div>
     <div class="dz-t" id="dzTitle">DROP TO ROT IT</div>
-    <div class="dz-s">Image or video · audio goes to music sync</div>
+    <div class="dz-s" data-i18n="dz.s">Image or video · audio goes to music sync</div>
   </div>
 </div>
 <div id="keys" role="dialog" aria-modal="true" aria-labelledby="ksTitle" aria-hidden="true">
   <div class="ks-card">
-    <div class="ks-head"><h2 id="ksTitle">Shortcuts</h2><button class="ks-close" id="ksClose" type="button">Close · Esc</button></div>
+    <div class="ks-head"><h2 id="ksTitle" data-i18n="ks.t">Shortcuts</h2><button class="ks-close" id="ksClose" type="button" data-i18n="ks.close">Close · Esc</button></div>
     <div class="ks-grid" id="ksGrid"></div>
   </div>
 </div>
-<div id="cmpBadge" aria-hidden="true"><i></i>Original</div>
+<div id="cmpBadge" aria-hidden="true"><i></i><span data-i18n="cmp.badge">Original</span></div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#070812;color:#f3f4ff;font:14px monospace;text-align:center;padding:30px">ROT needs JavaScript and WebGL.<br>Please enable JavaScript for this instrument.</div></noscript>
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+<script src="vendor/three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"><\/script>')</script>
 <script>
 "use strict";
 
@@ -2650,7 +2660,7 @@ async function loadSampleSource(){
     t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
     Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
     updateSourceInfo();
-    toast('<b>SAMPLE SOURCE</b> — upload your own image or video any time');
+    toast(tr('toast.sample'));
   }catch(e){toast('<b>SAMPLE ERROR</b> — could not prepare texture')}
 }
 function bindSource(){
@@ -2939,6 +2949,111 @@ function scrambleTo(el,text,steps){
 // ─── Interactive "how it works" tour ───
 // Runs once after the safety gate (replayable from Setup). A dimmed layer with a moving
 // spotlight points at the real controls; each step has a small hands-on task.
+// ─── Language (English / Italian) ───
+// Static markup carries data-i18n keys (English is read from the page itself);
+// dynamic text uses tr(key). Instrument labels (INTENSITY, CHAOS…) stay English on purpose.
+const I18N={
+  en:{
+    't0.k':'How ROT works','t0.t':'Break images. Beautifully.','t0.next':'Start the tour',
+    't0.x':'ROT is a <b>live distortion instrument</b>: feed it a picture or a video, then bend it in real time. A few quick moves and you are in — we loaded a sample so you can see everything happen live.',
+    't0.flow':'SIGNAL,SHAPE,RECIPES,CHAOS,CAPTURE',
+    't1.k':'01 — Signal','t1.t':'Feed it a signal',
+    't1.x':'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page, or use <b>Upload</b> in the Look panel. Right now ROT is chewing on a sample.',
+    't1.xm':'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page, or open <b>LOOK</b> down here and tap Upload. Right now ROT is chewing on a sample.',
+    't2.k':'02 — Shape','t2.t':'Bend it with the masters','t2.task':'Move a slider',
+    't2.x':'<b>Intensity</b> sets how hard ROT hits, <b>Chaos</b> how unpredictable it gets. Drag one — the picture behind reacts live.',
+    't3.k':'03 — Recipes','t3.t':'Or start from a recipe','t3.task':'Apply a recipe',
+    't3.x':'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here or straight from the grid.',
+    't3.xm':'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here.',
+    't4.k':'04 — Chaos','t4.t':'Roll the dice','t4.task':'Press R or tap the key','t4.taskm':'Tap the key',
+    't4.x':'Press <b>R</b> to mutate every parameter at once. <b>E</b> flips Extreme for an unstable feed — use with care.',
+    't4.xm':'Randomize mutates <b>every parameter</b> at once — you will find it in <b>RECIPES</b>. On a keyboard it is the <b>R</b> key.',
+    't4.l':'tap it — or hit R','t4.lm':'tap to randomize',
+    't5.k':'05 — Capture','t5.t':'Perform & export',
+    't5.x':'<b>P</b> saves a frame, <b>V</b> records a video, <b>Space</b> records a performance you can replay on the timeline. Everything stays on your device.',
+    't5.xm':'<b>OUTPUT</b> saves frames and records video. <b>CAPTURE</b> records a performance you can replay. Everything stays on your device.',
+    't5.frame':'frame','t5.video':'video','t5.perf':'perform',
+    't6.k':'06 — Your turn','t6.t':'Now feed it yours.','t6.keep':'Keep the sample',
+    't6.x':'Drop your own image or video, or keep playing with the sample. You can replay this tour any time from <b>Setup</b>.',
+    'tour.ok':'Nice — got it','tour.next':'Next','eh.up':'Upload file','dz.t':'DROP TO ROT IT',
+    'toast.sample':'<b>SAMPLE SOURCE</b> — upload your own image or video any time',
+    'toast.tip':'<b>TIP</b> — press ? any time for every shortcut',
+    'toast.nocmp':'<b>NOTHING TO COMPARE</b> — load an image or video first'
+  },
+  it:{
+    'gate.kick':'PROTOCOLLO DI SICUREZZA / LEGGI UNA VOLTA','gate.title':'QUESTA COSA<br>LAMPEGGIA.',
+    'gate.p':'ROT è uno strumento di distorsione. Produce di proposito <b>lampi rapidi, stroboscopie ad alto contrasto, sfarfallio, aberrazione cromatica e pattern in movimento</b>. È proprio questo il punto.',
+    'gate.w1':'Se soffri di epilessia fotosensibile o sei soggetto a crisi, non usare la modalità a effetti pieni.',
+    'gate.w2':'Fermati subito se ti senti stordito, nauseato, disorientato o poco bene.',
+    'gate.w3':'La safe mode limita gli effetti stroboscopici peggiori. Resta intensa, solo meno violenta.',
+    'gate.w4':'L’audio è spento di default. Puoi attivare un leggero drone ambient da Setup.',
+    'gate.check':'Parti in <b style="color:var(--acc)">SAFE MODE</b> — consigliata la prima volta e su schermi grandi.',
+    'gate.enter':'ENTRA / HO CAPITO','gate.safe':'ENTRA IN SAFE MODE',
+    'gate.foot':'Entrando confermi di aver letto questo avviso. Puoi riaprirlo da Setup → Motion &amp; safety.',
+    'intro.sub':'UNO STRUMENTO PER DANNI MERAVIGLIOSI','intro.skip':'tocca ovunque per saltare',
+    'eh.k':'NESSUNA SORGENTE','eh.t':'TRASCINA UN’IMMAGINE<br>O UN VIDEO','eh.s':'OPPURE INIZIA DA QUI <b>↓</b>',
+    'eh.up':'Carica file','eh.sample':'Prova un esempio',
+    'dz.t':'LASCIA PER DISTRUGGERLO','dz.s':'Immagine o video · l’audio va al music sync',
+    'ks.t':'Scorciatoie','ks.close':'Chiudi · Esc','cmp.badge':'Originale',
+    'tour.back':'Indietro','tour.skip':'Salta','tour.next':'Avanti','tour.ok':'Grande — fatto',
+    'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
+    't0.k':'Come funziona ROT','t0.t':'Rompi le immagini. Con stile.','t0.next':'Inizia il tour',
+    't0.x':'ROT è uno <b>strumento di distorsione dal vivo</b>: gli dai una foto o un video e lo pieghi in tempo reale. Pochi passaggi e ci sei — abbiamo caricato un esempio così vedi tutto succedere dal vivo.',
+    't0.flow':'SEGNALE,FORMA,RICETTE,CAOS,CATTURA',
+    't1.k':'01 — Segnale','t1.t':'Dagli un segnale',
+    't1.x':'Tutto parte da una sorgente. <b>Trascina una foto o un video ovunque</b> nella pagina, oppure usa <b>Upload</b> nel pannello Look. Ora ROT sta masticando un esempio.',
+    't1.xm':'Tutto parte da una sorgente. <b>Trascina una foto o un video</b> nella pagina, oppure apri <b>LOOK</b> qui sotto e tocca Upload. Ora ROT sta masticando un esempio.',
+    't2.k':'02 — Forma','t2.t':'Piegalo con i master','t2.task':'Muovi uno slider',
+    't2.x':'<b>Intensity</b> decide quanto forte colpisce ROT, <b>Chaos</b> quanto è imprevedibile. Trascinane uno — l’immagine dietro reagisce dal vivo.',
+    't3.k':'03 — Ricette','t3.t':'Oppure parti da una ricetta','t3.task':'Applica una ricetta',
+    't3.x':'<b>30 look fatti a mano</b> — nastro VHS, CCTV, liquido, specchi. Un tocco cambia tutto il setup. Scegline una qui o direttamente dalla griglia.',
+    't3.xm':'<b>30 look fatti a mano</b> — nastro VHS, CCTV, liquido, specchi. Un tocco cambia tutto il setup. Scegline una qui.',
+    't4.k':'04 — Caos','t4.t':'Lancia i dadi','t4.task':'Premi R o tocca il tasto','t4.taskm':'Tocca il tasto',
+    't4.x':'Premi <b>R</b> per stravolgere tutti i parametri insieme. <b>E</b> attiva Extreme per un segnale instabile — con cautela.',
+    't4.xm':'Randomize stravolge <b>tutti i parametri</b> insieme — lo trovi in <b>RECIPES</b>. Con la tastiera è il tasto <b>R</b>.',
+    't4.l':'toccalo — o premi R','t4.lm':'tocca per randomizzare',
+    't5.k':'05 — Cattura','t5.t':'Suona ed esporta',
+    't5.x':'<b>P</b> salva un frame, <b>V</b> registra un video, <b>Spazio</b> registra una performance da rivedere sulla timeline. Tutto resta sul tuo dispositivo.',
+    't5.xm':'<b>OUTPUT</b> salva frame e registra video. <b>CAPTURE</b> registra una performance da rivedere. Tutto resta sul tuo dispositivo.',
+    't5.frame':'frame','t5.video':'video','t5.perf':'performance',
+    't6.k':'06 — Tocca a te','t6.t':'Ora dagli il tuo.','t6.keep':'Tieni l’esempio',
+    't6.x':'Trascina una tua immagine o un video, oppure continua a giocare con l’esempio. Puoi rivedere questo tour quando vuoi da <b>Setup</b>.',
+    'toast.sample':'<b>ESEMPIO CARICATO</b> — carica una tua immagine o video quando vuoi',
+    'toast.tip':'<b>TIP</b> — premi ? per tutte le scorciatoie',
+    'toast.nocmp':'<b>NIENTE DA CONFRONTARE</b> — carica prima un’immagine o un video',
+    'kh.Play':'Suona','kh.Capture':'Cattura','kh.With a music track':'Con una traccia musicale','kh.Anywhere':'Ovunque',
+    'kh.Randomize every parameter':'Randomizza tutti i parametri','kh.Extreme — unstable feed':'Extreme — segnale instabile',
+    'kh.Hypnosis mode':'Modalità ipnosi','kh.Filter effects':'Filtra gli effetti','kh.B (hold)':'B (tieni)',
+    'kh.Compare with the original':'Confronta con l’originale','kh.Paste an image':'Incolla un’immagine',
+    'kh.Save a frame (PNG)':'Salva un frame (PNG)','kh.Record video':'Registra video','kh.Record / stop performance':'Registra / ferma performance',
+    'kh.Mute ambient sound':'Muta il suono ambient','kh.Play / pause':'Play / pausa','kh.Tap tempo':'Tap tempo',
+    'kh.Nudge (Shift = more)':'Sposta (Shift = di più)','kh.This sheet':'Questa schermata','kh.Close panels & sheets':'Chiudi pannelli e schede','kh.Space':'Spazio'
+  }
+};
+let LANG='en';
+function tr(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.en[k]||k}
+function trk(x){return LANG==='en'?x:(I18N[LANG]['kh.'+x]||x)}
+function detectLang(){
+  const saved=storeGet('rot2.lang',null);if(saved==='en'||saved==='it')return saved;
+  const l=((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase();
+  return l.startsWith('it')?'it':'en';
+}
+function applyLang(l,save){
+  LANG=l==='it'?'it':'en';
+  if(save)storeSet('rot2.lang',LANG);
+  document.documentElement.lang=LANG;
+  $$('[data-i18n]').forEach(el=>{
+    const k=el.dataset.i18n;
+    if(!(k in I18N.en))I18N.en[k]=el.innerHTML; // English comes from the original markup
+    const v=(I18N[LANG]&&I18N[LANG][k])||I18N.en[k];
+    if(el.innerHTML!==v)el.innerHTML=v;
+  });
+  const sel=$id('setLang');if(sel)sel.value=LANG;
+  try{if(Tour.on){const keep=Tour.i;runTourCleanup();Tour.steps=tourSteps();Tour.i=keep;renderTourStep(true)}}catch(e){} // Tour is declared later; on first call it is not ready yet
+}
+applyLang(detectLang(),false);
+$id('setLang').addEventListener('change',e=>applyLang(e.target.value,true));
+
 const TOUR_KEY='rot2.tour';
 // localStorage first, a cookie as fallback for browsers that block or wipe storage
 function tourSeen(){
@@ -2958,15 +3073,15 @@ function tourSteps(){
   const m=tourMobile();
   const picks=[0,3,7].map(i=>BUILTIN_PRESETS[i]).filter(Boolean);
   return [
-    {id:'hello',kick:'How ROT works',title:'Break images. Beautifully.',next:'Start the tour',
-     text:'ROT is a <b>live distortion instrument</b>: feed it a picture or a video, then bend it in real time. A few quick moves and you are in — we loaded a sample so you can see everything happen live.',
-     try:()=>'<div class="tc-flow">'+['SIGNAL','SHAPE','RECIPES','CHAOS','CAPTURE'].map((s,i)=>'<span style="--i:'+i+'">'+s+'</span>').join('')+'</div>'},
-    {id:'signal',kick:'01 — Signal',title:'Feed it a signal',pad:m?4:10,
+    {id:'hello',kick:tr('t0.k'),title:tr('t0.t'),next:tr('t0.next'),
+     text:tr('t0.x'),
+     try:()=>'<div class="tc-flow">'+tr('t0.flow').split(',').map((s,i)=>'<span style="--i:'+i+'">'+s+'</span>').join('')+'</div>'},
+    {id:'signal',kick:tr('t1.k'),title:tr('t1.t'),pad:m?4:10,
      target:()=>m?$('.bnav[data-sheet="look"]'):$id('dropMini').closest('.section'),
-     text:'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page'+(m?', or open <b>LOOK</b> down here and tap Upload.':', or use <b>Upload</b> in the Look panel.')+' Right now ROT is chewing on a sample.'},
-    {id:'shape',kick:'02 — Shape',title:'Bend it with the masters',task:'Move a slider',
+     text:tr(m?'t1.xm':'t1.x')},
+    {id:'shape',kick:tr('t2.k'),title:tr('t2.t'),task:tr('t2.task'),
      target:()=>m?null:$id('masterSliders'),
-     text:'<b>Intensity</b> sets how hard ROT hits, <b>Chaos</b> how unpredictable it gets. Drag one — the picture behind reacts live.',
+     text:tr('t2.x'),
      try:()=>'<div class="tc-sl">'+['intensity','chaos'].map(id=>{const d=MASTERMAP[id];return '<label><span>'+d.name+'<b data-v="'+id+'">'+(+P[id]).toFixed(2)+'</b></span><input type="range" data-m="'+id+'" min="'+d.min+'" max="'+d.max+'" step="'+d.step+'" value="'+P[id]+'" aria-label="'+d.name+'"></label>'}).join('')+'</div>',
      mount(){
        const sync=id=>{const b=$('#tcBody [data-v="'+id+'"]');if(b)b.textContent=(+P[id]).toFixed(2)};
@@ -2983,10 +3098,10 @@ function tourSteps(){
        host.addEventListener('input',onReal);
        return ()=>host.removeEventListener('input',onReal);
      }},
-    {id:'recipe',kick:'03 — Recipes',title:'Or start from a recipe',task:'Apply a recipe',
+    {id:'recipe',kick:tr('t3.k'),title:tr('t3.t'),task:tr('t3.task'),
      target:()=>m?$('.bnav[data-sheet="recipes"]'):$id('presetGrid'),
      before(){if(!m){const tab=$('.tab[data-tab="recipes"]');if(tab&&!tab.classList.contains('on'))tab.click()}},
-     text:'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here'+(m?'.':' or straight from the grid.'),
+     text:tr(m?'t3.xm':'t3.x'),
      try:()=>'<div class="tc-chips">'+picks.map(p=>'<button type="button" class="tc-chip" style="--h:'+(p.hue||300)+'" data-p="'+esc(p.name)+'">'+esc(p.name)+'</button>').join('')+'</div>',
      mount(){
        $$('#tcBody .tc-chip').forEach(c=>c.addEventListener('click',()=>{
@@ -3000,21 +3115,21 @@ function tourSteps(){
        grid.addEventListener('click',onGrid);
        return ()=>grid.removeEventListener('click',onGrid);
      }},
-    {id:'chaos',kick:'04 — Chaos',title:'Roll the dice',task:m?'Tap the key':'Press R or tap the key',
+    {id:'chaos',kick:tr('t4.k'),title:tr('t4.t'),task:tr(m?'t4.taskm':'t4.task'),
      target:()=>m?null:$id('btnRandom'),
-     text:m?'Randomize mutates <b>every parameter</b> at once — you will find it in <b>RECIPES</b>. On a keyboard it is the <b>R</b> key.':'Press <b>R</b> to mutate every parameter at once. <b>E</b> flips Extreme for an unstable feed — use with care.',
-     try:()=>'<div class="tc-keys"><button type="button" class="kc big" id="tcRand" aria-label="Randomize">R</button><span class="kc-l">'+(m?'tap to randomize':'tap it — or hit R')+'</span></div>',
+     text:tr(m?'t4.xm':'t4.x'),
+     try:()=>'<div class="tc-keys"><button type="button" class="kc big" id="tcRand" aria-label="Randomize">R</button><span class="kc-l">'+tr(m?'t4.lm':'t4.l')+'</span></div>',
      mount(){
        const b=$id('tcRand');
        b.addEventListener('click',()=>{randomizeLook();markDirty();tourTask('chaos')});
      }},
-    {id:'capture',kick:'05 — Capture',title:'Perform & export',
+    {id:'capture',kick:tr('t5.k'),title:tr('t5.t'),
      target:()=>m?$('.bnav[data-sheet="output"]'):(getComputedStyle($id('timeline')).display!=='none'?$id('timeline'):$('.tab[data-tab="output"]')),
-     text:m?'<b>OUTPUT</b> saves frames and records video. <b>CAPTURE</b> records a performance you can replay. Everything stays on your device.':'<b>P</b> saves a frame, <b>V</b> records a video, <b>Space</b> records a performance you can replay on the timeline. Everything stays on your device.',
-     try:()=>m?'':'<div class="tc-keys"><span class="kc" style="--i:0">P</span><span class="kc-l">frame</span><span class="kc" style="--i:1">V</span><span class="kc-l">video</span><span class="kc" style="--i:2">Space</span><span class="kc-l">perform</span></div>'},
-    {id:'final',kick:'06 — Your turn',title:'Now feed it yours.',final:true,
-     text:'Drop your own image or video, or keep playing with the sample. You can replay this tour any time from <b>Setup</b>.',
-     try:()=>'<div class="tc-final"><button type="button" class="btn hot" id="tcUpload">Upload file</button><button type="button" class="btn acid" id="tcKeep">Keep the sample</button></div>',
+     text:tr(m?'t5.xm':'t5.x'),
+     try:()=>m?'':'<div class="tc-keys"><span class="kc" style="--i:0">P</span><span class="kc-l">'+tr('t5.frame')+'</span><span class="kc" style="--i:1">V</span><span class="kc-l">'+tr('t5.video')+'</span><span class="kc" style="--i:2">Space</span><span class="kc-l">'+tr('t5.perf')+'</span></div>'},
+    {id:'final',kick:tr('t6.k'),title:tr('t6.t'),final:true,
+     text:tr('t6.x'),
+     try:()=>'<div class="tc-final"><button type="button" class="btn hot" id="tcUpload">'+tr('eh.up')+'</button><button type="button" class="btn acid" id="tcKeep">'+tr('t6.keep')+'</button></div>',
      mount(){
        $id('tcUpload').addEventListener('click',()=>{endTour(true);$id('fileInput').click()});
        $id('tcKeep').addEventListener('click',()=>endTour(true));
@@ -3049,7 +3164,7 @@ function endTour(seen){
   document.body.classList.remove('touring');
   $id('tourCatch').style.clipPath='';
   try{document.activeElement&&document.activeElement.blur()}catch(e){}
-  if(!tourMobile())setTimeout(()=>toast('<b>TIP</b> — press ? any time for every shortcut',4200),900);
+  if(!tourMobile()&&matchMedia('(pointer:fine)').matches)setTimeout(()=>toast(tr('toast.tip'),4200),900);
 }
 function runTourCleanup(){Tour.cleanup.forEach(f=>{try{f()}catch(e){}});Tour.cleanup=[]}
 function tourGo(d){
@@ -3061,7 +3176,7 @@ function tourTask(id){
   if(!Tour.on||Tour.done[id])return;
   Tour.done[id]=true;
   const s=Tour.steps[Tour.i];if(!s||s.id!==id)return;
-  const el=$id('tcTask');if(el){el.classList.add('done');el.lastElementChild.textContent='Nice — got it'}
+  const el=$id('tcTask');if(el){el.classList.add('done');el.lastElementChild.textContent=tr('tour.ok')}
   $id('tcNext').classList.add('ready');
   if(DATA.settings.haptics&&navigator.vibrate)try{navigator.vibrate(12)}catch(e){}
 }
@@ -3079,14 +3194,14 @@ function renderTourStep(first){
       '<h2 class="tc-title" id="tcTitle" style="--i:1" aria-label="'+esc(s.title)+'"></h2>'+
       '<p class="tc-text" style="--i:2">'+s.text+'</p>'+
       (s.try&&s.try()?'<div class="tc-try" style="--i:3">'+s.try()+'</div>':'')+
-      (s.task?'<div class="tc-task'+(done?' done':'')+'" id="tcTask" style="--i:4"><span class="tk">'+TOUR_TICK+'</span><span>'+(done?'Nice — got it':s.task)+'</span></div>':'');
+      (s.task?'<div class="tc-task'+(done?' done':'')+'" id="tcTask" style="--i:4"><span class="tk">'+TOUR_TICK+'</span><span>'+(done?tr('tour.ok'):s.task)+'</span></div>':'');
     scrambleTo($id('tcTitle'),s.title);
     $id('tcStep').textContent=pad2(Tour.i+1)+' / '+pad2(Tour.steps.length);
     $$('#tcProg i').forEach((el,k)=>el.classList.toggle('done',k<=Tour.i));
     $id('tcBack').style.visibility=Tour.i?'visible':'hidden';
     const nx=$id('tcNext');
     nx.style.display=s.final?'none':'';
-    nx.textContent=s.next||'Next';
+    nx.textContent=s.next||tr('tour.next');
     nx.classList.toggle('ready',!!(s.task&&done));
     $id('tcSkip').style.visibility=s.final?'hidden':'visible';
     if(s.mount){const c=s.mount();if(typeof c==='function')Tour.cleanup.push(c)}
@@ -3171,11 +3286,16 @@ function bindTour(){
 }
 bindTour();
 
+// Offline support for the installed app (https only; skipped on file:// and plain http).
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+}
+
 // ─── Full-screen drop target ───
 (function bindDropZone(){
   const dz=$id('dropZone');let depth=0;
   const hasFiles=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes('Files');
-  const show=()=>{if(dz.classList.contains('on'))return;dz.classList.add('on');scrambleTo($id('dzTitle'),'DROP TO ROT IT',16)};
+  const show=()=>{if(dz.classList.contains('on'))return;dz.classList.add('on');scrambleTo($id('dzTitle'),tr('dz.t'),16)};
   const hide=()=>{depth=0;dz.classList.remove('on')};
   window.addEventListener('dragenter',e=>{if(!hasFiles(e))return;depth++;show()});
   window.addEventListener('dragleave',e=>{if(!hasFiles(e))return;depth=Math.max(0,depth-1);if(!depth)hide()});
@@ -3195,7 +3315,7 @@ function setCompare(on){
 (function bindCompare(){
   const b=$id('btnCompare');
   b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}
-    if(Engine.getSrc().empty){toast('<b>NOTHING TO COMPARE</b> — load an image or video first');return}
+    if(Engine.getSrc().empty){toast(tr('toast.nocmp'));return}
     setCompare(true)});
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>setCompare(false)));
   b.addEventListener('contextmenu',e=>e.preventDefault());
@@ -3233,7 +3353,7 @@ const KEY_HELP=[
 function openKeys(){
   const k=$id('keys');if(k.classList.contains('on'))return;
   let i=0;
-  $id('ksGrid').innerHTML=KEY_HELP.map(r=>r.length===1?'<div class="ks-sub">'+r[0]+'</div>':'<div class="ks-row" style="--i:'+(i++)+'"><span class="kc">'+esc(r[0])+'</span><span>'+esc(r[1])+'</span></div>').join('');
+  $id('ksGrid').innerHTML=KEY_HELP.map(r=>r.length===1?'<div class="ks-sub">'+esc(trk(r[0]))+'</div>':'<div class="ks-row" style="--i:'+(i++)+'"><span class="kc">'+esc(trk(r[0]))+'</span><span>'+esc(trk(r[1]))+'</span></div>').join('');
   k.classList.add('on');k.setAttribute('aria-hidden','false');
   setTimeout(()=>{try{$id('ksClose').focus({preventScroll:true})}catch(e){}},60);
 }
