@@ -1658,11 +1658,17 @@ void main(){
  uv.x+=gm*(h(vec2(rb,tq+5.))-.5)*.5*u_glitch;
  uv.y+=step(.97-.04*u_glitch,h(vec2(tq,9.)))*u_glitch*(h(vec2(tq,4.))-.5)*.4;
  float band=smoothstep(.09,0.,abs(fract(t*.12)-vUv.y));
- uv.x+=u_vhs*(.012*(n(vec2(uv.y*180.,t*18.))-.5)+band*.05*sin(uv.y*90.+t*30.));
- vec2 q0=uv*vec2(3.*uAsp,3.);
- vec2 w=vec2(fbm(q0+t*.25),fbm(q0+17.-t*.21))-.5;
- vec2 w2=vec2(fbm(uv*5.+w*3.+t*.3),fbm(uv*5.-w*3.-t*.2+5.))-.5;
- uv+=u_liquid*(1.+uOrg*1.6)*(w*.35+w2*.2);
+ if(u_vhs>.001)uv.x+=u_vhs*(.012*(n(vec2(uv.y*180.,t*18.))-.5)+band*.05*sin(uv.y*90.+t*30.));
+ // the warp field costs 4 fbm (16 noise taps) per pixel: only build it when liquid or feedback use it
+ vec2 w=vec2(0.);
+ if(u_liquid>.001||u_fb>.001){
+  vec2 q0=uv*vec2(3.*uAsp,3.);
+  w=vec2(fbm(q0+t*.25),fbm(q0+17.-t*.21))-.5;
+  if(u_liquid>.001){
+   vec2 w2=vec2(fbm(uv*5.+w*3.+t*.3),fbm(uv*5.-w*3.-t*.2+5.))-.5;
+   uv+=u_liquid*(1.+uOrg*1.6)*(w*.35+w2*.2);
+  }
+ }
  if(u_fluid>.001){
   vec2 fp=uv*vec2(3.4*uAsp,3.4);float ft=t*.24;
   vec2 f1=vec2(fbm(fp+vec2(0.,ft)),fbm(fp+vec2(5.2,-ft)));
@@ -1674,9 +1680,11 @@ void main(){
   float rw=sin(rr*30.-t*3.4)*exp(-rr*2.4)*u_ripple*.02;
   uv+=normalize(rp0+vec2(1e-5))*rw;
  }
- float l0=lum(S(uv));float e=.004;
- vec2 gr=vec2(lum(S(uv+vec2(e,0.)))-l0,lum(S(uv+vec2(0.,e)))-l0);
- uv+=u_disp*(gr*9.+.04*vec2(cos(l0*9.+t),sin(l0*9.-t))*(l0-.3));
+ if(u_disp>.001){
+  float l0=lum(S(uv));float e=.004;
+  vec2 gr=vec2(lum(S(uv+vec2(e,0.)))-l0,lum(S(uv+vec2(0.,e)))-l0);
+  uv+=u_disp*(gr*9.+.04*vec2(cos(l0*9.+t),sin(l0*9.-t))*(l0-.3));
+ }
  float bs=mix(10.,36.,h(vec2(floor(t*.7),3.)));vec2 id=floor(uv*vec2(bs*uAsp,bs));float ft=floor(t*(2.+6.*uRnd));
  float hm=step(1.-.55*u_mosh,h(id+ft));vec2 mv=(vec2(h(id+ft+3.),h(id+ft+8.))-.5)*.14*u_mosh;
  vec2 ro=vec2(1.,.4)*u_rgb*.17*(.5+.5*sin(t*2.3+h(vec2(tq,8.))*6.));vec2 cd=(uv-.5)*u_ca*.13;
@@ -1692,7 +1700,7 @@ void main(){
   vec3 b=c;float bl=lum(c);
   for(int i=1;i<16;i++){vec3 s=S(uv-dir*float(i)*.014*u_sort);float sl=lum(s);if(sl>thr&&sl>bl){b=s;bl=sl;}}
   c=mix(c,b,smoothstep(0.,.25,u_sort));}
- vec3 pv=texture2D(uPrev,mir(vUv+mv)).rgb;c=mix(c,pv,hm*.9*min(1.,u_mosh*3.));
+ if(u_mosh>.001){vec3 pv=texture2D(uPrev,mir(vUv+mv)).rgb;c=mix(c,pv,hm*.9*min(1.,u_mosh*3.));}
  if(u_ghost>.001){
   float g=clamp(u_ghost,0.,1.);
   vec3 ga=texture2D(uPrev,mir(uv+vec2(.035,.012))).rgb;
@@ -1713,10 +1721,12 @@ void main(){
   c+=edcol*smoothstep(.1,.42,edg)*u_edge*1.1;
  }
  vec2 ap=vec2(uAsp,1.);
- vec2 fq=vUv-.5;float fa=.012*u_fb*sin(t*.7);
- fq=mat2(cos(fa),-sin(fa),sin(fa),cos(fa))*fq*(1.-.03*u_fb)+.5+w*.012*u_fb;
- vec3 pf=texture2D(uPrev,mir(fq)).rgb;pf=mix(pf,pf.gbr,.04*u_fb);
- c=mix(c,mix(max(c,pf*.96),pf,.4),clamp(u_fb*1.3,0.,1.));
+ if(u_fb>.001){
+  vec2 fq=vUv-.5;float fa=.012*u_fb*sin(t*.7);
+  fq=mat2(cos(fa),-sin(fa),sin(fa),cos(fa))*fq*(1.-.03*u_fb)+.5+w*.012*u_fb;
+  vec3 pf=texture2D(uPrev,mir(fq)).rgb;pf=mix(pf,pf.gbr,.04*u_fb);
+  c=mix(c,mix(max(c,pf*.96),pf,.4),clamp(u_fb*1.3,0.,1.));
+ }
  float sl=.5+.5*sin(vUv.y*uRes.y*3.14159);
  c*=1.-u_vhs*.3*(1.-sl);
  c=mix(c,vec3(lum(c)),.3*u_vhs);c*=1.-u_vhs*dot(vUv-.5,vUv-.5)*1.2;
@@ -1735,8 +1745,8 @@ void main(){
  c=mix(c,floor(c*lv+.5+dth)/lv,step(.001,u_post));
  float dk=clamp(u_decay,0.,1.);
  c=mix(c,c*vec3(1.06,.74,.68),dk*.5);
- float mold=1.-abs(2.*fbm(uv*ap*2.1+t*.012)-1.);
- c=mix(c,vec3(.02,.005,.008),smoothstep(.84,1.,mold)*dk*.45);
+ if(dk>.001){float mold=1.-abs(2.*fbm(uv*ap*2.1+t*.012)-1.);
+ c=mix(c,vec3(.02,.005,.008),smoothstep(.84,1.,mold)*dk*.45);}
  c*=1.+uAudio*.12;
  if(u_glare>.001){
   float glr=smoothstep(.52,.95,lum(c));
@@ -4004,7 +4014,7 @@ const Music=(()=>{
   }
   function drawHead(){
     const cv=$id('musicWaveHead');
-    if(!cv)return;
+    if(!cv||!cv.offsetParent)return; // panel closed: nothing to paint
     const g=fitCanvas(cv);if(!g.ctx)return;
     const c=g.ctx,w=g.w,h=g.h;
     c.clearRect(0,0,w,h);
@@ -4025,7 +4035,7 @@ const Music=(()=>{
   }
   function drawSpectrum(){
     const cv=$id('musicSpectrum');
-    if(!cv)return;
+    if(!cv||!cv.offsetParent)return; // panel closed: nothing to paint
     const g=fitCanvas(cv);if(!g.ctx)return;
     const c=g.ctx,w=g.w,h=g.h;
     c.clearRect(0,0,w,h);
@@ -5771,7 +5781,7 @@ const PLACEHOLDER=(()=>{
 const SAFE_LIMITS={glitch:.55,tear:.55,mosh:.55,vhs:.55,skip:.55,rgb:.7,ca:.7};
 const EXTREME={on:false,cur:FX.map(()=>0),tgt:FX.map(()=>0),next:0,nuke:0};
 const jn=x=>(Math.sin(x*1.7)+Math.sin(x*2.9+1.3)+.5*Math.sin(x*4.3+.7))/5+.5;
-const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false,nextDraw:0,minFrame:100,finish:1};
+const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false,nextDraw:0,minFrame:100,finish:1,drawLast:0,drawEMA:16.7,janks:0,upAt:0};
 
 let MM=null;
 let musicFlash=0,musicFlashTarget=0,musicDropPrev=0,musicExtremePrev=0;
@@ -5823,15 +5833,15 @@ function adaptQuality(now){
   // up as edges shimmering; keep it at full resolution and don't adapt
   const still=!EXTREME.on&&!(Engine.src&&Engine.src.video)&&!FX.some(f=>(frame.fxVals[f.id]||0)>0);
   if(still){if(Engine.getQuality()<1)Engine.setQuality(1);VIEW.adaptiveAt=now;return}
-  if(now-VIEW.adaptiveAt<1500)return;
+  // react within half a second when drawn frames miss the 60 fps budget; climb back slowly
+  if(now-VIEW.adaptiveAt<500)return;
   VIEW.adaptiveAt=now;
-  const fps=1000/Math.max(1,DATA.fpsEMA);
-  const q=Engine.getQuality();
-  // The shortest frame in the window reveals the display refresh rate, even under load.
-  const refresh=1000/VIEW.minFrame;
-  VIEW.minFrame=100;
-  if(fps<38&&q>.55)Engine.setQuality(Math.max(.55,q-.1));
-  else if(fps>clamp(refresh*.92,45,57)&&q<1)Engine.setQuality(Math.min(1,q+.05));
+  // budget = one 60 fps frame, or the display's own interval on screens slower than 60 Hz
+  const budget=Math.max(1000/60,Math.min(40,VIEW.minFrame||16.7));
+  if(now-(VIEW.minAt||0)>5000){VIEW.minAt=now;VIEW.minFrame=100}
+  const q=Engine.getQuality(),janks=VIEW.janks;VIEW.janks=0;
+  if((VIEW.drawEMA>budget*1.17||janks>=3)&&q>.5){Engine.setQuality(Math.max(.5,q-.1));VIEW.upAt=now+4000;return}
+  if(VIEW.drawEMA<budget*1.04&&janks===0&&q<1&&now>VIEW.upAt){Engine.setQuality(Math.min(1,q+.05));VIEW.upAt=now+2500}
 }
 
 
@@ -5965,9 +5975,12 @@ function loop(now){
   if(musicBurst>.003){
     const burst=Math.min(1.8,musicBurst*(DATA.settings.safe?.3:(DATA.settings.reduce?.22:.85)));
     if(burst>.003){
+      // hit the effects already in the look plus three cheap "punch" ones; lighting up all 28
+      // shader branches at once on every drop is what made frames drop
       for(let i=0;i<FX.length;i++){
         const id=FX[i].id;
-        if(id!=='skip')frame.fxVals[id]=Math.max(frame.fxVals[id],burst);
+        if(id==='skip')continue;
+        if(P.on[id]||id==='rgb'||id==='glitch'||id==='ca')frame.fxVals[id]=Math.max(frame.fxVals[id],burst);
       }
     }
   }
@@ -6017,6 +6030,9 @@ function loop(now){
       VIEW.nextDraw=Math.max(VIEW.nextDraw+frameMs,now);
       Engine.uploadFrame(frame);
       if(VIEW.hold<=0||exporting){
+        // real drawn-frame cadence (the rAF rate hides dropped frames on 120-165 Hz screens)
+        if(VIEW.drawLast){const gap=now-VIEW.drawLast;if(gap<1500){VIEW.drawEMA+=(Math.min(gap,120)-VIEW.drawEMA)*.12;if(gap>Math.max(24,(VIEW.minFrame||16.7)*1.45))VIEW.janks++}} // >1.5 s is a paused tab, not a slow GPU
+        VIEW.drawLast=now;
         Engine.draw();
         if(exporting&&typeof pumpRecordedFrame==='function')pumpRecordedFrame(now);
       }
