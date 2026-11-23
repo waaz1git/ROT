@@ -718,6 +718,40 @@ body.reduce-motion #dropZone .dz-frame,body.reduce-motion #dropZone .dz-icon{ani
 #keys .ks-sub{grid-column:1/-1;font:500 9px/1 var(--fm);letter-spacing:.28em;color:var(--mint);text-transform:uppercase;margin:12px 0 2px}
 @media(max-width:620px){#keys .ks-grid{grid-template-columns:1fr}}
 
+.intro-warn{font:500 9px/1.4 var(--fm);letter-spacing:.22em;text-transform:uppercase;color:#ffc98a;opacity:.85;margin:16px 0 0;animation:fadeUp 1s .7s both}
+/* ─── text → image dialog ─── */
+#gen{position:fixed;inset:0;z-index:106;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;
+  background:rgba(4,5,14,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:opacity .4s var(--ease),visibility 0s linear .4s}
+#gen.on{opacity:1;visibility:visible;transition:opacity .4s var(--ease),visibility 0s}
+.gen-card{width:min(560px,100%);border-radius:var(--r-xl);padding:22px 24px 18px;margin:0;
+  background:linear-gradient(160deg,rgba(26,24,58,.95),rgba(10,11,26,.96));border:1px solid var(--stroke);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 30px 80px -40px rgba(108,88,232,.75);transform:translate3d(0,18px,0) scale(.96);transition:transform .6s var(--snap)}
+#gen.on .gen-card{transform:none}
+#gen .ks-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+#gen .ks-close{appearance:none;background:none;border:0;color:var(--dim);font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:6px 0;white-space:nowrap}
+#gen .ks-close:hover{color:var(--tx)}
+#gen h2{font:800 26px/1.05 var(--fd);letter-spacing:-.035em;color:var(--tx);margin:0}
+.gen-sub{font:400 13px/1.5 var(--fd);color:var(--mu);margin:8px 0 14px}
+#genPrompt{width:100%;resize:vertical;min-height:84px;border-radius:var(--r-md);border:1px solid var(--stroke);background:rgba(255,255,255,.04);
+  color:var(--tx);font:400 15px/1.45 var(--fd);padding:12px 14px;outline:none;transition:border-color .25s,box-shadow .25s}
+#genPrompt:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(155,140,255,.18)}
+.gen-styles{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.gen-styles button{appearance:none;cursor:pointer;border:1px solid var(--stroke-soft);background:transparent;color:var(--mu);border-radius:var(--pill);
+  padding:7px 11px;font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;transition:all .25s}
+.gen-styles button.on{color:#fff;border-color:var(--acc);background:rgba(155,140,255,.18)}
+.gen-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.gen-foot .btn{min-height:42px;padding:0 18px}
+.gen-busy{display:none;align-items:center;gap:10px;margin-top:14px;font:500 10px/1 var(--fm);letter-spacing:.2em;text-transform:uppercase;color:var(--acc-2)}
+.gen-busy i{flex:1;height:3px;border-radius:var(--pill);background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+.gen-busy i::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,var(--acc),var(--mint));animation:indet 1.2s var(--ease) infinite}
+#gen.busy .gen-busy{display:flex}
+#gen.busy #genGo,#gen.busy #genIdea{opacity:.45;pointer-events:none}
+.gen-note{font:400 11px/1.4 var(--fd);color:var(--dim);margin:14px 0 0}
+.gen-note b{color:var(--mu);font-weight:600}
+#tour,#emptyHint,#dropZone,#keys,#gen{--tx:#f3f4ff;--mu:#adb2d0;--dim:#767c9f;--acc:#9b8cff;--acc-2:#c8bdff;--mint:#6ee7d2;--stroke:rgba(255,255,255,.13);--stroke-soft:rgba(255,255,255,.07)}
+#emptyHint .eh-actions #ehGen{flex-basis:100%;max-width:346px}
+@media(max-width:620px){#emptyHint .eh-actions #ehGen{max-width:none}}
+
 /* ─── touch & small-screen polish ─── */
 /* toasts would land on top of the tour card; the tour gives its own feedback */
 body.touring #toasts{opacity:0;visibility:hidden}
@@ -882,6 +916,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   <div class="eh-actions">
     <button class="btn hot" id="ehUpload" type="button" data-i18n="eh.up">Upload file</button>
     <button class="btn acid" id="ehSample" type="button" data-i18n="eh.sample">Try a sample</button>
+    <button class="btn dark" id="ehGen" type="button" data-i18n="eh.gen">✦ Generate from text</button>
   </div>
 </div>
 <audio id="musicAudio" preload="auto" crossorigin="anonymous"></audio>
@@ -906,6 +941,10 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <span id="tickerHint">R RANDOMIZE · V RECORD · P FRAME</span>
   </div>
   <nav class="topnav" aria-label="Global controls">
+    <button class="tbtn" id="btnShare" title="Copy a link to this look" aria-label="Share this look">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
+      <span data-i18n="share.btn">Share</span>
+    </button>
     <button class="tbtn" id="btnCompare" title="Hold to see the original (B)" aria-label="Hold to compare with the original">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 3v18"/><path d="M6.5 9.5l2 2.5-2 2.5" opacity=".6"/></svg>
       <span>Compare</span>
@@ -944,6 +983,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
         <button class="btn" id="btnUpload">UPLOAD</button>
         <button class="btn dark" id="btnClearSource">CLEAR</button>
       </div>
+      <button class="btn full" id="btnGen" type="button" style="margin-top:7px" data-i18n="src.gen">✦ TEXT → IMAGE</button>
       <input type="file" id="fileInput" accept="image/*,video/*" hidden>
       <div class="source-meter"><span id="srcDims">— × —</span><span class="bar"></span><span id="srcType">EMPTY</span></div>
     </div>
@@ -1282,13 +1322,11 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     </div>
     <div class="set-group">
       <h3>Motion &amp; safety</h3>
-      <label class="set-row"><span>Safe mode (caps flicker/strobe)</span><input type="checkbox" id="setSafe"></label>
       <label class="set-row"><span>Reduce UI motion</span><input type="checkbox" id="setReduce"></label>
-      <div class="set-row"><span>Show photosensitivity warning</span><button class="btn xs" id="setShowGate">SHOW</button></div>
       <div class="set-row"><span data-i18n="set.tour">How ROT works (tour)</span><button class="btn xs" id="setShowTour">REPLAY</button></div>
       <div class="set-row"><span data-i18n="set.keys">Keyboard shortcuts</span><button class="btn xs" id="setShowKeys">SHOW · ?</button></div>
       <div class="set-row"><span>Entropy / decay</span><button class="btn xs" id="setResetDecay">RESET</button></div>
-      <p class="set-note">Safe mode lowers strobe-prone effects, disables frame skipping bursts, caps speed and removes hue strobing.</p>
+      <p class="set-note" data-i18n="set.safeNote">Strobe-prone effects are capped automatically when your device asks to reduce motion (accessibility settings).</p>
     </div>
     <div class="set-group">
       <h3>Audio</h3>
@@ -1345,6 +1383,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <h1 class="logo-big" data-text="ROT">ROT</h1>
     </div>
     <div class="intro-sub"><span data-i18n="intro.sub">AN INSTRUMENT FOR BEAUTIFUL DAMAGE</span><em data-i18n="intro.skip">press anywhere to skip</em></div>
+    <div class="intro-warn" data-i18n="intro.warn">⚠ Contains flashing lights &amp; strobe effects</div>
     <div class="intro-bar"><i id="introBar"></i></div>
     <div class="intro-meta"><span id="introPct">00%</span><span>BUILD 2.1.0 / WEBGL</span></div>
     <div id="introLog">BOOTING SHADER CORE…</div>
@@ -1404,6 +1443,20 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <div class="ks-head"><h2 id="ksTitle" data-i18n="ks.t">Shortcuts</h2><button class="ks-close" id="ksClose" type="button" data-i18n="ks.close">Close · Esc</button></div>
     <div class="ks-grid" id="ksGrid"></div>
   </div>
+</div>
+<div id="gen" role="dialog" aria-modal="true" aria-labelledby="genTitle" aria-hidden="true">
+  <form class="gen-card" id="genForm" autocomplete="off">
+    <div class="ks-head"><h2 id="genTitle" data-i18n="gen.t">Type it, then break it</h2><button class="ks-close" id="genClose" type="button" data-i18n="ks.close">Close · Esc</button></div>
+    <p class="gen-sub" data-i18n="gen.sub">Describe an image and ROT generates it as your source — or paste an image link.</p>
+    <textarea id="genPrompt" rows="3" maxlength="400" data-i18n-ph="gen.ph" placeholder="a neon jellyfish drifting in a dark ocean"></textarea>
+    <div class="gen-styles" id="genStyles"></div>
+    <div class="gen-foot">
+      <button class="btn dark" id="genIdea" type="button" data-i18n="gen.idea">Surprise me</button>
+      <button class="btn hot" id="genGo" type="submit" data-i18n="gen.go">Generate</button>
+    </div>
+    <div class="gen-busy" id="genBusy" aria-live="polite"><i></i><span id="genBusyTxt"></span></div>
+    <p class="gen-note" data-i18n="gen.note">Images are generated by <b>pollinations.ai</b>: your prompt is sent to their service.</p>
+  </form>
 </div>
 <div id="cmpBadge" aria-hidden="true"><i></i><span data-i18n="cmp.badge">Original</span></div>
 <div id="toasts" role="status" aria-live="polite"></div>
@@ -1937,7 +1990,7 @@ const DATA={
   userPresets:storeGet(PRESET_STORAGE_KEY,{}),
   look:storeGet(LOOK_STORAGE_KEY,null),
   perf:storeGet(PERF_STORAGE_KEY,null),
-  gateAccepted:storeGet('rot2.gate',false)===true,
+  gateAccepted:true, // the blocking photosensitivity gate is gone: a one-line notice in the intro replaces it
   entropy:0,
   bootAt:nowMs(),
   lastExport:null,
@@ -1954,6 +2007,8 @@ const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
 if(DATA.settings.reducePref==null)DATA.settings.reducePref=!!DATA.settings.reduce&&!DATA.settings.reducedByOS;
 delete DATA.settings.reducedByOS;
 DATA.settings.reduce=DATA.settings.reducePref||motionQuery.matches;
+// no user-facing safe mode: it is on only for people who asked their OS to reduce motion
+DATA.settings.safe=motionQuery.matches;
 DATA.settings.audioSrc='ambient'; // mic and file inputs cannot survive a reload
 
 const savedExportRes=String(DATA.settings.exportRes||EXPORT_DEFAULT);
@@ -2570,7 +2625,7 @@ function releaseVideo(video,next){
   if(url&&!exported&&!(next&&next.src===url))URL.revokeObjectURL(url);
 }
 function setPlaceholderSource(quiet){
-  sourceToken++;
+  sourceToken++;srcMeta=null;
   Engine.setSource(PLACEHOLDER.texture,PLACEHOLDER.canvas.width,PLACEHOLDER.canvas.height,{empty:true,label:'NO SOURCE'});
   updateSourceInfo();
   if(!quiet)toast('<b>SOURCE CLEARED</b> — upload an image or video to begin');
@@ -2584,6 +2639,7 @@ function handleSourceFile(file){
     return;
   }
   if(!/^(image|video)\//.test(file.type)){toast('<b>UNSUPPORTED FILE</b> — image, video or audio only');return}
+  srcMeta=null; // a local file never travels in a shared link
   const token=++sourceToken,url=URL.createObjectURL(file);
   let ready=false;
   if(file.type.startsWith('video/')){
@@ -2677,6 +2733,7 @@ async function loadSampleSource(){
     t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
     Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
     updateSourceInfo();
+    srcMeta={t:'sample'};
     toast(tr('toast.sample'));
   }catch(e){toast('<b>SAMPLE ERROR</b> — could not prepare texture')}
 }
@@ -2746,6 +2803,7 @@ function setReduceMotion(on){
 }
 motionQuery.addEventListener('change',e=>{
   DATA.settings.reduce=DATA.settings.reducePref||e.matches;
+  DATA.settings.safe=e.matches;
   syncReduceUI();
 });
 function syncSettingsUI(){
@@ -2776,14 +2834,14 @@ function toggleAmbientMute(){
 function bindSettings(){
   $id('setTheme').addEventListener('change',e=>{applyTheme(e.target.value);saveSettings()});
   $id('setGrain').addEventListener('change',e=>{DATA.settings.grain=e.target.checked;applyMotionSettings();saveSettings()});
-  $id('setSafe').addEventListener('change',e=>{
+  if($id('setSafe'))$id('setSafe').addEventListener('change',e=>{
     DATA.settings.safe=e.target.checked;
     if(DATA.settings.safe){capForSafeMode(P);syncUI();toast('<b>SAFE MODE ON</b> — strobe effects capped')}
     else toast('<b>SAFE MODE OFF</b> — full signal restored');
     applyMotionSettings();saveSettings();
   });
   $id('setReduce').addEventListener('change',e=>{setReduceMotion(e.target.checked)});
-  $id('setShowGate').addEventListener('click',()=>openGate(true));
+  if($id('setShowGate'))$id('setShowGate').addEventListener('click',()=>openGate(true));
   $id('setShowTour').addEventListener('click',()=>{if(drawerOpen)closeDrawer(drawerOpen);setTimeout(()=>startTour(true),380)});
   $id('setResetDecay').addEventListener('click',()=>{DATA.entropy=0;updateHUD(true);toast('<b>ENTROPY RESET</b> — clean slate')});
   $id('setMute').addEventListener('change',e=>{
@@ -2996,6 +3054,14 @@ const I18N={
     't7.demo':'Play demo beat','t7.own':'Load your track','t7.making':'Building beat…',
     't6.k':'07 — Your turn','t6.t':'Now feed it yours.','t6.keep':'Keep the sample',
     't6.x':'Drop your own image or video, or keep playing with the sample. You can replay this tour any time from <b>Setup</b>.',
+    'gen.busy':'GENERATING YOUR IMAGE…','gen.loading':'LOADING IMAGE…',
+    'toast.gen':'<b>IMAGE GENERATED</b> — now break it','toast.linkImg':'<b>IMAGE LOADED</b> — from link',
+    'toast.cors':'<b>CAN\u2019T USE THAT IMAGE</b> — the site hosting it blocks other sites; download it and upload the file',
+    'toast.genFail':'<b>GENERATION FAILED</b> — the image service did not answer, try again',
+    'share.text':'Look what I broke on ROT','share.manual':'Copy this link:',
+    'toast.copied':'<b>LINK COPIED</b> — anyone who opens it gets this look',
+    'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
+    'toast.opened':'<b>SHARED LOOK</b> — opened from a link','toast.openedNoImg':'<b>SHARED LOOK</b> — the image could not be loaded, showing the sample',
     'tour.ok':'Nice — got it','tour.next':'Next','eh.up':'Upload file','dz.t':'DROP TO ROT IT',
     'toast.sample':'<b>SAMPLE SOURCE</b> — upload your own image or video any time',
     'toast.tip':'<b>TIP</b> — press ? any time for every shortcut',
@@ -3011,12 +3077,26 @@ const I18N={
     'gate.check':'Parti in <b style="color:var(--acc)">SAFE MODE</b> — consigliata la prima volta e su schermi grandi.',
     'gate.enter':'ENTRA / HO CAPITO','gate.safe':'ENTRA IN SAFE MODE',
     'gate.foot':'Entrando confermi di aver letto questo avviso. Puoi riaprirlo da Setup → Motion &amp; safety.',
+    'intro.warn':'⚠ Contiene luci lampeggianti ed effetti stroboscopici',
     'intro.sub':'UNO STRUMENTO PER DANNI MERAVIGLIOSI','intro.skip':'tocca ovunque per saltare',
     'eh.k':'NESSUNA SORGENTE','eh.t':'TRASCINA UN’IMMAGINE<br>O UN VIDEO','eh.s':'OPPURE INIZIA DA QUI <b>↓</b>',
     'eh.up':'Carica file','eh.sample':'Prova un esempio',
     'dz.t':'LASCIA PER DISTRUGGERLO','dz.s':'Immagine o video · l’audio va al music sync',
     'ks.t':'Scorciatoie','ks.close':'Chiudi · Esc','cmp.badge':'Originale',
     'tour.back':'Indietro','tour.skip':'Salta','tour.next':'Avanti','tour.ok':'Grande — fatto',
+    'set.safeNote':'Gli effetti stroboscopici vengono limitati in automatico se il dispositivo chiede di ridurre il movimento (impostazioni di accessibilità).',
+    'gen.t':'Scrivilo, poi distruggilo','gen.sub':'Descrivi un\u2019immagine e ROT la genera come sorgente — oppure incolla il link di un\u2019immagine.',
+    'gen.ph':'una medusa al neon che fluttua in un oceano scuro','gen.idea':'Sorprendimi','gen.go':'Genera',
+    'gen.note':'Le immagini sono generate da <b>pollinations.ai</b>: il tuo prompt viene inviato al loro servizio.',
+    'gen.busy':'GENERO LA TUA IMMAGINE…','gen.loading':'CARICO L\u2019IMMAGINE…','eh.gen':'✦ Genera da un testo','src.gen':'✦ TESTO → IMMAGINE',
+    'toast.gen':'<b>IMMAGINE GENERATA</b> — ora distruggila','toast.linkImg':'<b>IMMAGINE CARICATA</b> — dal link',
+    'toast.cors':'<b>IMMAGINE NON UTILIZZABILE</b> — il sito che la ospita blocca gli altri siti; scaricala e caricala come file',
+    'toast.genFail':'<b>GENERAZIONE FALLITA</b> — il servizio non ha risposto, riprova',
+    'share.btn':'Condividi','share.text':'Guarda cosa ho distrutto su ROT','share.manual':'Copia questo link:',
+    'toast.copied':'<b>LINK COPIATO</b> — chi lo apre vede questo look',
+    'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
+    'toast.opened':'<b>LOOK CONDIVISO</b> — aperto da un link','toast.openedNoImg':'<b>LOOK CONDIVISO</b> — immagine non disponibile, mostro l\u2019esempio',
+    'kh.Generate an image from text':'Genera un\u2019immagine da un testo',
     'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
     't0.k':'Come funziona ROT','t0.t':'Rompi le immagini. Con stile.','t0.next':'Inizia il tour',
     't0.x':'ROT è uno <b>strumento di distorsione dal vivo</b>: gli dai una foto o un video e lo pieghi in tempo reale. Pochi passaggi e ci sei — abbiamo caricato un esempio così vedi tutto succedere dal vivo.',
@@ -3067,6 +3147,7 @@ function applyLang(l,save){
   LANG=l==='it'?'it':'en';
   if(save)storeSet('rot2.lang',LANG);
   document.documentElement.lang=LANG;
+  $$('[data-i18n-ph]').forEach(el=>{const k=el.dataset.i18nPh;if(!(k in I18N.en))I18N.en[k]=el.placeholder;el.placeholder=(I18N[LANG]&&I18N[LANG][k])||I18N.en[k]});
   $$('[data-i18n]').forEach(el=>{
     const k=el.dataset.i18n;
     if(!(k in I18N.en))I18N.en[k]=el.innerHTML; // English comes from the original markup
@@ -3220,7 +3301,7 @@ function tourSteps(){
 
 function startTour(force){
   if(Tour.on||!introDone||!DATA.gateAccepted)return;
-  if(!force&&tourSeen())return;
+  if(!force&&(tourSeen()||sharedLook))return;
   if($id('gate').classList.contains('on'))return;
   Tour.on=true;Tour.i=0;Tour.done={};Tour.steps=tourSteps();Tour.last='';Tour.first=true;
   markTourSeen(); // shown once per device: closing the page mid-tour must not bring it back
@@ -3423,10 +3504,144 @@ window.addEventListener('paste',e=>{
   handleSourceFile(f.name?f:new File([f],'pasted.'+(f.type.split('/')[1]||'png'),{type:f.type}));
 });
 
+// ─── Text → image, image links, shareable looks ───
+// Where the current picture came from, so a shared link can rebuild it:
+// {t:'gen',q,seed,w,h} (generated), {t:'url',u} (image link), {t:'sample'}; null = a local file, which stays private.
+var srcMeta=null; // var: read by source loaders that can run before this line is reached
+const GEN_STYLES=[['photo','photographic, cinematic lighting, 35mm'],['neon','neon glow, synthwave, dark background'],['anime','anime illustration, vibrant'],['3d','3D render, glossy, studio light'],['paint','oil painting, thick brush strokes']];
+const GEN_IDEAS=['a neon jellyfish drifting in a dark ocean','a melting chrome skull on a velvet throne','a rainy tokyo street at night, reflections','a cathedral made of glass and smoke','an astronaut floating in a field of sunflowers','a tiger made of liquid gold','a vaporwave greek statue with headphones','a burning piano in the desert at dusk'];
+function genURL(q,seed,w,h){
+  return 'https://image.pollinations.ai/prompt/'+encodeURIComponent(q)+'?width='+w+'&height='+h+'&seed='+seed+'&nologo=true&model=flux';
+}
+function loadRemoteImage(url,meta){
+  return new Promise((resolve,reject)=>{
+    const token=++sourceToken,im=new Image();
+    im.crossOrigin='anonymous';im.decoding='async';
+    im.onload=()=>{
+      if(token!==sourceToken)return resolve(false);
+      try{
+        const pot=toPowerOf2Canvas(im,2048);
+        const t=new THREE.CanvasTexture(pot.canvas);
+        t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
+        Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
+        srcMeta=meta||null;updateSourceInfo();resolve(true);
+      }catch(e){reject(new Error('cors'))}
+    };
+    im.onerror=()=>reject(new Error('load'));
+    im.src=url;
+  });
+}
+async function generateImage(q){
+  q=String(q||'').trim().slice(0,400);if(!q)return false;
+  // generated at the screen's proportions, long side 1280
+  const asp=clamp(innerWidth/Math.max(1,innerHeight),.5,2.2);
+  const w=asp>=1?1280:Math.round(1280*asp/16)*16,h=asp>=1?Math.round(1280/asp/16)*16:1280;
+  const seed=Math.floor(Math.random()*1e9);
+  await loadRemoteImage(genURL(q,seed,w,h),{t:'gen',q,seed,w,h});
+  return true;
+}
+function isImageLink(v){return /^https?:\/\/\S+$/i.test(String(v||'').trim())}
+
+function openGen(){
+  const g=$id('gen');if(g.classList.contains('on'))return;
+  if(Tour.on)endTour(true);
+  if(document.body.dataset.sheet)closeSheet();
+  if(drawerOpen)closeDrawer(drawerOpen);
+  g.classList.add('on');g.setAttribute('aria-hidden','false');
+  setTimeout(()=>{try{$id('genPrompt').focus()}catch(e){}},80);
+}
+function closeGen(){const g=$id('gen');g.classList.remove('on','busy');g.setAttribute('aria-hidden','true')}
+(function bindGen(){
+  const st=$id('genStyles');let style=null;
+  st.innerHTML=GEN_STYLES.map(([k])=>'<button type="button" data-k="'+k+'">'+k+'</button>').join('');
+  st.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;style=style===b.dataset.k?null:b.dataset.k;$$('#genStyles button').forEach(x=>x.classList.toggle('on',x.dataset.k===style))});
+  $id('genIdea').addEventListener('click',()=>{const t=$id('genPrompt');t.value=GEN_IDEAS[Math.floor(Math.random()*GEN_IDEAS.length)];t.focus()});
+  $id('genClose').addEventListener('click',closeGen);
+  $id('gen').addEventListener('click',e=>{if(e.target.id==='gen')closeGen()});
+  $id('genPrompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$id('genForm').requestSubmit()}});
+  $id('genForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const raw=$id('genPrompt').value.trim();if(!raw){$id('genPrompt').focus();return}
+    const g=$id('gen');g.classList.add('busy');
+    scrambleTo($id('genBusyTxt'),isImageLink(raw)?tr('gen.loading'):tr('gen.busy'),18);
+    try{
+      if(isImageLink(raw)){await loadRemoteImage(raw,{t:'url',u:raw});toast(tr('toast.linkImg'))}
+      else{const sty=style?GEN_STYLES.find(x=>x[0]===style)[1]:'';await generateImage(sty?raw+', '+sty:raw);toast(tr('toast.gen'))}
+      closeGen();
+    }catch(err){
+      g.classList.remove('busy');
+      toast(err&&err.message==='cors'?tr('toast.cors'):tr('toast.genFail'),4200);
+    }
+  });
+  ['btnGen','ehGen'].forEach(id=>{const b=$id(id);if(b)b.addEventListener('click',openGen)});
+  document.addEventListener('keydown',e=>{
+    if(e.key.toLowerCase()!=='g'||e.repeat||isTyping(e.target)||e.metaKey||e.ctrlKey||e.altKey)return;
+    if(Tour.on||!introDone||drawerOpen||$id('gen').classList.contains('on')||$id('keys').classList.contains('on'))return;
+    e.preventDefault();openGen();
+  });
+  window.addEventListener('keydown',e=>{
+    if(!$id('gen').classList.contains('on'))return;
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeGen();return}
+    if(e.key.length===1&&!isTyping(e.target))e.stopPropagation();
+  },true);
+})();
+
+// Shareable link: the look (active effects + changed masters) and, when it can travel, the picture.
+const b64u={
+  enc:o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),
+  dec:s=>JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))))
+};
+function lookForLink(){
+  const fx={},m={};
+  FX.forEach(f=>{if(P.on[f.id])fx[f.id]=Math.round(P.fx[f.id]*100)/100});
+  MASTER.forEach(x=>{const v=Math.round(P[x.id]*100)/100;if(Math.abs(v-x.def)>.004)m[x.id]=v});
+  const o={fx,m};if(P.pix)o.pix=Math.round(P.pix*100)/100;if(P.grade)o.grade=P.grade;if(P.asciiMode)o.a=1;
+  return o;
+}
+function shareURL(){
+  const o={v:1,l:lookForLink()};
+  if(srcMeta&&(srcMeta.t==='gen'||srcMeta.t==='url'))o.s=srcMeta;
+  return location.origin+location.pathname+'#rot='+b64u.enc(o);
+}
+async function shareLook(){
+  const url=shareURL();
+  // a photo loaded from the device never leaves it: the link carries the look only
+  const privateSrc=!Engine.getSrc().empty&&!srcMeta;
+  if(matchMedia('(pointer:coarse)').matches&&navigator.share){
+    try{await navigator.share({title:'ROT',text:tr('share.text'),url});return}catch(e){if(e&&e.name==='AbortError')return}
+  }
+  try{await navigator.clipboard.writeText(url);toast(privateSrc?tr('toast.copiedPrivate'):tr('toast.copied'),privateSrc?5200:3200)}
+  catch(e){window.prompt(tr('share.manual'),url)}
+}
+let sharedLook=false;
+function readSharedLink(){
+  const m=/[#&]rot=([A-Za-z0-9_-]+)/.exec(location.hash||'');if(!m)return null;
+  try{const o=b64u.dec(m[1]);return o&&o.v===1?o:null}catch(e){return null}
+}
+async function applySharedLink(){
+  const o=readSharedLink();if(!o)return false;
+  sharedLook=true;
+  try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+  if(o.l){
+    const l=o.l,src={fx:{},m:l.m||{},pix:l.pix||0,grade:l.grade||0,asciiMode:l.a?1:0};
+    Object.keys(l.fx||{}).forEach(k=>{if(FXMAP[k])src.fx[k]=clamp(+l.fx[k]||0,0,1)});
+    applyPreset(src,true);if(DATA.settings.safe)capForSafeMode(P);syncUI();
+  }
+  const sm=o.s;
+  try{
+    if(sm&&sm.t==='gen'&&sm.q)await loadRemoteImage(genURL(String(sm.q).slice(0,400),+sm.seed|0,clamp(+sm.w|0,256,1440),clamp(+sm.h|0,256,1440)),{t:'gen',q:String(sm.q),seed:+sm.seed|0,w:+sm.w|0,h:+sm.h|0});
+    else if(sm&&sm.t==='url'&&isImageLink(sm.u))await loadRemoteImage(sm.u,{t:'url',u:sm.u});
+    else await loadSampleSource();
+    toast(tr('toast.opened'));
+  }catch(e){try{await loadSampleSource()}catch(_){}toast(tr('toast.openedNoImg'),4200)}
+  return true;
+}
+(function bindShare(){const b=$id('btnShare');if(b)b.addEventListener('click',shareLook)})();
+
 // ─── Keyboard shortcuts sheet ("?") ───
 const KEY_HELP=[
   ['Play'],['R','Randomize every parameter'],['E','Extreme — unstable feed'],['H','Hypnosis mode'],['/','Filter effects'],
-  ['B (hold)','Compare with the original'],['Ctrl/⌘ V','Paste an image'],
+  ['B (hold)','Compare with the original'],['Ctrl/⌘ V','Paste an image'],['G','Generate an image from text'],
   ['Capture'],['P','Save a frame (PNG)'],['V','Record video'],['Space','Record / stop performance'],['M','Mute ambient sound'],
   ['With a music track'],['Space','Play / pause'],['T','Tap tempo'],['← →','Nudge (Shift = more)'],
   ['Anywhere'],['?','This sheet'],['Esc','Close panels & sheets']
@@ -6226,6 +6441,7 @@ function startApp(){
   
   if(!DATA.gateAccepted)setBackgroundInert(true);
   try{startIntro()}catch(e){try{showGateAfterIntro()}catch(_){}}
+  try{applySharedLink()}catch(e){}
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startApp,{once:true});
