@@ -2761,7 +2761,8 @@ function bindSettings(){
   });
   $id('setClearAll').addEventListener('click',()=>{
     if(!confirm('Delete all ROT data on this device? Settings, recipes, saved look and performance will be removed.'))return;
-    [SETTINGS_STORAGE_KEY,PRESET_STORAGE_KEY,LOOK_STORAGE_KEY,PERF_STORAGE_KEY,'rot2.gate','rot2.music'].forEach(storeDel);
+    [SETTINGS_STORAGE_KEY,PRESET_STORAGE_KEY,LOOK_STORAGE_KEY,PERF_STORAGE_KEY,'rot2.gate','rot2.music','rot2.tour'].forEach(storeDel);
+    try{document.cookie='rot2tour=; max-age=0; path=/'}catch(e){}
     storeLocked=true; // pending debounced saves must not write it back before reload
     toast('<b>LOCAL DATA CLEARED</b> — reloading');
     setTimeout(()=>location.reload(),700);
@@ -2906,6 +2907,15 @@ function scrambleTo(el,text,steps){
 // Runs once after the safety gate (replayable from Setup). A dimmed layer with a moving
 // spotlight points at the real controls; each step has a small hands-on task.
 const TOUR_KEY='rot2.tour';
+// localStorage first, a cookie as fallback for browsers that block or wipe storage
+function tourSeen(){
+  if(storeGet(TOUR_KEY,false))return true;
+  try{return /(?:^|;\s*)rot2tour=1/.test(document.cookie)}catch(e){return false}
+}
+function markTourSeen(){
+  storeSet(TOUR_KEY,true);
+  try{document.cookie='rot2tour=1; max-age=31536000; path=/; SameSite=Lax'}catch(e){}
+}
 const Tour={on:false,i:0,steps:[],done:{},target:null,raf:0,tid:0,last:'',first:false,cleanup:[]};
 const tourMobile=()=>matchMedia('(max-width:900px)').matches;
 const pad2=n=>String(n).padStart(2,'0');
@@ -2981,9 +2991,10 @@ function tourSteps(){
 
 function startTour(force){
   if(Tour.on||!introDone||!DATA.gateAccepted)return;
-  if(!force&&storeGet(TOUR_KEY,false))return;
+  if(!force&&tourSeen())return;
   if($id('gate').classList.contains('on'))return;
   Tour.on=true;Tour.i=0;Tour.done={};Tour.steps=tourSteps();Tour.last='';Tour.first=true;
+  markTourSeen(); // shown once per device: closing the page mid-tour must not bring it back
   if(document.body.dataset.sheet)closeSheet();
   try{if(Engine.getSrc().empty)loadSampleSource()}catch(e){}
   document.body.classList.add('touring');
@@ -3000,7 +3011,7 @@ function endTour(seen){
   Tour.on=false;
   cancelAnimationFrame(Tour.raf);clearTimeout(Tour.tid);
   runTourCleanup();
-  if(seen!==false)storeSet(TOUR_KEY,true);
+  if(seen!==false)markTourSeen();
   const t=$id('tour');t.classList.remove('on');t.setAttribute('aria-hidden','true');
   document.body.classList.remove('touring');
   $id('tourCatch').style.clipPath='';
