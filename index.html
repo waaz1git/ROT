@@ -6031,7 +6031,7 @@ function loop(now){
       Engine.uploadFrame(frame);
       if(VIEW.hold<=0||exporting){
         // real drawn-frame cadence (the rAF rate hides dropped frames on 120-165 Hz screens)
-        if(VIEW.drawLast){const gap=now-VIEW.drawLast;if(gap<250){VIEW.drawEMA+=(gap-VIEW.drawEMA)*.12;if(gap>Math.max(24,(VIEW.minFrame||16.7)*1.45))VIEW.janks++}}
+        if(VIEW.drawLast){const gap=now-VIEW.drawLast;if(gap<1500){VIEW.drawEMA+=(Math.min(gap,120)-VIEW.drawEMA)*.12;if(gap>Math.max(24,(VIEW.minFrame||16.7)*1.45))VIEW.janks++}} // >1.5 s is a paused tab, not a slow GPU
         VIEW.drawLast=now;
         Engine.draw();
         if(exporting&&typeof pumpRecordedFrame==='function')pumpRecordedFrame(now);
