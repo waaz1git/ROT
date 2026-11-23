@@ -6,6 +6,20 @@
 <meta name="theme-color" content="#07060a">
 <meta name="description" content="ROT — a cinematic distortion instrument. Melt images, corrupt video, record performances and export your own signal.">
 <title>ROT — distortion instrument</title>
+<link rel="canonical" href="https://nicoflp.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ROT">
+<meta property="og:url" content="https://nicoflp.com/">
+<meta property="og:title" content="ROT — distortion instrument">
+<meta property="og:description" content="Melt images, corrupt video, record performances and export your own signal. Runs in your browser.">
+<meta property="og:image" content="https://nicoflp.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ROT — a glitched, pixel-corrupted image with the ROT logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ROT — distortion instrument">
+<meta name="twitter:description" content="Melt images, corrupt video, record performances and export your own signal.">
+<meta name="twitter:image" content="https://nicoflp.com/og.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2307060a'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23ff2b55' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23ff2b55'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -654,8 +668,52 @@ input[type=range]::-webkit-slider-thumb{backface-visibility:hidden}
 }
 body.safe .logo-big,body.reduce-motion .logo-big{animation:logoBreathe 1.5s var(--snap) both}
 
+/* ─── full-screen drop target ─── */
+#dropZone{position:fixed;inset:0;z-index:110;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;
+  background:radial-gradient(ellipse at 50% 50%,rgba(40,30,110,.55),rgba(4,5,14,.86) 70%);
+  -webkit-backdrop-filter:blur(10px) saturate(1.4);backdrop-filter:blur(10px) saturate(1.4);
+  transition:opacity .35s var(--ease),visibility 0s linear .35s}
+#dropZone.on{opacity:1;visibility:visible;transition:opacity .35s var(--ease),visibility 0s}
+#dropZone .dz-frame{position:absolute;inset:18px;border-radius:28px;padding:2px;
+  background:conic-gradient(from var(--dz-a,0deg),var(--acc),var(--mint),var(--hot),var(--acc));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:dzSpin 3s linear infinite;opacity:.9}
+@property --dz-a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes dzSpin{to{--dz-a:360deg}}
+#dropZone .dz-in{text-align:center;transform:scale(.92);transition:transform .6s var(--snap)}
+#dropZone.on .dz-in{transform:scale(1)}
+#dropZone .dz-icon{width:88px;height:88px;margin:0 auto 22px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle,rgba(155,140,255,.35),transparent 70%);border:1px solid rgba(200,189,255,.5);animation:dzBob 1.6s var(--ease) infinite alternate}
+#dropZone .dz-icon svg{width:34px;height:34px;stroke:#f3f4ff;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+@keyframes dzBob{to{transform:translateY(-8px);box-shadow:0 0 50px -6px rgba(155,140,255,.8)}}
+#dropZone .dz-t{font:800 clamp(34px,7vw,84px)/.95 var(--fd);letter-spacing:-.045em;color:#f3f4ff;text-shadow:0 0 60px rgba(155,140,255,.55)}
+#dropZone .dz-s{font:500 10px/1.4 var(--fm);letter-spacing:.32em;color:#adb2d0;text-transform:uppercase;margin-top:16px}
+body.reduce-motion #dropZone .dz-frame,body.reduce-motion #dropZone .dz-icon{animation:none}
+
+/* ─── keyboard shortcuts sheet ─── */
+#keys{position:fixed;inset:0;z-index:105;display:grid;place-items:center;padding:16px;opacity:0;visibility:hidden;
+  background:rgba(4,5,14,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:opacity .4s var(--ease),visibility 0s linear .4s}
+#keys.on{opacity:1;visibility:visible;transition:opacity .4s var(--ease),visibility 0s}
+#keys .ks-card{width:min(620px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:var(--r-xl);padding:22px 24px 20px;
+  background:linear-gradient(160deg,rgba(26,24,58,.95),rgba(10,11,26,.96));border:1px solid var(--stroke);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 30px 80px -40px rgba(108,88,232,.75);
+  transform:translate3d(0,18px,0) scale(.96);transition:transform .6s var(--snap)}
+#keys.on .ks-card{transform:none}
+#keys .ks-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
+#keys h2{font:800 26px/1 var(--fd);letter-spacing:-.035em;color:var(--tx);margin:0}
+#keys .ks-close{appearance:none;background:none;border:0;color:var(--dim);font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:6px 0}
+#keys .ks-close:hover{color:var(--tx)}
+#keys .ks-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+#keys .ks-row{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--stroke-faint);opacity:0;transform:translate3d(0,8px,0)}
+#keys.on .ks-row{animation:tcIn .55s var(--snap) both;animation-delay:calc(var(--i) * 28ms)}
+#keys .ks-row .kc{min-width:38px;height:34px;font-size:11px;border-radius:9px;animation:none}
+#keys .ks-row span:last-child{font:400 12.5px/1.3 var(--fd);color:var(--mu)}
+#keys .ks-sub{grid-column:1/-1;font:500 9px/1 var(--fm);letter-spacing:.28em;color:var(--mint);text-transform:uppercase;margin:12px 0 2px}
+@media(max-width:620px){#keys .ks-grid{grid-template-columns:1fr}}
+
 /* Overlays that sit straight on the (always dark) canvas keep the dark palette in both themes. */
-#tour,#emptyHint{
+#tour,#emptyHint,#dropZone,#keys{
   --tx:#f3f4ff;--mu:#adb2d0;--dim:#767c9f;
   --acc:#9b8cff;--acc-2:#c8bdff;--acc-deep:#6c58e8;--mint:#6ee7d2;--lime:#cbf5a6;
   --stroke:rgba(255,255,255,.13);--stroke-soft:rgba(255,255,255,.07);--glass-faint:rgba(255,255,255,.022);
@@ -1164,6 +1222,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <label class="set-row"><span>Reduce UI motion</span><input type="checkbox" id="setReduce"></label>
       <div class="set-row"><span>Show photosensitivity warning</span><button class="btn xs" id="setShowGate">SHOW</button></div>
       <div class="set-row"><span>How ROT works (tour)</span><button class="btn xs" id="setShowTour">REPLAY</button></div>
+      <div class="set-row"><span>Keyboard shortcuts</span><button class="btn xs" id="setShowKeys">SHOW · ?</button></div>
       <div class="set-row"><span>Entropy / decay</span><button class="btn xs" id="setResetDecay">RESET</button></div>
       <p class="set-note">Safe mode lowers strobe-prone effects, disables frame skipping bursts, caps speed and removes hue strobing.</p>
     </div>
@@ -1267,6 +1326,20 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       </div>
     </div>
   </section>
+</div>
+<div id="dropZone" aria-hidden="true">
+  <div class="dz-frame"></div>
+  <div class="dz-in">
+    <div class="dz-icon"><svg viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg></div>
+    <div class="dz-t" id="dzTitle">DROP TO ROT IT</div>
+    <div class="dz-s">Image or video · audio goes to music sync</div>
+  </div>
+</div>
+<div id="keys" role="dialog" aria-modal="true" aria-labelledby="ksTitle" aria-hidden="true">
+  <div class="ks-card">
+    <div class="ks-head"><h2 id="ksTitle">Shortcuts</h2><button class="ks-close" id="ksClose" type="button">Close · Esc</button></div>
+    <div class="ks-grid" id="ksGrid"></div>
+  </div>
 </div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#070812;color:#f3f4ff;font:14px monospace;text-align:center;padding:30px">ROT needs JavaScript and WebGL.<br>Please enable JavaScript for this instrument.</div></noscript>
@@ -2909,6 +2982,7 @@ function endTour(seen){
   document.body.classList.remove('touring');
   $id('tourCatch').style.clipPath='';
   try{document.activeElement&&document.activeElement.blur()}catch(e){}
+  if(!tourMobile())setTimeout(()=>toast('<b>TIP</b> — press ? any time for every shortcut',4200),900);
 }
 function runTourCleanup(){Tour.cleanup.forEach(f=>{try{f()}catch(e){}});Tour.cleanup=[]}
 function tourGo(d){
@@ -3024,6 +3098,47 @@ function bindTour(){
   },true);
 }
 bindTour();
+
+// ─── Full-screen drop target ───
+(function bindDropZone(){
+  const dz=$id('dropZone');let depth=0;
+  const hasFiles=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes('Files');
+  const show=()=>{if(dz.classList.contains('on'))return;dz.classList.add('on');scrambleTo($id('dzTitle'),'DROP TO ROT IT',16)};
+  const hide=()=>{depth=0;dz.classList.remove('on')};
+  window.addEventListener('dragenter',e=>{if(!hasFiles(e))return;depth++;show()});
+  window.addEventListener('dragleave',e=>{if(!hasFiles(e))return;depth=Math.max(0,depth-1);if(!depth)hide()});
+  window.addEventListener('drop',e=>{hide();if(Tour.on&&e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)endTour(true)});
+  window.addEventListener('blur',hide);
+})();
+
+// ─── Keyboard shortcuts sheet ("?") ───
+const KEY_HELP=[
+  ['Play'],['R','Randomize every parameter'],['E','Extreme — unstable feed'],['H','Hypnosis mode'],['/','Filter effects'],
+  ['Capture'],['P','Save a frame (PNG)'],['V','Record video'],['Space','Record / stop performance'],['M','Mute ambient sound'],
+  ['With a music track'],['Space','Play / pause'],['T','Tap tempo'],['← →','Nudge (Shift = more)'],
+  ['Anywhere'],['?','This sheet'],['Esc','Close panels & sheets']
+];
+function openKeys(){
+  const k=$id('keys');if(k.classList.contains('on'))return;
+  let i=0;
+  $id('ksGrid').innerHTML=KEY_HELP.map(r=>r.length===1?'<div class="ks-sub">'+r[0]+'</div>':'<div class="ks-row" style="--i:'+(i++)+'"><span class="kc">'+esc(r[0])+'</span><span>'+esc(r[1])+'</span></div>').join('');
+  k.classList.add('on');k.setAttribute('aria-hidden','false');
+  setTimeout(()=>{try{$id('ksClose').focus({preventScroll:true})}catch(e){}},60);
+}
+function closeKeys(){const k=$id('keys');k.classList.remove('on');k.setAttribute('aria-hidden','true')}
+(function bindKeys(){
+  $id('ksClose').addEventListener('click',closeKeys);
+  $id('keys').addEventListener('click',e=>{if(e.target.id==='keys')closeKeys()});
+  $id('setShowKeys').addEventListener('click',()=>{if(drawerOpen)closeDrawer(drawerOpen);setTimeout(openKeys,320)});
+  window.addEventListener('keydown',e=>{
+    const open=$id('keys').classList.contains('on');
+    if(open&&(e.key==='Escape'||e.key==='?')){e.preventDefault();e.stopPropagation();closeKeys();return}
+    if(open){if(e.key.length===1)e.stopPropagation();return}
+    if(e.key!=='?'||Tour.on||isTyping(e.target)||e.metaKey||e.ctrlKey||e.altKey)return;
+    if(!introDone||!DATA.gateAccepted||$id('gate').classList.contains('on'))return;
+    e.preventDefault();e.stopPropagation();openKeys();
+  },true);
+})();
 
 // Mouse clicks should not leave focus on a button and capture the Space shortcut.
 document.addEventListener('click',e=>{
