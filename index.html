@@ -109,6 +109,11 @@ body.clean #aurora,body.clean #scan,body.clean #vignette,body.clean #edge{opacit
 #emptyHint .eh-t{font:700 clamp(24px,4.6vw,62px)/1.02 var(--fd);letter-spacing:-.035em;color:var(--tx);text-shadow:0 4px 60px rgba(4,3,14,.9)}
 #emptyHint .eh-s{font:400 9px/1 var(--fm);letter-spacing:.3em;color:var(--mu);margin-top:18px;text-transform:uppercase}
 #emptyHint .eh-s b{color:var(--acc);font-weight:400}
+/* keep the empty-state copy hidden while the boot intro is on screen, so the two titles never overlap */
+body:has(#intro:not(.out)) #emptyHint{opacity:0;visibility:hidden}
+#emptyHint .eh-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px;pointer-events:auto}
+#emptyHint .eh-actions .btn{min-width:168px;min-height:44px;padding:0 20px}
+#emptyHint.off .eh-actions{pointer-events:none}
 
 
 #topbar{
@@ -434,9 +439,11 @@ details.adv .adv-body{padding:0 12px 12px;animation:paneIn .4s var(--ease) both}
 .viewer-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .viewer-meta{font:400 6.5px var(--fm);color:var(--dim);letter-spacing:.09em;text-transform:uppercase;margin-right:auto;min-width:100px}
 .viewer-bar .btn{min-height:28px;font-size:7px;padding:6px 11px}
-#toasts{position:fixed;left:50%;bottom:calc(86px + var(--safeb));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(540px,92vw)}
+#toasts{position:fixed;left:50%;bottom:calc(132px + var(--safeb));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(540px,92vw)}
 .toast{background:var(--glass-solid);border:1px solid var(--stroke);border-left:2px solid var(--acc);color:var(--tx);padding:10px 15px;border-radius:var(--pill);font:400 8px/1.4 var(--fm);letter-spacing:.09em;text-transform:uppercase;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:var(--shadow);animation:toastIn .46s var(--glide) both;max-width:100%;will-change:transform,opacity}
 .toast.out{animation:toastOut .45s var(--ease) forwards}
+/* the performance timeline is hidden at this width, so toasts can sit lower again */
+@media(max-width:1180px){#toasts{bottom:calc(86px + var(--safeb))}}
 .toast b{color:var(--acc-2);font-weight:400}
 @keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.94);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
 @keyframes toastOut{to{opacity:0;transform:translateY(-8px) scale(.96);filter:blur(6px)}}
@@ -632,6 +639,119 @@ body.safe .logo-big::before,body.safe .logo-big::after{animation-duration:4s}
 .panel.dragging,.drawer.open{will-change:transform,opacity}
 input[type=range]::-webkit-slider-thumb{backface-visibility:hidden}
 
+/* ─── recipe cards: pointer-following light (after 21st.dev "Spotlight Card") ─── */
+.preset .p-glow{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .45s var(--ease);background:radial-gradient(180px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.26),rgba(200,189,255,.08) 40%,transparent 70%);mix-blend-mode:screen}
+.preset:hover .p-glow,.preset:focus-visible .p-glow{opacity:1}
+
+/* ─── intro: occasional hard glitch on the logo ─── */
+.logo-big{animation:logoBreathe 1.5s var(--snap) both,logoGlitch 3.4s steps(1,end) 1.7s infinite}
+@keyframes logoGlitch{
+  0%,88%,100%{transform:none;filter:none}
+  89%{transform:translate3d(-5px,0,0) skewX(-8deg);filter:drop-shadow(6px 0 0 rgba(255,112,156,.7)) drop-shadow(-6px 0 0 rgba(110,231,210,.7))}
+  91%{transform:translate3d(4px,-2px,0) skewX(5deg);filter:drop-shadow(-4px 0 0 rgba(155,140,255,.8))}
+  93%{transform:translate3d(-2px,1px,0);filter:none}
+  95%{transform:translate3d(3px,0,0) scaleY(1.04)}
+}
+body.safe .logo-big,body.reduce-motion .logo-big{animation:logoBreathe 1.5s var(--snap) both}
+
+/* Overlays that sit straight on the (always dark) canvas keep the dark palette in both themes. */
+#tour,#emptyHint{
+  --tx:#f3f4ff;--mu:#adb2d0;--dim:#767c9f;
+  --acc:#9b8cff;--acc-2:#c8bdff;--acc-deep:#6c58e8;--mint:#6ee7d2;--lime:#cbf5a6;
+  --stroke:rgba(255,255,255,.13);--stroke-soft:rgba(255,255,255,.07);--glass-faint:rgba(255,255,255,.022);
+  color-scheme:dark;
+}
+
+/* ─── interactive "how it works" tour ─── */
+body.touring #emptyHint{opacity:0;visibility:hidden}
+#tour{position:fixed;inset:0;z-index:95;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .7s var(--ease),visibility 0s linear .7s}
+#tour.on{visibility:visible;opacity:1;transition:opacity .7s var(--ease),visibility 0s}
+#tourCatch{position:absolute;inset:0;pointer-events:auto}
+#tour:not(.on) #tourCatch{pointer-events:none}
+#tourRing{position:absolute;left:0;top:0;width:0;height:0;border-radius:20px;pointer-events:none;
+  box-shadow:0 0 0 200vmax rgba(4,5,14,.62);
+  transition:transform .85s var(--snap),width .85s var(--snap),height .85s var(--snap),border-radius .85s var(--snap);will-change:transform,width,height}
+#tourRing::before{content:"";position:absolute;inset:-5px;border-radius:inherit;border:1.5px solid rgba(200,189,255,.85);box-shadow:0 0 28px -2px rgba(155,140,255,.75),inset 0 0 22px -6px rgba(155,140,255,.5);opacity:1;transition:opacity .4s var(--ease)}
+#tourRing::after{content:"";position:absolute;inset:-5px;border-radius:inherit;border:1px solid var(--acc);animation:tourPulse 2.4s var(--ease) infinite}
+#tourRing.none::before,#tourRing.none::after{opacity:0;animation:none}
+@keyframes tourPulse{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.08)}}
+
+#tourCard{position:absolute;left:0;top:0;width:min(392px,calc(100vw - 32px));pointer-events:auto;border-radius:var(--r-xl);
+  background:linear-gradient(160deg,rgba(26,24,58,.92),rgba(10,11,26,.94));border:1px solid var(--stroke);
+  -webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 30px 80px -40px rgba(108,88,232,.75),inset 0 1px 0 rgba(255,255,255,.07);
+  transition:transform .9s var(--snap),opacity .5s var(--ease),scale .9s var(--snap);will-change:transform;overflow:hidden;isolation:isolate;
+  scale:.92;opacity:0}
+#tour.on #tourCard{scale:1;opacity:1}
+#tourCard::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:var(--glow,0);transition:opacity .5s var(--ease);
+  background:radial-gradient(320px circle at var(--mx,50%) var(--my,0%),rgba(155,140,255,.2),transparent 65%)}
+#tourCard.nudge{animation:tourNudge .5s var(--snap)}
+@keyframes tourNudge{30%{translate:0 -6px;scale:1.015}100%{translate:0 0;scale:1}}
+.tc-in{padding:20px 22px 18px}
+.tc-top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.tc-step{font:500 9px/1 var(--fm);letter-spacing:.2em;color:var(--mu);min-width:44px}
+.tc-prog{flex:1;display:flex;gap:4px}
+.tc-prog i{flex:1;height:3px;border-radius:var(--pill);background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+.tc-prog i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--acc),var(--mint));transform:scaleX(0);transform-origin:left;transition:transform .7s var(--snap)}
+.tc-prog i.done::after{transform:scaleX(1)}
+.tc-skip{appearance:none;background:none;border:0;color:var(--dim);font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:6px 0;transition:color var(--t)}
+.tc-skip:hover{color:var(--tx)}
+.tc-body>*{animation:tcIn .7s var(--snap) both;animation-delay:calc(var(--i,0) * 60ms)}
+#tourCard.swap .tc-body>*{animation:tcOut .22s var(--ease) both}
+@keyframes tcIn{from{opacity:0;transform:translate3d(0,14px,0);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes tcOut{to{opacity:0;transform:translate3d(0,-8px,0);filter:blur(4px)}}
+.tc-kick{font:500 9px/1 var(--fm);letter-spacing:.32em;color:var(--mint);text-transform:uppercase;margin-bottom:10px}
+.tc-title{font:800 clamp(24px,3.2vw,30px)/1.04 var(--fd);letter-spacing:-.035em;color:var(--tx);margin:0 0 10px;min-height:1em}
+.tc-text{font:400 13px/1.55 var(--fd);color:var(--mu);margin:0}
+.tc-text b{color:var(--tx);font-weight:600}
+.tc-try{margin-top:16px}
+.tc-task{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;border-radius:var(--r-md);border:1px dashed rgba(155,140,255,.35);font:500 9.5px/1.3 var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--acc-2);transition:border-color .4s,background .4s,color .4s}
+.tc-task .tk{width:16px;height:16px;flex:0 0 16px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;transition:background .4s var(--snap),transform .5s var(--snap)}
+.tc-task .tk svg{width:10px;height:10px;stroke:#070812;stroke-width:3;fill:none;stroke-dasharray:14;stroke-dashoffset:14;transition:stroke-dashoffset .45s var(--ease) .12s}
+.tc-task.done{border-style:solid;border-color:rgba(110,231,210,.55);background:rgba(110,231,210,.07);color:var(--mint)}
+.tc-task.done .tk{background:var(--mint);border-color:var(--mint);transform:scale(1.15)}
+.tc-task.done .tk svg{stroke-dashoffset:0}
+.tc-foot{display:flex;align-items:center;gap:8px;margin-top:18px}
+.tc-foot .btn{min-height:40px;padding:0 18px}
+.tc-foot .tc-next{margin-left:auto}
+.tc-next.ready{animation:tcReady 1.6s var(--ease) infinite}
+@keyframes tcReady{0%,100%{box-shadow:0 10px 30px -12px rgba(124,100,255,.85)}50%{box-shadow:0 0 0 6px rgba(155,140,255,.18),0 14px 36px -10px rgba(124,100,255,1)}}
+.tc-flow{display:flex;flex-wrap:wrap;gap:6px}
+.tc-flow span{font:500 8.5px/1 var(--fm);letter-spacing:.16em;padding:8px 10px;border-radius:var(--pill);border:1px solid var(--stroke-soft);color:var(--dim);animation:flowLit 4.2s var(--ease) infinite;animation-delay:calc(var(--i) * .7s)}
+@keyframes flowLit{0%,100%{color:var(--dim);border-color:var(--stroke-soft);background:transparent}8%,22%{color:var(--tx);border-color:var(--acc);background:rgba(155,140,255,.14)}}
+.tc-sl{display:grid;gap:12px}
+.tc-sl label{display:grid;gap:7px;font:500 9px/1 var(--fm);letter-spacing:.16em;color:var(--mu);text-transform:uppercase}
+.tc-sl label span{display:flex;justify-content:space-between}
+.tc-sl label b{color:var(--tx);font-weight:500}
+.tc-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.tc-chip{appearance:none;position:relative;overflow:hidden;border:1px solid var(--stroke-soft);border-radius:var(--r-md);min-height:58px;padding:8px;text-align:left;color:#fff;font:600 9px/1.2 var(--fd);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;display:flex;align-items:flex-end;
+  background:radial-gradient(circle at 30% 30%,hsla(var(--h),90%,65%,.75),transparent 60%),radial-gradient(circle at 80% 80%,hsla(calc(var(--h) + 60),90%,55%,.6),transparent 60%),#0c0d1e;
+  transition:transform .45s var(--snap),border-color .3s,box-shadow .3s}
+.tc-chip:hover{transform:translateY(-3px);border-color:var(--acc);box-shadow:0 14px 30px -16px rgba(120,90,255,.9)}
+.tc-chip.on{border-color:var(--mint);box-shadow:0 0 0 1px rgba(110,231,210,.6)}
+.tc-keys{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kc{appearance:none;display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 12px;border-radius:12px;cursor:default;
+  font:600 13px/1 var(--fm);color:var(--tx);background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid var(--stroke);
+  box-shadow:0 4px 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14);transition:transform .12s var(--ease),box-shadow .12s var(--ease),background .3s}
+button.kc{cursor:pointer}
+.kc.big{min-width:64px;height:64px;font-size:22px;border-radius:16px;background:linear-gradient(160deg,var(--acc),var(--acc-deep));border-color:transparent;box-shadow:0 5px 0 #3b2c99,0 18px 40px -14px rgba(124,100,255,.9)}
+.kc.press,.kc:active{transform:translateY(4px);box-shadow:0 0 0 rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14)}
+.kc.big.press,.kc.big:active{box-shadow:0 1px 0 #3b2c99,0 10px 26px -14px rgba(124,100,255,.9)}
+.kc-l{font:500 9px/1.4 var(--fm);letter-spacing:.12em;color:var(--mu);text-transform:uppercase;margin-right:6px}
+.tc-keys .kc{animation:kcTap 3.6s var(--ease) infinite;animation-delay:calc(var(--i,0) * .9s)}
+.tc-keys .kc.big{animation:none}
+@keyframes kcTap{0%,12%,100%{transform:none}6%{transform:translateY(4px);box-shadow:0 0 0 rgba(0,0,0,.45)}}
+.tc-final{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tc-final .btn{min-height:48px}
+@media(max-width:900px){
+  #tourCard{width:calc(100vw - 20px)}
+  .tc-in{padding:16px 16px 14px}
+  .tc-text{font-size:12.5px}
+}
+body.reduce-motion #tourRing,body.reduce-motion #tourCard{transition-duration:.01s}
+body.reduce-motion #tourRing::after,body.reduce-motion .tc-flow span,body.reduce-motion .tc-keys .kc,body.reduce-motion .tc-next.ready{animation:none}
+body.reduce-motion .tc-body>*{animation-duration:.01s}
+
 </style>
 </head>
 <body>
@@ -641,7 +761,11 @@ input[type=range]::-webkit-slider-thumb{backface-visibility:hidden}
 <div id="emptyHint" aria-hidden="true">
   <div class="eh-k">NO SOURCE</div>
   <div class="eh-t">DROP AN IMAGE<br>OR A VIDEO</div>
-  <div class="eh-s">OR USE SOURCE <b>→</b> UPLOAD</div>
+  <div class="eh-s">OR START HERE <b>↓</b></div>
+  <div class="eh-actions">
+    <button class="btn hot" id="ehUpload" type="button">Upload file</button>
+    <button class="btn acid" id="ehSample" type="button">Try a sample</button>
+  </div>
 </div>
 <audio id="musicAudio" preload="auto" crossorigin="anonymous"></audio>
 <div id="scan" aria-hidden="true"></div>
@@ -1039,6 +1163,7 @@ input[type=range]::-webkit-slider-thumb{backface-visibility:hidden}
       <label class="set-row"><span>Safe mode (caps flicker/strobe)</span><input type="checkbox" id="setSafe"></label>
       <label class="set-row"><span>Reduce UI motion</span><input type="checkbox" id="setReduce"></label>
       <div class="set-row"><span>Show photosensitivity warning</span><button class="btn xs" id="setShowGate">SHOW</button></div>
+      <div class="set-row"><span>How ROT works (tour)</span><button class="btn xs" id="setShowTour">REPLAY</button></div>
       <div class="set-row"><span>Entropy / decay</span><button class="btn xs" id="setResetDecay">RESET</button></div>
       <p class="set-note">Safe mode lowers strobe-prone effects, disables frame skipping bursts, caps speed and removes hue strobing.</p>
     </div>
@@ -1125,6 +1250,24 @@ input[type=range]::-webkit-slider-thumb{backface-visibility:hidden}
   </div>
 </div>
 
+<div id="tour" aria-hidden="true">
+  <div id="tourCatch"></div>
+  <div id="tourRing" class="none"></div>
+  <section id="tourCard" role="dialog" aria-modal="false" aria-labelledby="tcTitle">
+    <div class="tc-in">
+      <div class="tc-top">
+        <span class="tc-step" id="tcStep">01 / 07</span>
+        <div class="tc-prog" id="tcProg" aria-hidden="true"></div>
+        <button class="tc-skip" id="tcSkip" type="button">Skip</button>
+      </div>
+      <div class="tc-body" id="tcBody"></div>
+      <div class="tc-foot">
+        <button class="btn dark" id="tcBack" type="button">Back</button>
+        <button class="btn hot tc-next" id="tcNext" type="button">Next</button>
+      </div>
+    </div>
+  </section>
+</div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#070812;color:#f3f4ff;font:14px monospace;text-align:center;padding:30px">ROT needs JavaScript and WebGL.<br>Please enable JavaScript for this instrument.</div></noscript>
 
@@ -2144,7 +2287,7 @@ function renderPresets(){
     btn.style.setProperty('--h',it.hue||350);
     btn.dataset.name=it.name;
     btn.setAttribute('aria-label','Apply preset '+it.name);
-    btn.innerHTML='<span class="p-art"></span><span class="p-num">'+String(i+1).padStart(2,'0')+'</span><span class="p-tag">'+esc(it.tag||'USER')+'</span><span class="p-name">'+esc(it.name)+'</span>'+(it.user?'<span class="p-del" role="button" aria-label="Delete preset">×</span>':'');
+    btn.innerHTML='<span class="p-art"></span><span class="p-glow" aria-hidden="true"></span><span class="p-num">'+String(i+1).padStart(2,'0')+'</span><span class="p-tag">'+esc(it.tag||'USER')+'</span><span class="p-name">'+esc(it.name)+'</span>'+(it.user?'<span class="p-del" role="button" aria-label="Delete preset">×</span>':'');
     btn.addEventListener('click',e=>{
       if(e.target.closest('.p-del')){if(confirm('Delete "'+it.name+'"?'))deleteCurrentPreset(it.name);return}
       applyPreset(it.src,false);DATA.activePreset=it.name;
@@ -2155,6 +2298,15 @@ function renderPresets(){
     grid.appendChild(btn);
   });
   $id('presetCount').textContent=items.length+' RECIPES';
+  if(!grid.dataset.glow){
+    grid.dataset.glow='1';
+    grid.addEventListener('pointermove',e=>{
+      const card=e.target.closest&&e.target.closest('.preset');if(!card)return;
+      const r=card.getBoundingClientRect();
+      card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      card.style.setProperty('--my',(e.clientY-r.top)+'px');
+    },{passive:true});
+  }
 }
 function renderPresetsSafe(){try{renderPresets()}catch(e){}}
 
@@ -2334,9 +2486,49 @@ function updateSourceInfo(){
   const hint=$id('emptyHint');if(hint)hint.classList.toggle('off',!empty);
   syncRenderResUI();
 }
+// Procedural demo picture: colour, hard edges, rings and type give every effect something to chew on.
+async function loadSampleSource(){
+  const token=++sourceToken;
+  try{if(document.fonts&&document.fonts.load)await document.fonts.load('800 200px Manrope')}catch(e){}
+  if(token!==sourceToken)return;
+  const W=1600,H=1000,c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  const bg=g.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#0b0820');bg.addColorStop(1,'#1a0c22');
+  g.fillStyle=bg;g.fillRect(0,0,W,H);
+  [[340,300,520,'#9b8cff'],[1250,260,460,'#ff709c'],[1000,820,520,'#6ee7d2'],[260,860,380,'#ffc98a']].forEach(([x,y,r,col])=>{
+    const rg=g.createRadialGradient(x,y,0,x,y,r);
+    rg.addColorStop(0,col);rg.addColorStop(1,'rgba(0,0,0,0)');
+    g.globalAlpha=.85;g.fillStyle=rg;g.fillRect(0,0,W,H);
+  });
+  g.globalAlpha=1;
+  g.lineWidth=3;
+  for(let i=1;i<=9;i++){g.strokeStyle='rgba(255,255,255,'+(0.5-i*0.045)+')';g.beginPath();g.arc(W*.72,H*.42,i*46,0,Math.PI*2);g.stroke()}
+  for(let i=0;i<16;i++){g.fillStyle=i%2?'#f3f4ff':'#070812';g.fillRect(i*(W/16),H-70,W/16,70)}
+  g.fillStyle='rgba(255,255,255,.08)';
+  for(let x=0;x<W;x+=40)g.fillRect(x,0,1,H-70);
+  for(let y=0;y<H-70;y+=40)g.fillRect(0,y,W,1);
+  g.fillStyle='#f3f4ff';g.textAlign='left';g.textBaseline='alphabetic';
+  g.font='800 360px Manrope, "Segoe UI", system-ui, sans-serif';
+  g.fillText('ROT',90,560);
+  g.font='500 34px "DM Mono", Consolas, monospace';
+  g.fillStyle='#c8bdff';
+  g.fillText('SAMPLE SIGNAL / BEAUTIFUL DAMAGE',100,650);
+  try{
+    const pot=toPowerOf2Canvas(c,2048);
+    const t=new THREE.CanvasTexture(pot.canvas);
+    t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
+    Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
+    updateSourceInfo();
+    toast('<b>SAMPLE SOURCE</b> — upload your own image or video any time');
+  }catch(e){toast('<b>SAMPLE ERROR</b> — could not prepare texture')}
+}
 function bindSource(){
   const fi=$id('fileInput');
   $id('btnUpload').addEventListener('click',()=>fi.click());
+  const ehUp=$id('ehUpload');if(ehUp)ehUp.addEventListener('click',()=>fi.click());
+  const ehSample=$id('ehSample');if(ehSample)ehSample.addEventListener('click',()=>loadSampleSource());
   const clear=$id('btnClearSource');if(clear)clear.addEventListener('click',()=>setPlaceholderSource());
   $id('dropMini').addEventListener('click',()=>fi.click());
   $id('dropMini').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click()}});
@@ -2436,6 +2628,7 @@ function bindSettings(){
   });
   $id('setReduce').addEventListener('change',e=>{setReduceMotion(e.target.checked)});
   $id('setShowGate').addEventListener('click',()=>openGate(true));
+  $id('setShowTour').addEventListener('click',()=>{if(drawerOpen)closeDrawer(drawerOpen);setTimeout(()=>startTour(true),380)});
   $id('setResetDecay').addEventListener('click',()=>{DATA.entropy=0;updateHUD(true);toast('<b>ENTROPY RESET</b> — clean slate')});
   $id('setMute').addEventListener('change',e=>{
     DATA.settings.mute=!e.target.checked;
@@ -2545,7 +2738,8 @@ function startIntro(){
     introPct=clamp(introPct+rnd(.008,.03),0,1);
     if(bar)bar.style.transform='scaleX('+introPct+')';
     if(pctEl)pctEl.textContent=String(Math.round(introPct*100)).padStart(2,'0')+'%';
-    if(log)log.textContent=INTRO_LOGS[Math.min(INTRO_LOGS.length-1,Math.floor(introPct*INTRO_LOGS.length))];
+    const li=Math.min(INTRO_LOGS.length-1,Math.floor(introPct*INTRO_LOGS.length));
+    if(log&&log.dataset.li!==String(li)){log.dataset.li=li;scrambleTo(log,INTRO_LOGS[li],14)}
     if(introPct>=1)endIntro();
   },step);
   const skip=e=>{e.stopPropagation();endIntro()};
@@ -2562,6 +2756,7 @@ function endIntro(){
 }
 function showGateAfterIntro(){
   if(!DATA.gateAccepted)openGate(false);
+  else setTimeout(()=>startTour(false),300);
 }
 
 
@@ -2587,11 +2782,248 @@ function closeGate(accepted,safe){
   if(accepted)toast('<b>WELCOME TO ROT</b> — '+(DATA.settings.safe?'SAFE MODE':'FULL SIGNAL'));
   setTimeout(()=>{if(typeof AudioBus!=='undefined'&&!DATA.settings.mute)AudioBus.resume()},120);
   updateHUD(true);
+  const fromSettings=gateOpenedFromSettings;
   if(gateOpenedFromSettings)gateOpenedFromSettings=false;
+  if(!fromSettings)setTimeout(()=>startTour(false),650);
 }
 $id('gateEnter').addEventListener('click',()=>closeGate(true,!!$id('gateSafe').checked));
 $id('gateSafeEnter').addEventListener('click',()=>closeGate(true,true));
 
+
+// ─── Decrypt-style text reveal (after 21st.dev "Scramble Text") ───
+const SCRAMBLE_CHARS='-_~`!@#$%^&*()+=[]{}|;:,.<>?/\\';
+function scrambleTo(el,text,steps){
+  if(!el)return;
+  clearInterval(el._scr);
+  if(DATA.settings.reduce){el.textContent=text;return}
+  // Time-based, so a busy main thread can delay the reveal but never leave it half-scrambled.
+  const segs=Array.from(text),dur=Math.min(900,(steps||22)*34),t0=performance.now();
+  const draw=shown=>{el.textContent=segs.map((c,i)=>c.trim()===''||i<shown?c:SCRAMBLE_CHARS[Math.random()*SCRAMBLE_CHARS.length|0]).join('')};
+  draw(0);
+  el._scr=setInterval(()=>{
+    const k=(performance.now()-t0)/dur;
+    if(k>=1){clearInterval(el._scr);el.textContent=text}else draw(Math.floor(k*segs.length));
+  },34);
+}
+
+// ─── Interactive "how it works" tour ───
+// Runs once after the safety gate (replayable from Setup). A dimmed layer with a moving
+// spotlight points at the real controls; each step has a small hands-on task.
+const TOUR_KEY='rot2.tour';
+const Tour={on:false,i:0,steps:[],done:{},target:null,raf:0,tid:0,last:'',first:false,cleanup:[]};
+const tourMobile=()=>matchMedia('(max-width:900px)').matches;
+const pad2=n=>String(n).padStart(2,'0');
+const TOUR_TICK='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.6 2.5L10 3.5"/></svg>';
+
+function tourSteps(){
+  const m=tourMobile();
+  const picks=[0,3,7].map(i=>BUILTIN_PRESETS[i]).filter(Boolean);
+  return [
+    {id:'hello',kick:'How ROT works',title:'Break images. Beautifully.',next:'Start the tour',
+     text:'ROT is a <b>live distortion instrument</b>: feed it a picture or a video, then bend it in real time. A few quick moves and you are in — we loaded a sample so you can see everything happen live.',
+     try:()=>'<div class="tc-flow">'+['SIGNAL','SHAPE','RECIPES','CHAOS','CAPTURE'].map((s,i)=>'<span style="--i:'+i+'">'+s+'</span>').join('')+'</div>'},
+    {id:'signal',kick:'01 — Signal',title:'Feed it a signal',pad:m?4:10,
+     target:()=>m?$('.bnav[data-sheet="look"]'):$id('dropMini').closest('.section'),
+     text:'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page'+(m?', or open <b>LOOK</b> down here and tap Upload.':', or use <b>Upload</b> in the Look panel.')+' Right now ROT is chewing on a sample.'},
+    {id:'shape',kick:'02 — Shape',title:'Bend it with the masters',task:'Move a slider',
+     target:()=>m?null:$id('masterSliders'),
+     text:'<b>Intensity</b> sets how hard ROT hits, <b>Chaos</b> how unpredictable it gets. Drag one — the picture behind reacts live.',
+     try:()=>'<div class="tc-sl">'+['intensity','chaos'].map(id=>{const d=MASTERMAP[id];return '<label><span>'+d.name+'<b data-v="'+id+'">'+(+P[id]).toFixed(2)+'</b></span><input type="range" data-m="'+id+'" min="'+d.min+'" max="'+d.max+'" step="'+d.step+'" value="'+P[id]+'" aria-label="'+d.name+'"></label>'}).join('')+'</div>',
+     mount(){
+       const sync=id=>{const b=$('#tcBody [data-v="'+id+'"]');if(b)b.textContent=(+P[id]).toFixed(2)};
+       $$('#tcBody input[data-m]').forEach(inp=>{
+         fillRange(inp);
+         inp.addEventListener('input',()=>{
+           const id=inp.dataset.m,real=UI.master[id]&&UI.master[id].input;
+           if(real){real.value=inp.value;real.dispatchEvent(new Event('input',{bubbles:true}))}else{P[id]=+inp.value}
+           fillRange(inp);sync(id);tourTask('shape');
+         });
+       });
+       const host=$id('masterSliders');
+       const onReal=()=>{tourTask('shape');$$('#tcBody input[data-m]').forEach(inp=>{inp.value=P[inp.dataset.m];fillRange(inp);sync(inp.dataset.m)})};
+       host.addEventListener('input',onReal);
+       return ()=>host.removeEventListener('input',onReal);
+     }},
+    {id:'recipe',kick:'03 — Recipes',title:'Or start from a recipe',task:'Apply a recipe',
+     target:()=>m?$('.bnav[data-sheet="recipes"]'):$id('presetGrid'),
+     before(){if(!m){const tab=$('.tab[data-tab="recipes"]');if(tab&&!tab.classList.contains('on'))tab.click()}},
+     text:'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here'+(m?'.':' or straight from the grid.'),
+     try:()=>'<div class="tc-chips">'+picks.map(p=>'<button type="button" class="tc-chip" style="--h:'+(p.hue||300)+'" data-p="'+esc(p.name)+'">'+esc(p.name)+'</button>').join('')+'</div>',
+     mount(){
+       $$('#tcBody .tc-chip').forEach(c=>c.addEventListener('click',()=>{
+         const p=BUILTIN_PRESETS.find(x=>x.name===c.dataset.p);if(!p)return;
+         const real=$$('.preset').find(x=>x.dataset.name===p.name);
+         if(real&&!m)real.click();else{applyPreset(p,false);DATA.activePreset=p.name;toast('<b>RECIPE</b> — '+esc(p.name))}
+         $$('#tcBody .tc-chip').forEach(x=>x.classList.toggle('on',x===c));
+         tourTask('recipe');
+       }));
+       const grid=$id('presetGrid'),onGrid=e=>{if(e.target.closest('.preset'))tourTask('recipe')};
+       grid.addEventListener('click',onGrid);
+       return ()=>grid.removeEventListener('click',onGrid);
+     }},
+    {id:'chaos',kick:'04 — Chaos',title:'Roll the dice',task:m?'Tap the key':'Press R or tap the key',
+     target:()=>m?null:$id('btnRandom'),
+     text:m?'Randomize mutates <b>every parameter</b> at once — you will find it in <b>RECIPES</b>. On a keyboard it is the <b>R</b> key.':'Press <b>R</b> to mutate every parameter at once. <b>E</b> flips Extreme for an unstable feed — use with care.',
+     try:()=>'<div class="tc-keys"><button type="button" class="kc big" id="tcRand" aria-label="Randomize">R</button><span class="kc-l">'+(m?'tap to randomize':'tap it — or hit R')+'</span></div>',
+     mount(){
+       const b=$id('tcRand');
+       b.addEventListener('click',()=>{randomizeLook();markDirty();tourTask('chaos')});
+     }},
+    {id:'capture',kick:'05 — Capture',title:'Perform & export',
+     target:()=>m?$('.bnav[data-sheet="output"]'):(getComputedStyle($id('timeline')).display!=='none'?$id('timeline'):$('.tab[data-tab="output"]')),
+     text:m?'<b>OUTPUT</b> saves frames and records video. <b>CAPTURE</b> records a performance you can replay. Everything stays on your device.':'<b>P</b> saves a frame, <b>V</b> records a video, <b>Space</b> records a performance you can replay on the timeline. Everything stays on your device.',
+     try:()=>m?'':'<div class="tc-keys"><span class="kc" style="--i:0">P</span><span class="kc-l">frame</span><span class="kc" style="--i:1">V</span><span class="kc-l">video</span><span class="kc" style="--i:2">Space</span><span class="kc-l">perform</span></div>'},
+    {id:'final',kick:'06 — Your turn',title:'Now feed it yours.',final:true,
+     text:'Drop your own image or video, or keep playing with the sample. You can replay this tour any time from <b>Setup</b>.',
+     try:()=>'<div class="tc-final"><button type="button" class="btn hot" id="tcUpload">Upload file</button><button type="button" class="btn acid" id="tcKeep">Keep the sample</button></div>',
+     mount(){
+       $id('tcUpload').addEventListener('click',()=>{endTour(true);$id('fileInput').click()});
+       $id('tcKeep').addEventListener('click',()=>endTour(true));
+     }}
+  ];
+}
+
+function startTour(force){
+  if(Tour.on||!introDone||!DATA.gateAccepted)return;
+  if(!force&&storeGet(TOUR_KEY,false))return;
+  if($id('gate').classList.contains('on'))return;
+  Tour.on=true;Tour.i=0;Tour.done={};Tour.steps=tourSteps();Tour.last='';Tour.first=true;
+  if(document.body.dataset.sheet)closeSheet();
+  try{if(Engine.getSrc().empty)loadSampleSource()}catch(e){}
+  document.body.classList.add('touring');
+  const t=$id('tour');t.classList.add('on');t.setAttribute('aria-hidden','false');
+  $id('tcProg').innerHTML=Tour.steps.map(()=>'<i></i>').join('');
+  renderTourStep(true);
+  cancelAnimationFrame(Tour.raf);
+  const loop=()=>{if(!Tour.on)return;layoutTour();Tour.raf=requestAnimationFrame(loop)};
+  Tour.raf=requestAnimationFrame(loop);
+  setTimeout(()=>{try{$id('tcNext').focus({preventScroll:true})}catch(e){}},400);
+}
+function endTour(seen){
+  if(!Tour.on)return;
+  Tour.on=false;
+  cancelAnimationFrame(Tour.raf);clearTimeout(Tour.tid);
+  runTourCleanup();
+  if(seen!==false)storeSet(TOUR_KEY,true);
+  const t=$id('tour');t.classList.remove('on');t.setAttribute('aria-hidden','true');
+  document.body.classList.remove('touring');
+  $id('tourCatch').style.clipPath='';
+  try{document.activeElement&&document.activeElement.blur()}catch(e){}
+}
+function runTourCleanup(){Tour.cleanup.forEach(f=>{try{f()}catch(e){}});Tour.cleanup=[]}
+function tourGo(d){
+  const n=clamp(Tour.i+d,0,Tour.steps.length-1);
+  if(n===Tour.i)return;
+  runTourCleanup();Tour.i=n;renderTourStep(false);
+}
+function tourTask(id){
+  if(!Tour.on||Tour.done[id])return;
+  Tour.done[id]=true;
+  const s=Tour.steps[Tour.i];if(!s||s.id!==id)return;
+  const el=$id('tcTask');if(el){el.classList.add('done');el.lastElementChild.textContent='Nice — got it'}
+  $id('tcNext').classList.add('ready');
+  if(DATA.settings.haptics&&navigator.vibrate)try{navigator.vibrate(12)}catch(e){}
+}
+function renderTourStep(first){
+  const s=Tour.steps[Tour.i],card=$id('tourCard'),body=$id('tcBody');
+  if(s.before)try{s.before()}catch(e){}
+  const tgt=s.target?s.target():null;
+  Tour.target=tgt||null;
+  if(tgt&&tgt.scrollIntoView)try{tgt.scrollIntoView({block:'nearest',behavior:DATA.settings.reduce?'auto':'smooth'})}catch(e){}
+  const fill=()=>{
+    if(!Tour.on)return;
+    const done=!!Tour.done[s.id];
+    body.innerHTML=
+      '<div class="tc-kick" style="--i:0">'+s.kick+'</div>'+
+      '<h2 class="tc-title" id="tcTitle" style="--i:1" aria-label="'+esc(s.title)+'"></h2>'+
+      '<p class="tc-text" style="--i:2">'+s.text+'</p>'+
+      (s.try&&s.try()?'<div class="tc-try" style="--i:3">'+s.try()+'</div>':'')+
+      (s.task?'<div class="tc-task'+(done?' done':'')+'" id="tcTask" style="--i:4"><span class="tk">'+TOUR_TICK+'</span><span>'+(done?'Nice — got it':s.task)+'</span></div>':'');
+    scrambleTo($id('tcTitle'),s.title);
+    $id('tcStep').textContent=pad2(Tour.i+1)+' / '+pad2(Tour.steps.length);
+    $$('#tcProg i').forEach((el,k)=>el.classList.toggle('done',k<=Tour.i));
+    $id('tcBack').style.visibility=Tour.i?'visible':'hidden';
+    const nx=$id('tcNext');
+    nx.style.display=s.final?'none':'';
+    nx.textContent=s.next||'Next';
+    nx.classList.toggle('ready',!!(s.task&&done));
+    $id('tcSkip').style.visibility=s.final?'hidden':'visible';
+    if(s.mount){const c=s.mount();if(typeof c==='function')Tour.cleanup.push(c)}
+    card.classList.remove('swap');
+    Tour.last='';
+  };
+  if(first)fill();
+  else{card.classList.add('swap');clearTimeout(Tour.tid);Tour.tid=setTimeout(fill,DATA.settings.reduce?0:210)}
+}
+function layoutTour(){
+  const vw=innerWidth,vh=innerHeight,M=14,ring=$id('tourRing'),card=$id('tourCard');
+  const s=Tour.steps[Tour.i];if(!s)return;
+  let r=null;
+  const el=Tour.target;
+  if(el&&el.isConnected){
+    let b=el.getBoundingClientRect();
+    // inside a scrolling panel, only spotlight the part that is actually visible
+    const sc=el.closest('.panel-body');
+    if(sc){const c=sc.getBoundingClientRect();const t=Math.max(b.top,c.top),bt=Math.min(b.bottom,c.bottom);b={left:b.left,right:b.right,width:b.width,top:t,bottom:bt,height:bt-t}}
+    if(b.width>2&&b.height>2&&b.bottom>0&&b.top<vh&&b.right>0&&b.left<vw)r=b;
+  }
+  const pad=s.pad==null?10:s.pad;
+  let x=vw/2,y=vh/2,w=0,h=0;
+  if(r){
+    x=Math.max(4,r.left-pad);y=Math.max(4,r.top-pad);
+    w=Math.min(vw-4,r.right+pad)-x;h=Math.min(vh-4,r.bottom+pad)-y;
+  }
+  const cw=card.offsetWidth,ch=card.offsetHeight;
+  let cx=(vw-cw)/2,cy=(vh-ch)/2;
+  if(r){
+    if(tourMobile()){
+      const below=y+h/2<vh/2;
+      cy=below?Math.min(vh-ch-M,y+h+14):Math.max(M,y-ch-14);
+    }else{
+      const vy=clamp(y+h/2-ch/2,M,vh-ch-M),hx=clamp(x+w/2-cw/2,M,vw-cw-M);
+      const opts=[[x+w+20,vy],[x-cw-20,vy],[hx,y+h+20],[hx,y-ch-20]];
+      const fit=opts.find(([ox,oy])=>ox>=M&&ox+cw<=vw-M&&oy>=M&&oy+ch<=vh-M);
+      if(fit){cx=fit[0];cy=fit[1]}
+      else{cy=vh-ch-M}
+    }
+  }
+  const key=[x,y,w,h,cx,cy].map(Math.round).join(',');
+  if(key===Tour.last)return;
+  Tour.last=key;
+  if(Tour.first){ring.style.transition='none';card.style.transition='none'}
+  ring.classList.toggle('none',!r);
+  ring.style.transform='translate3d('+x+'px,'+y+'px,0)';
+  ring.style.width=w+'px';ring.style.height=h+'px';
+  ring.style.borderRadius=r?Math.min(22,Math.max(10,Math.min(w,h)/4))+'px':'50%';
+  card.style.transform='translate3d('+Math.round(cx)+'px,'+Math.round(cy)+'px,0)';
+  $id('tourCatch').style.clipPath=r?'path(evenodd,"M0 0H'+vw+'V'+vh+'H0Z M'+x+' '+y+'H'+(x+w)+'V'+(y+h)+'H'+x+'Z")':'';
+  if(Tour.first){Tour.first=false;void card.offsetWidth;ring.style.transition='';card.style.transition=''}
+}
+function bindTour(){
+  $id('tcNext').addEventListener('click',()=>{const s=Tour.steps[Tour.i];if(s&&s.final)endTour(true);else tourGo(1)});
+  $id('tcBack').addEventListener('click',()=>tourGo(-1));
+  $id('tcSkip').addEventListener('click',()=>endTour(true));
+  const card=$id('tourCard');
+  $id('tourCatch').addEventListener('click',()=>{card.classList.remove('nudge');void card.offsetWidth;card.classList.add('nudge')});
+  card.addEventListener('animationend',e=>{if(e.animationName==='tourNudge')card.classList.remove('nudge')});
+  card.addEventListener('pointermove',e=>{const r=card.getBoundingClientRect();card.style.setProperty('--mx',(e.clientX-r.left)+'px');card.style.setProperty('--my',(e.clientY-r.top)+'px');card.style.setProperty('--glow',1)},{passive:true});
+  card.addEventListener('pointerleave',()=>card.style.setProperty('--glow',0));
+  // Capture phase: runs before the global shortcut handler, so the tour decides which keys get through.
+  window.addEventListener('keydown',e=>{
+    if(!Tour.on)return;
+    const k=e.key,s=Tour.steps[Tour.i]||{},onRange=e.target&&e.target.type==='range';
+    if(k==='Escape'){e.preventDefault();e.stopPropagation();endTour(true);return}
+    if(isTyping(e.target)&&!onRange)return;
+    if(!onRange&&(k==='ArrowRight'||k==='ArrowLeft')){e.preventDefault();e.stopPropagation();if(k==='ArrowLeft')tourGo(-1);else if(s.final)endTour(true);else tourGo(1);return}
+    if(s.id==='chaos'&&k.toLowerCase()==='r'&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+      const b=$id('tcRand');if(b){b.classList.add('press');setTimeout(()=>b.classList.remove('press'),150)}
+      tourTask('chaos');return;
+    }
+    if(k===' '&&e.target.closest&&e.target.closest('button'))return;
+    if(k.length===1)e.stopPropagation();
+  },true);
+}
+bindTour();
 
 // Mouse clicks should not leave focus on a button and capture the Space shortcut.
 document.addEventListener('click',e=>{
@@ -5097,7 +5529,7 @@ const TouchState={points:new Map(),startX:0,startY:0,startT:0,pinchDist:0,pinchB
 function bindGestures(){
   window.addEventListener('pointerdown',e=>{
     if(e.pointerType!=='touch')return;
-    if(e.target.closest&&e.target.closest('.panel,.drawer,#topbar,#bottomNav,#timeline,#viewer,#gate,#intro'))return;
+    if(e.target.closest&&e.target.closest('.panel,.drawer,#topbar,#bottomNav,#timeline,#viewer,#gate,#intro,.eh-actions'))return;
     TouchState.points.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(TouchState.points.size===1){
       TouchState.startX=e.clientX;TouchState.startY=e.clientY;TouchState.startT=performance.now();TouchState.pinched=false;
