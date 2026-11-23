@@ -718,6 +718,39 @@ body.reduce-motion #dropZone .dz-frame,body.reduce-motion #dropZone .dz-icon{ani
 #keys .ks-sub{grid-column:1/-1;font:500 9px/1 var(--fm);letter-spacing:.28em;color:var(--mint);text-transform:uppercase;margin:12px 0 2px}
 @media(max-width:620px){#keys .ks-grid{grid-template-columns:1fr}}
 
+/* ─── touch & small-screen polish ─── */
+/* toasts would land on top of the tour card; the tour gives its own feedback */
+body.touring #toasts{opacity:0;visibility:hidden}
+/* bigger hit area for the tour's Skip without changing how it looks */
+#tourCard .tc-skip{padding:14px 10px;margin:-14px -10px}
+/* never taller than the screen: scroll inside the card instead (landscape phones) */
+#tour #tourCard{max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+#tourCard::-webkit-scrollbar{display:none}
+@media(pointer:coarse){
+  /* finger-sized slider thumbs and top-bar buttons everywhere */
+  input[type=range]{height:30px}
+  input[type=range]::-webkit-slider-thumb{width:20px;height:20px;margin-top:-8px}
+  input[type=range]::-moz-range-thumb{width:17px;height:17px}
+  #tourCard input[type=range]{height:38px}
+  .tbtn{min-width:40px;min-height:40px}
+}
+@media(max-width:900px) and (min-height:521px){#tour #tourCard{width:min(560px,calc(100vw - 20px))}}
+@media(max-height:520px){
+  .tc-in{padding:12px 16px 12px}
+  .tc-top{margin-bottom:10px}
+  .tc-kick{margin-bottom:6px}
+  .tc-title{font-size:21px;margin-bottom:6px}
+  .tc-text{font-size:12px;line-height:1.45}
+  .tc-try{margin-top:10px}
+  .tc-task{margin-top:10px;padding:7px 10px}
+  .tc-foot{margin-top:10px}
+  .tc-foot .btn{min-height:38px}
+  .tc-chip{min-height:44px}
+  .kc.big{min-width:48px;height:48px;font-size:18px}
+  .tc-sl{gap:4px}
+  .gate-card{max-height:calc(100dvh - 24px)}
+}
+
 /* ─── hold-to-compare badge ─── */
 #cmpBadge{position:fixed;left:50%;top:calc(86px + var(--safet));z-index:60;pointer-events:none;
   display:flex;align-items:center;gap:10px;padding:10px 16px 10px 12px;border-radius:var(--pill);
@@ -3081,12 +3114,16 @@ function layoutTour(){
     x=Math.max(4,r.left-pad);y=Math.max(4,r.top-pad);
     w=Math.min(vw-4,r.right+pad)-x;h=Math.min(vh-4,r.bottom+pad)-y;
   }
-  const cw=card.offsetWidth,ch=card.offsetHeight;
-  let cx=(vw-cw)/2,cy=(vh-ch)/2;
+  const cw=card.offsetWidth;
+  let ch=card.offsetHeight;
+  let cx=(vw-cw)/2,cy=(vh-ch)/2,maxH='';
   if(r){
     if(tourMobile()){
-      const below=y+h/2<vh/2;
-      cy=below?Math.min(vh-ch-M,y+h+14):Math.max(M,y-ch-14);
+      // dock on the side with more room and cap the height there, so the card never covers its target
+      const above=y-14-M,below=vh-(y+h)-14-M,useBelow=below>above;
+      const avail=Math.max(150,Math.floor(useBelow?below:above));
+      ch=Math.min(card.scrollHeight,avail);maxH=avail+'px';
+      cy=useBelow?y+h+14:Math.max(M,y-14-ch);
     }else{
       const vy=clamp(y+h/2-ch/2,M,vh-ch-M),hx=clamp(x+w/2-cw/2,M,vw-cw-M);
       const opts=[[x+w+20,vy],[x-cw-20,vy],[hx,y+h+20],[hx,y-ch-20]];
@@ -3095,7 +3132,8 @@ function layoutTour(){
       else{cy=vh-ch-M}
     }
   }
-  const key=[x,y,w,h,cx,cy].map(Math.round).join(',');
+  const key=[x,y,w,h,cx,cy].map(Math.round).join(',')+maxH;
+  if(card.style.maxHeight!==maxH)card.style.maxHeight=maxH;
   if(key===Tour.last)return;
   Tour.last=key;
   if(Tour.first){ring.style.transition='none';card.style.transition='none'}
