@@ -4848,11 +4848,13 @@ async function snapPreview(){
     if(sum/(d.length/(4*97))>24)break;
     await new Promise(r=>requestAnimationFrame(()=>r()));
   }
-  for(const q of [.74,.6,.46,.34]){
+  // aim for ~60 KB (a link card doesn't need more, and the daily preview budget then lasts twice as long)
+  let fit=null;
+  for(const q of [.7,.58,.46,.34]){
     const b=await new Promise(r=>c.toBlob(r,'image/jpeg',q));
-    if(b&&b.size<=210*1024)return b;
+    if(b&&b.size<=210*1024){fit=b;if(b.size<=60*1024)break}
   }
-  return null;
+  return fit;
 }
 async function sendPreview(){
   if(!PV.id||PV.sent)return PV.sent;
