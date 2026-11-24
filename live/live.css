@@ -109,3 +109,28 @@
 .qp-nav{margin-top:6px}
 @media(max-width:520px){.live-card{padding:18px 16px 14px}.qp-steps li span{display:none}.qp-steps li{justify-content:center}.scn-grid{grid-template-columns:repeat(3,1fr)}}
 body.safe .seq-st.now{transform:none}
+
+/* ─── Motion 2 (live/motion.js) ─── */
+/* sliding pill under the active tab / bottom-nav item */
+.tabs.has-ind{position:relative} /* #bottomNav is already fixed: its pill positions against it */
+.tab-ind,.bnav-ind{position:absolute;left:0;top:0;z-index:0;pointer-events:none;border-radius:var(--pill);will-change:transform;transform-origin:left center;transition:opacity .2s}
+.tab-ind{background:linear-gradient(135deg,rgba(155,140,255,.85),rgba(110,231,210,.35));box-shadow:0 6px 18px -10px rgba(150,130,255,.9)}
+.bnav-ind{border-radius:var(--r-md);background:rgba(155,140,255,.12);border:1px solid var(--stroke-soft)}
+.tabs.has-ind .tab{z-index:1}
+.tabs.has-ind .tab.on{background:transparent;box-shadow:none}
+#bottomNav.has-ind .bnav{position:relative;z-index:1}
+#bottomNav.has-ind .bnav.on{background:transparent;border-color:transparent}
+[data-theme="bone"] .tab-ind{background:linear-gradient(135deg,#4f3bd6,#7a68ea);box-shadow:0 6px 16px -10px rgba(79,59,214,.8)}
+[data-theme="bone"] .bnav-ind{background:rgba(79,59,214,.09)}
+/* title wipe: a thin scan line runs ahead of the reveal */
+.mo2-wipe{display:inline-block;position:relative}
+.mo2-scan::after{content:"";position:absolute;top:-2px;bottom:-2px;left:0;width:2px;border-radius:2px;background:var(--mint);box-shadow:0 0 10px var(--mint);opacity:0;pointer-events:none;
+  animation:mo2Scan .56s cubic-bezier(.65,0,.35,1) var(--wd,0ms) both}
+@keyframes mo2Scan{0%{transform:translateX(0);opacity:1}85%{opacity:1}100%{transform:translateX(var(--sw,120px));opacity:0}}
+/* magnetic buttons glide back when the pointer leaves; a soft light follows the pointer */
+.btn.hot,.btn.acid,#btnQuick,.tc-next,.qp-style,#apToggle{transition:translate .45s var(--spring,cubic-bezier(.2,1.3,.3,1)),color var(--t),background var(--t),border-color var(--t),box-shadow var(--t),transform var(--t-fast)}
+.mo2-mag{transition:translate .12s linear,color var(--t),background var(--t),border-color var(--t),box-shadow var(--t),transform var(--t-fast)}
+.mo2-mag.btn{background-image:radial-gradient(120px circle at var(--mx,50%) 50%,rgba(255,255,255,.18),transparent 70%)}
+/* cascades use the spring when the browser has linear() easing */
+@supports (animation-timing-function:linear(0,1)){.mo-in>*{animation-timing-function:var(--spring)}}
+body.safe .mo2-scan::after,body.reduce-motion .mo2-scan::after{animation:none}

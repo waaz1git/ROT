@@ -19,7 +19,8 @@ const CORE = [
   'live/midi.js?v=1',
   'live/clip.js?v=1',
   'live/quick.js?v=1',
-  'live/ui.js?v=1'
+  'live/ui.js?v=1',
+  'live/motion.js?v=1'
 ];
 
 self.addEventListener('install', e => {
