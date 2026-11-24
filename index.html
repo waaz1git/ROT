@@ -1063,6 +1063,33 @@ body.reduce-motion #tourRing,body.reduce-motion #tourCard{transition-duration:.0
 body.reduce-motion #tourRing::after,body.reduce-motion .tc-flow span,body.reduce-motion .tc-keys .kc,body.reduce-motion .tc-next.ready{animation:none}
 body.reduce-motion .tc-body>*{animation-duration:.01s}
 
+/* ─── tutorial in the light theme: paper card, ink text, the same motion ─── */
+[data-theme="bone"] #tour{
+  --tx:#1c1a17;--mu:#5c564c;--dim:#8f877a;--acc:#4f3bd6;--acc-2:#5a46dc;--acc-deep:#3b2ab5;--mint:#0d8a79;--lime:#4f7a22;
+  --stroke:rgba(45,35,20,.16);--stroke-soft:rgba(45,35,20,.09);--glass-faint:rgba(60,45,25,.03);color-scheme:light}
+[data-theme="bone"] #tourRing{box-shadow:0 0 0 200vmax rgba(28,22,14,.5)}
+[data-theme="bone"] #tourRing::before{border-color:rgba(79,59,214,.9);box-shadow:0 0 0 3px rgba(251,248,242,.55),0 0 26px -2px rgba(79,59,214,.55)}
+[data-theme="bone"] #tourCard{background:linear-gradient(160deg,rgba(253,251,247,.97),rgba(242,236,226,.97));border-color:rgba(45,35,20,.14);
+  box-shadow:0 40px 90px -30px rgba(40,28,10,.55),0 24px 60px -40px rgba(79,59,214,.45),inset 0 1px 0 rgba(255,255,255,.9)}
+[data-theme="bone"] #tourCard::before{background:radial-gradient(320px circle at var(--mx,50%) var(--my,0%),rgba(79,59,214,.1),transparent 65%)}
+[data-theme="bone"] .tc-prog i{background:rgba(45,35,20,.1)}
+[data-theme="bone"] .tc-task{border-color:rgba(79,59,214,.35);color:var(--acc)}
+[data-theme="bone"] .tc-task.done{border-color:rgba(13,138,121,.5);background:rgba(13,138,121,.08);color:var(--mint)}
+[data-theme="bone"] .tc-task .tk svg{stroke:#fbf8f2}
+[data-theme="bone"] .tc-flow span{border-color:var(--stroke)}
+@keyframes flowLitBone{0%,100%{color:var(--dim);border-color:var(--stroke);background:transparent}8%,22%{color:var(--tx);border-color:var(--acc);background:rgba(79,59,214,.1)}}
+[data-theme="bone"] .tc-flow span{animation-name:flowLitBone}
+[data-theme="bone"] .tc-gen input{border-color:rgba(45,35,20,.18);background:rgba(255,255,255,.7);color:var(--tx)}
+[data-theme="bone"] .tc-gen input:focus{border-color:var(--acc)}
+[data-theme="bone"] .tc-gen-st.on{color:var(--acc)}
+[data-theme="bone"] .tc-gen-st.ok{color:var(--mint)}
+[data-theme="bone"] .tc-gen-st.bad{color:#b4501a}
+[data-theme="bone"] .tc-chip{border-color:rgba(45,35,20,.12)}
+[data-theme="bone"] .kc{color:var(--tx);background:linear-gradient(180deg,#fffdf9,#efe8dc);border-color:rgba(45,35,20,.18);box-shadow:0 4px 0 rgba(60,45,25,.28),inset 0 1px 0 #fff}
+[data-theme="bone"] .kc.press,[data-theme="bone"] .kc:active{box-shadow:0 0 0 rgba(60,45,25,.28),inset 0 1px 0 #fff}
+[data-theme="bone"] .kc.big{color:#fff;background:linear-gradient(160deg,var(--acc),var(--acc-deep));border-color:transparent;box-shadow:0 5px 0 #2a1d8a,0 18px 40px -14px rgba(79,59,214,.6)}
+[data-theme="bone"] #tour .btn:not(.hot):not(.acid){color:var(--tx);background:rgba(255,255,255,.6);border-color:var(--stroke)}
+
 /* ─── readability on phones & tablets: the micro labels (6–9px) scaled ~1.2×, min 9px ─── */
 @media(max-width:900px),(pointer:coarse){
   .brand-word sup,.brand-sub,.ph-label small,.section-note,.btn.sm,.btn.xs,.btn .k,.ctrl-sub,.lock-row span,.source-meter,.chip,.fx-cat,.fx-row.new .fx-name::after,.preset .p-num,.preset .p-tag,.big-action .ba-s,.tab,#hud,.tl-title,.tl-btn,.tl-hint,.bnav,.drawer-sub,.drawer-foot,.j-meta,.set-group h3::before,.set-note,.snippet,details.adv summary,.viewer-meta,.viewer-bar .btn,.intro-kicker,.intro-sub,.intro-meta,#introLog,#skipIntro,.gate-kicker,.gate-card .warn-list,.gate-check,.gate-foot,.music-drop span,.music-zip span,.music-zip-note,.music-track-sub,.music-wave-hint,.music-range-row,.music-transport .btn,.music-bpm small,.music-bar span,.music-visual,.music-analyze-meta,.music-presets .btn,.music-route-head select,.music-route-grid select,.music-route-grid.two label,.music-empty,#hypnoExit{font-size:9px}
