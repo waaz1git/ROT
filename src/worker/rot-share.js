@@ -2,7 +2,10 @@
 // with a KV binding SHOTS and (optional) a rate-limit binding RL;
 // share links use the custom domain https://s.nicoflp.com/<id>#rot=….
 //
-//   POST /i            a WebP made by the ROT generator (≤ 400 KB, ≤ 1152 px) → { id }   (content hash)
+//   POST /gen          { q } → { img (base64 JPEG), p (the prompt actually drawn) }: text → image with
+//                      FLUX.1 schnell on Workers AI (binding AI); a small language model first checks the
+//                      request and rewrites it into a richer prompt
+//   POST /i            a WebP or JPEG made by the ROT generator (≤ 400 KB, ≤ 1152 px) → { id } (content hash)
 //   GET  /i/<id>       the stored image, immutable
 //   PUT  /p/<id>       a 1200×630 JPEG frame of a shared look (id chosen by the client, write-once)
 //   GET  /p/<id>       that frame
@@ -29,6 +32,18 @@ const DAY_MAX_BYTES = 4 * 1024 * 1024;        // images: × 180 days ≈ 0.7 GB
 const DAY_MAX_PREVIEW_BYTES = 3 * 1024 * 1024; // previews: × 60 days ≈ 0.18 GB
 const GALLERY_MAX = 60, GALLERY_HIDE_AT = 3, DAY_MAX_GALLERY = 120;
 const ID_RX = /^[A-Za-z0-9_-]{8,32}$/;
+const DAY_MAX_GEN = 150;                      // FLUX images per day: inside the free Workers AI allowance
+const FLUX = '@cf/black-forest-labs/flux-1-schnell';
+const LLM = '@cf/meta/llama-3.1-8b-instruct-fast';
+// refused before any model runs (the language model below catches what words alone miss)
+const BLOCK_RX = /\b(nude|nudity|naked|nsfw|porn\w*|sex|sexy|sexual|hentai|erotic\w*|topless|lingerie|undress\w*|fetish|genitals?|loli\w*|shota|child\s*porn|cp|gore|beheading|dismember\w*)\b/i;
+const ENHANCE = `You turn short ideas into image prompts for a text-to-image model.
+Rules:
+- If the idea asks for sexual or nude content, anything sexual involving minors, a real person in a compromising or
+  sexual situation, or graphic gore, answer with exactly: BLOCKED
+- Otherwise answer with ONE prompt in English, at most 60 words: keep the user's subject and any style they asked for,
+  then add concrete details on lighting, colour, composition, lens or medium, and mood.
+- No quotes, no lists, no explanations, no text or letters in the picture unless the user asked for them.`;
 
 const cors = origin => ({
   'Access-Control-Allow-Origin': origin && ALLOWED_ORIGINS.includes(origin) ? origin : '*',
@@ -156,7 +171,7 @@ export default {
       if (!value) return json({ error: 'not_found' }, 404, origin);
       return new Response(value, {
         headers: {
-          'Content-Type': m[1] === 'i' ? 'image/webp' : 'image/jpeg',
+          'Content-Type': m[1] === 'i' && new Uint8Array(value, 0, 1)[0] !== 0xff ? 'image/webp' : 'image/jpeg',
           'Cache-Control': 'public, max-age=31536000, immutable',
           'X-Content-Type-Options': 'nosniff',
           'Content-Security-Policy': "default-src 'none'",
@@ -184,12 +199,38 @@ export default {
       if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
       const bytes = await readCapped(req, MAX_BYTES);
       if (!bytes) return json({ error: 'too_large' }, 413, origin);
-      if (!webpSize(bytes)) return json({ error: 'not_an_image' }, 415, origin);
+      const dim = webpSize(bytes) || jpegSize(bytes); // WebP, or JPEG from browsers that cannot encode WebP
+      if (!dim || dim.w < MIN_SIDE || dim.h < MIN_SIDE || dim.w > MAX_SIDE || dim.h > MAX_SIDE) return json({ error: 'not_an_image' }, 415, origin);
       const id = await idFor(bytes), key = 'img:' + id;
       if (await exists(env, key)) return json({ id }, 200, origin);
       if (!(await spend(env, 'img', bytes.length, DAY_MAX_UPLOADS, DAY_MAX_BYTES))) return json({ error: 'budget' }, 429, origin);
       await env.SHOTS.put(key, bytes, { expirationTtl: TTL, metadata: { at: Date.now() } });
       return json({ id }, 201, origin);
+    }
+
+    if (req.method === 'POST' && path === '/gen') {
+      if (!env.AI) return json({ error: 'unavailable' }, 503, origin);
+      if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
+      const body = await readCapped(req, 2048);
+      let o = null;
+      try { o = JSON.parse(new TextDecoder().decode(body || new Uint8Array(0))); } catch (e) {}
+      const q = String((o && o.q) || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+      if (!q) return json({ error: 'bad_request' }, 400, origin);
+      if (BLOCK_RX.test(q)) return json({ error: 'censored' }, 422, origin);
+      if (!(await spend(env, 'gen', 0, DAY_MAX_GEN, 1))) return json({ error: 'budget' }, 429, origin);
+      let prompt = q;
+      try {
+        const r = await env.AI.run(LLM, { messages: [{ role: 'system', content: ENHANCE }, { role: 'user', content: q }], max_tokens: 140, temperature: 0.6 });
+        const t = String((r && r.response) || '').replace(/^["'\s]+|["'\s]+$/g, '').replace(/\s+/g, ' ');
+        if (/^BLOCKED\b/i.test(t)) return json({ error: 'censored' }, 422, origin);
+        if (t.length >= 12 && t.length <= 700 && !BLOCK_RX.test(t)) prompt = t;
+      } catch (e) { /* no rewrite: draw the words as typed */ }
+      let out;
+      try {
+        out = await env.AI.run(FLUX, { prompt, steps: 6, seed: Math.floor(Math.random() * 2147483647) });
+      } catch (e) { return json({ error: 'model' }, 502, origin); }
+      if (!out || !out.image) return json({ error: 'model' }, 502, origin);
+      return json({ img: out.image, p: prompt }, 200, origin, { 'Cache-Control': 'no-store' });
     }
 
     if (req.method === 'PUT' && (m = path.match(/^\/p\/([A-Za-z0-9_-]{12,32})$/))) {
