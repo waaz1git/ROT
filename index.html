@@ -3067,7 +3067,7 @@ const I18N={
     'toast.copied':'<b>LINK COPIED</b> — anyone who opens it gets this look',
     'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
     'toast.saving':'<b>PREPARING LINK…</b>',
-    'toast.notStored':'<b>LINK COPIED</b> — the image could not be saved, so the link will redraw it (it may differ slightly)',
+    'toast.notStored':'<b>IMAGE NOT SAVED</b> — the link will redraw it (it may differ slightly)',
     'toast.opened':'<b>SHARED LOOK</b> — opened from a link','toast.openedNoImg':'<b>SHARED LOOK</b> — the image could not be loaded, showing the sample',
     'tour.ok':'Nice — got it','tour.next':'Next','eh.up':'Upload file','dz.t':'DROP TO ROT IT',
     'toast.sample':'<b>SAMPLE SOURCE</b> — upload your own image or video any time',
@@ -3107,7 +3107,7 @@ const I18N={
     'toast.copied':'<b>LINK COPIATO</b> — chi lo apre vede questo look',
     'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
     'toast.saving':'<b>PREPARO IL LINK…</b>',
-    'toast.notStored':'<b>LINK COPIATO</b> — l\u2019immagine non è stata salvata, quindi il link la ridisegnerà (potrebbe differire leggermente)',
+    'toast.notStored':'<b>IMMAGINE NON SALVATA</b> — il link la ridisegnerà (potrebbe differire leggermente)',
     'toast.opened':'<b>LOOK CONDIVISO</b> — aperto da un link','toast.openedNoImg':'<b>LOOK CONDIVISO</b> — immagine non disponibile, mostro l\u2019esempio',
     'kh.Generate an image from text':'Genera un\u2019immagine da un testo',
     'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
@@ -3593,7 +3593,8 @@ async function generateImage(q,onStatus){
   const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
   const seed=Math.floor(Math.random()*1e9);
   const url=await hordeGenerate(q,seed,w,h,onStatus);
-  await loadRemoteImage(url,{t:'gen',q,seed,w,h,data:url});
+  const meta={t:'gen',q,seed,w,h,data:url};
+  await loadRemoteImage(url,meta);preStore(meta);
   return true;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
@@ -3602,7 +3603,8 @@ async function regenerateShared(sm){
   let w=+sm.w|0,h=+sm.h|0;
   if(!(w>=256&&w<=576&&h>=256&&h<=576)){const s=hordeSize((w&&h)?w/h:16/9);w=s.w;h=s.h} // links made before the switch
   const url=await hordeGenerate(q,seed,w,h);
-  await loadRemoteImage(url,{t:'gen',q,seed,w,h,data:url});
+  const meta={t:'gen',q,seed,w,h,data:url};
+  await loadRemoteImage(url,meta);preStore(meta);
 }
 function isImageLink(v){return /^https?:\/\/\S+$/i.test(String(v||'').trim())}
 
@@ -3670,16 +3672,24 @@ const SHARE_API='https://rot-share.nicoflp.workers.dev';
 async function storeShot(meta){
   if(meta.id)return meta.id;
   const blob=await (await fetch(meta.data)).blob();
-  const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob});
-  const d=await r.json().catch(()=>null);
-  if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
-  meta.id=d.id;return d.id;
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob,signal:ctl.signal});
+    const d=await r.json().catch(()=>null);
+    if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
+    meta.id=d.id;delete meta.data;return d.id;
+  }finally{clearTimeout(tm)}
+}
+// started as soon as an image is generated: by the time Share is pressed the id is usually ready
+function preStore(meta){
+  if(meta&&meta.data&&!meta.id&&!meta.pending)meta.pending=storeShot(meta).catch(()=>null).finally(()=>{meta.pending=null});
 }
 function linkSource(){
   if(!srcMeta)return null;
-  if(srcMeta.t==='img')return {t:'img',id:srcMeta.id,q:srcMeta.q};
+  if(srcMeta.t==='img'||(srcMeta.t==='gen'&&srcMeta.id)){
+    const o={t:'img',id:srcMeta.id,q:srcMeta.q};if(srcMeta.seed!=null){o.seed=srcMeta.seed;o.w=srcMeta.w;o.h=srcMeta.h}return o;
+  }
   if(srcMeta.t==='gen'){
-    if(srcMeta.id)return {t:'img',id:srcMeta.id,q:srcMeta.q};
     return {t:'gen',q:srcMeta.q,seed:srcMeta.seed,w:srcMeta.w,h:srcMeta.h}; // fallback: re-render
   }
   if(srcMeta.t==='url')return {t:'url',u:srcMeta.u};
@@ -3693,12 +3703,14 @@ function shareURL(){
 async function shareLook(){
   const btn=$id('btnShare');
   if(btn&&btn.classList.contains('busy'))return;
-  let note=null;
-  if(srcMeta&&srcMeta.t==='gen'&&!srcMeta.id&&srcMeta.data){
+  let note=null;const meta=srcMeta;
+  if(meta&&meta.t==='gen'&&!meta.id&&(meta.pending||meta.data)){
     if(btn)btn.classList.add('busy');
     toast(tr('toast.saving'),1600);
-    try{await storeShot(srcMeta)}catch(e){note=tr('toast.notStored')}
-    if(btn)btn.classList.remove('busy');
+    try{if(meta.pending)await meta.pending;if(!meta.id)await storeShot(meta)}catch(e){}
+    finally{if(btn)btn.classList.remove('busy')}
+    if(srcMeta!==meta)return; // the source changed while uploading: don't share the wrong picture
+    if(!meta.id)note=tr('toast.notStored');
   }
   const url=shareURL();
   // a photo loaded from the device never leaves it: the link carries the look only
@@ -3706,8 +3718,8 @@ async function shareLook(){
   if(matchMedia('(pointer:coarse)').matches&&navigator.share){
     try{await navigator.share({title:'ROT',text:tr('share.text'),url});if(note)toast(note,5200);return}catch(e){if(e&&e.name==='AbortError')return}
   }
-  try{await navigator.clipboard.writeText(url);toast(note||(privateSrc?tr('toast.copiedPrivate'):tr('toast.copied')),note||privateSrc?5200:3200)}
-  catch(e){window.prompt(tr('share.manual'),url)}
+  try{await navigator.clipboard.writeText(url);toast(note?tr('toast.copied')+'<br>'+note:(privateSrc?tr('toast.copiedPrivate'):tr('toast.copied')),note||privateSrc?5200:3200)}
+  catch(e){window.prompt(tr('share.manual'),url);if(note)toast(note,5200)}
 }
 let sharedLook=false;
 function readSharedLink(){
@@ -3726,8 +3738,14 @@ async function applySharedLink(){
   const sm=o.s;
   try{
     if(sm&&sm.t==='img'&&/^[A-Za-z0-9_-]{8,32}$/.test(String(sm.id||''))){
-      try{await loadRemoteImage(SHARE_API+'/i/'+sm.id,{t:'img',id:String(sm.id),q:sm.q?String(sm.q).slice(0,400):''})}
-      catch(e){if(sm.q)await regenerateShared({q:sm.q});else throw e}
+      const meta={t:'img',id:String(sm.id),q:sm.q?String(sm.q).slice(0,400):''};
+      if(sm.seed!=null){meta.seed=Math.abs(+sm.seed|0);meta.w=+sm.w|0;meta.h=+sm.h|0}
+      try{await loadRemoteImage(SHARE_API+'/i/'+sm.id,meta)}
+      catch(e){
+        await new Promise(r=>setTimeout(r,1500));
+        try{await loadRemoteImage(SHARE_API+'/i/'+sm.id+'?r=1',meta)}
+        catch(_){if(sm.q)await regenerateShared(sm);else throw e}
+      }
     }
     else if(sm&&sm.t==='gen'&&sm.q)await regenerateShared(sm);
     else if(sm&&sm.t==='url'&&isImageLink(sm.u))await loadRemoteImage(sm.u,{t:'url',u:sm.u});
@@ -5754,7 +5772,7 @@ function shareLast(){
 }
 async function chainViewer(){
   const d=DATA.lastExport;
-  const token=++sourceToken;
+  const token=++sourceToken;srcMeta=null;
   if(!d||!d.chainable){toast('<b>CANNOT CHAIN</b>');return}
   try{
     if(d.type&&d.type.indexOf('image/')===0){
