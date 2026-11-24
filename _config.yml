@@ -1,0 +1,8 @@
+# GitHub Pages: keep development tooling out of the published site.
+exclude:
+  - CLAUDE.md
+  - README.md
+  - .claude
+  - .claude-flow
+  - .agents
+  - .swarm

@@ -10,3 +10,8 @@
 .swarm/*.db
 .swarm/*.db-*
 .swarm/*.ruvector
+
+# Ruflo per-session runtime state
+.claude-flow/cost/
+.claude-flow/mods/session.json
+.claude-flow/protector-mod/
