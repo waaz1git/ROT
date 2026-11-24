@@ -1,9 +1,3 @@
-# GitHub Pages: keep development tooling out of the published site.
+# GitHub Pages: publish only the site (the worker source is a backup, not part of the site).
 exclude:
-  - CLAUDE.md
-  - README.md
-  - .claude
-  - .claude-flow
-  - .agents
-  - .swarm
   - src

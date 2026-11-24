@@ -1,4 +1,0 @@
-{"version":1,"entries":[
-{"seq":0,"length":1,"headHash":"sha256:8c8b84f9a8fedc5fa29ea10a3eaa53b5a703278ed59847354e59abc5ef86b296","prevAnchorHash":null,"ts":1795503788883,"event":"append","hash":"6e23f090565d4851cefd39cd67076027a1bbedaea5ef0bad8f4a0603f9b67b52"},
-{"seq":1,"length":2,"headHash":"sha256:0b0137ebb49ff62b30013de21137db079a4760238f4c8d97c5044b6e63cb45f9","prevAnchorHash":"6e23f090565d4851cefd39cd67076027a1bbedaea5ef0bad8f4a0603f9b67b52","ts":1795511408194,"event":"append","hash":"d71f72b6a7cb62c85297679c9833506da34edf85ea901c09d86724837f5872e3"}
-]}

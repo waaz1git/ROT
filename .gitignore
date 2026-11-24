@@ -15,3 +15,12 @@
 .claude-flow/cost/
 .claude-flow/mods/session.json
 .claude-flow/protector-mod/
+
+# Development tooling stays local: the repository holds only what the site needs
+.claude/
+.claude-flow/
+.swarm/
+.agents/
+CLAUDE.md
+.mcp.json
+README.md
