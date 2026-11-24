@@ -4221,6 +4221,7 @@ function linkSource(){
 // Links go through the worker's /s/<id> page, whose preview card (og:image) is a frame of the look,
 // then forward to the site with the same #rot= part. Photos from the device never leave it: their
 // links skip the preview and point straight at the site.
+const SHARE_LINK='https://s.nicoflp.com/';
 const PV={payload:'',id:'',sent:false};
 let remixCount=0;
 function randId(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
@@ -4235,7 +4236,7 @@ function shareURL(){
   const pl=sharePayload();
   if(privateSource())return location.origin+location.pathname+'#rot='+pl;
   if(PV.payload!==pl){PV.payload=pl;PV.id=randId(12);PV.sent=false}
-  return SHARE_API+'/s/'+PV.id+'#rot='+pl;
+  return SHARE_LINK+PV.id+'#rot='+pl;
 }
 // the current frame, cover-cropped to 1200×630, as a JPEG under the worker's size cap
 async function snapPreview(){

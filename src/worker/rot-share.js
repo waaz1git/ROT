@@ -1,11 +1,12 @@
 // rot-share — Cloudflare Worker behind ROT's share links. Deployed at https://rot-share.nicoflp.workers.dev
-// with a KV binding SHOTS and (optional) a rate-limit binding RL.
+// with a KV binding SHOTS and (optional) a rate-limit binding RL;
+// share links use the custom domain https://s.nicoflp.com/<id>#rot=….
 //
 //   POST /i            a WebP made by the ROT generator (≤ 400 KB, ≤ 1152 px) → { id }   (content hash)
 //   GET  /i/<id>       the stored image, immutable
 //   PUT  /p/<id>       a 1200×630 JPEG frame of a shared look (id chosen by the client, write-once)
 //   GET  /p/<id>       that frame
-//   GET  /s/<id>       a tiny page whose link preview (og:image) is that frame; it forwards the visitor
+//   GET  /<id>, /s/<id> a tiny page whose link preview (og:image) is that frame; it forwards the visitor
 //                      to https://nicoflp.com/ keeping the #rot=… part of the address
 //   GET  /g            the public gallery (newest first)
 //   POST /g            { img, p, l } publish a generated-image look to the gallery
@@ -163,7 +164,7 @@ export default {
         }
       });
     }
-    if (req.method === 'GET' && (m = path.match(/^\/s\/([A-Za-z0-9_-]{8,32})$/))) {
+    if (req.method === 'GET' && (m = path.match(/^\/(?:s\/)?([A-Za-z0-9_-]{12,32})$/))) {
       const has = await exists(env, 'pv:' + m[1]);
       return new Response(sharePage(url.origin, m[1], has), {
         headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': has ? 'public, max-age=86400' : 'public, max-age=60', 'X-Content-Type-Options': 'nosniff' }
