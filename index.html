@@ -193,6 +193,7 @@ body:has(#intro:not(.out)) #emptyHint{opacity:0;visibility:hidden}
 .brand-sub{font:400 7px/1.4 var(--fm);letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:3px}
 #ticker{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:9px;overflow:hidden;white-space:nowrap;font:400 8px/1 var(--fm);letter-spacing:.15em;text-transform:uppercase;color:var(--dim)}
 #ticker b{color:var(--tx);font-weight:400}
+@media(max-width:1640px){#ticker .tk-hint{display:none}}
 #ticker .sep{color:var(--acc);opacity:.65}
 #ticker .live{width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px var(--mint);animation:livePulse 2.2s var(--ease) infinite;flex:0 0 auto}
 @keyframes livePulse{50%{opacity:.28;transform:scale(.7)}}
@@ -379,6 +380,11 @@ input::placeholder,textarea::placeholder{color:var(--dim);opacity:.8}
   linear-gradient(150deg,rgba(40,34,86,.9),rgba(8,9,24,.95));}
 .preset .p-art::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 8px,rgba(255,255,255,.035) 8px 9px)}
 .preset .p-art::after{content:"";position:absolute;width:62%;height:140%;left:20%;top:-20%;border:1px solid rgba(255,255,255,.22);border-radius:50%;transform:rotate(-22deg)}
+.preset .p-thumb{position:absolute;inset:0;width:100%;height:100%;z-index:0;opacity:0;transition:opacity .6s var(--ease);image-rendering:auto}
+.preset .p-thumb.on{opacity:1}
+.preset:has(.p-thumb.on) .p-name{text-shadow:0 1px 3px rgba(0,0,0,.95),0 2px 14px rgba(0,0,0,.9)}
+.preset .p-thumb.on~.p-num,.preset .p-thumb.on~.p-tag{text-shadow:0 1px 4px rgba(0,0,0,.95)}
+.preset::after{content:"";position:absolute;inset:auto 0 0;height:55%;z-index:1;pointer-events:none;background:linear-gradient(transparent,rgba(4,3,12,.78))}
 .preset .p-num{position:absolute;top:7px;left:8px;z-index:2;font:400 6.5px var(--fm);color:rgba(255,255,255,.6);letter-spacing:.1em}
 .preset .p-name{position:absolute;left:8px;right:7px;bottom:7px;z-index:2;font:600 8px/1.2 var(--fd);letter-spacing:.05em;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}
 .preset .p-tag{position:absolute;right:7px;top:7px;z-index:2;font:400 5.8px var(--fm);letter-spacing:.08em;color:rgba(255,255,255,.65)}
@@ -429,6 +435,7 @@ input::placeholder,textarea::placeholder{color:var(--dim);opacity:.8}
 #tlCanvas{width:100%;height:34px;display:block;background:rgba(6,7,20,.36);border:1px solid var(--stroke-faint);border-radius:var(--r-sm);cursor:crosshair}
 .tl-hint{font:400 6.5px var(--fm);color:var(--dim);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 @media(max-width:1180px){#timeline{display:none}}
+body.perf-empty #timeline{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(18px)}
 
 #bottomNav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:43;padding:6px 8px calc(6px + var(--safeb));background:var(--glass-solid);border-top:1px solid var(--stroke);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);gap:2px}
 .bnav{flex:1;appearance:none;background:transparent;border:1px solid transparent;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 1px;border-radius:var(--r-md);font:500 6px/1 var(--fm);letter-spacing:.1em;text-transform:uppercase;transition:color var(--t),background var(--t),border-color var(--t),transform var(--t-fast);min-width:0}
@@ -613,6 +620,14 @@ body.safe #musicSpectrum,body.reduce-motion #musicSpectrum{opacity:.72}
 body.hypno #topbar,body.hypno .panel,body.hypno #timeline,body.hypno #hud,body.hypno #bottomNav,body.hypno #scan,body.hypno #aurora{opacity:0!important;pointer-events:none!important;transition:opacity var(--t-slow)}
 body.hypno #vignette{opacity:1;background:radial-gradient(ellipse at 50% 50%,transparent 24%,rgba(3,3,12,.5) 72%,rgba(2,2,8,.9) 100%)}
 body.hypno #cv{cursor:none}
+body.cinema #topbar,body.cinema .panel,body.cinema #timeline,body.cinema #hud,body.cinema #bottomNav,body.cinema #remixChip,body.cinema #toasts{opacity:0!important;pointer-events:none!important;transition:opacity .7s var(--ease)}
+body.cinema.peek #topbar,body.cinema.peek #bottomNav{opacity:.92!important;pointer-events:auto!important;transition:opacity .35s var(--ease)}
+body.cinema #cv{cursor:none}
+body.cinema.peek #cv{cursor:auto}
+#cinemaHint{position:fixed;left:50%;bottom:calc(26px + var(--safeb,0px));z-index:45;transform:translate(-50%,8px);padding:9px 16px;border-radius:var(--pill);
+  background:rgba(8,7,20,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
+  font:500 9px/1 var(--fm);letter-spacing:.18em;text-transform:uppercase;color:#cfd0ea;opacity:0;pointer-events:none;transition:opacity .4s,transform .4s}
+#cinemaHint.on{opacity:1;transform:translate(-50%,0)}
 #hypnoExit{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:120;display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid var(--stroke);background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:var(--dim);border-radius:var(--pill);font:500 7px/1 var(--fm);letter-spacing:.14em;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity var(--t-slow) var(--ease),color var(--t),border-color var(--t),background var(--t)}
 #hypnoExit b{display:grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;border-radius:50%;font-weight:400;color:var(--acc)}
 #hypnoExit:hover,#hypnoExit:focus-visible{opacity:1!important;color:var(--tx);border-color:var(--acc);background:var(--glass-solid)}
@@ -1023,8 +1038,8 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <span class="live"></span>
     <b id="tickerSrc">NO SOURCE</b><span class="sep">/</span>
     <span id="tickerState">LIVE DISTORTION</span><span class="sep">/</span>
-    <span id="tickerClock">00:00:00</span><span class="sep">/</span>
-    <span id="tickerHint">R RANDOMIZE · V RECORD · P FRAME</span>
+    <span id="tickerClock">00:00:00</span><span class="sep tk-hint">/</span>
+    <span id="tickerHint" class="tk-hint">R RANDOMIZE · V RECORD · P FRAME</span>
   </div>
   <nav class="topnav" aria-label="Global controls">
     <button class="tbtn" id="btnShare" title="Copy a link to this look" aria-label="Share this look">
@@ -1563,6 +1578,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <div class="gal-grid" id="galGrid"></div>
   </div>
 </div>
+<div id="cinemaHint" role="status" aria-live="polite"></div>
 <div id="cmpBadge" aria-hidden="true"><i></i><span data-i18n="cmp.badge">Original</span></div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#070812;color:#f3f4ff;font:14px monospace;text-align:center;padding:30px">ROT needs JavaScript and WebGL.<br>Please enable JavaScript for this instrument.</div></noscript>
@@ -2455,13 +2471,42 @@ const Engine=(()=>{
   }
   function isExporting(){return exporting}
   function getSize(){return {w:stageW,h:stageH,cssW,cssH,internalW,internalH}}
+  // Small offscreen render for recipe thumbnails. Uses its own targets (no feedback from the live
+  // view), reads the pixels back and restores every uniform it touched, so the stage never flickers.
+  let thumbRT=null;
+  function renderThumb(fr,ow,oh,iw,ih,out){
+    if(!R||exporting||!lastFrame||src.empty||!src.texture)return false;
+    if(!thumbRT||thumbRT.ow!==ow||thumbRT.iw!==iw){
+      if(thumbRT){thumbRT.a.dispose();thumbRT.b.dispose();thumbRT.o.dispose()}
+      thumbRT={a:makeRT(iw,ih,true),b:makeRT(iw,ih,true),o:makeRT(ow,oh,true),ow,oh,iw,ih,buf:new Uint8Array(ow*oh*4)};
+      R.setRenderTarget(thumbRT.a);R.setClearColor(0x000000,1);R.clear();
+    }
+    const live=lastFrame,keep={res:U.uRes.value.clone(),asp:U.uAsp.value,out:FU.uOutRes.value.clone(),basp:FU.uBufAsp.value,prev:U.uPrev.value};
+    try{
+      uploadFrame(fr);
+      U.uRes.value.set(iw,ih);U.uAsp.value=iw/ih;FU.uOutRes.value.set(ow,oh);FU.uBufAsp.value=iw/ih;
+      U.uPrev.value=thumbRT.a.texture;
+      R.setRenderTarget(thumbRT.b);R.render(sceneMain,cam);
+      FU.uBloomAmt.value=0;FU.uBloom.value=rtBloom[1].texture;FU.uTex.value=thumbRT.b.texture;
+      R.setRenderTarget(thumbRT.o);R.render(sceneFinal,cam);
+      R.readRenderTargetPixels(thumbRT.o,0,0,ow,oh,thumbRT.buf);
+    }finally{
+      R.setRenderTarget(null);
+      U.uRes.value.copy(keep.res);U.uAsp.value=keep.asp;FU.uOutRes.value.copy(keep.out);FU.uBufAsp.value=keep.basp;U.uPrev.value=keep.prev;
+      uploadFrame(live);
+    }
+    // WebGL rows run bottom-up
+    const d=out.data,b=thumbRT.buf,row=ow*4;
+    for(let y=0;y<oh;y++)d.set(b.subarray((oh-1-y)*row,(oh-y)*row),y*row);
+    return true;
+  }
   function getQuality(){return quality}
   function getCanvas(){return cv}
   function getRenderer(){return R}
   function resize(){fit(true)}
 
   return {init,fit,resize,setQuality,setSource,getSrc,uploadFrame,draw,renderNow,beginExport,endExport,isExporting,
-    getSize,getQuality,getCanvas,getRenderer,get src(){return src},get uniforms(){return U}};
+    getSize,getQuality,getCanvas,getRenderer,renderThumb,get src(){return src},get uniforms(){return U}};
 })();
 
 
@@ -2597,7 +2642,7 @@ function renderPresets(){
     btn.style.setProperty('--h',it.hue||350);
     btn.dataset.name=it.name;
     btn.setAttribute('aria-label','Apply preset '+it.name);
-    btn.innerHTML='<span class="p-art"></span><span class="p-glow" aria-hidden="true"></span><span class="p-num">'+String(i+1).padStart(2,'0')+'</span><span class="p-tag">'+esc(it.tag||'USER')+'</span><span class="p-name">'+esc(it.name)+'</span>'+(it.user?'<span class="p-del" role="button" aria-label="Delete preset">×</span>':'');
+    btn.innerHTML='<span class="p-art"></span><canvas class="p-thumb" width="198" height="120" aria-hidden="true"></canvas><span class="p-glow" aria-hidden="true"></span><span class="p-num">'+String(i+1).padStart(2,'0')+'</span><span class="p-tag">'+esc(it.tag||'USER')+'</span><span class="p-name">'+esc(it.name)+'</span>'+(it.user?'<span class="p-del" role="button" aria-label="Delete preset">×</span>':'');
     btn.addEventListener('click',e=>{
       if(e.target.closest('.p-del')){if(confirm('Delete "'+it.name+'"?'))deleteCurrentPreset(it.name);return}
       applyPreset(it.src,false);DATA.activePreset=it.name;
@@ -2608,6 +2653,7 @@ function renderPresets(){
     grid.appendChild(btn);
   });
   $id('presetCount').textContent=items.length+' RECIPES';
+  try{Thumbs.queueAll()}catch(e){} // Thumbs is declared later; the first render happens before it exists
   if(!grid.dataset.glow){
     grid.dataset.glow='1';
     grid.addEventListener('pointermove',e=>{
@@ -2618,6 +2664,98 @@ function renderPresets(){
     },{passive:true});
   }
 }
+const Thumbs=(()=>{
+  const OW=198,OH=120,IW=330,IH=200;
+  let queue=[],timer=0,srcKey=null,img=null;
+  function presetFor(name){return BUILTIN_PRESETS.find(p=>p.name===name)||DATA.userPresets[name]||null}
+  function frameFor(p){
+    const full=isFullLook(p),m=Object.assign({},full?normalizeMasters(p):(p.m||{}));
+    const get=(id,d)=>Number.isFinite(+m[id])?+m[id]:d;
+    const inten=clamp(get('intensity',1),0,2),fxVals={};
+    FX.forEach(f=>{
+      let v=p.fx&&p.fx[f.id]!=null?+p.fx[f.id]:0;
+      if(full&&p.on&&p.on[f.id]===false)v=0;
+      v=clamp((Number.isFinite(v)?v:0)*inten,0,1.8);
+      fxVals[f.id]=f.id==='skip'?0:v;
+    });
+    if(DATA.settings.safe)FX.forEach(f=>{fxVals[f.id]=Math.min(fxVals[f.id],SAFE_LIMITS[f.id]||1)});
+    return {t:4.2,mix:clamp(get('mix',1),0,1),org:clamp(get('org',.5),0,1.5),rnd:clamp(get('rnd',.5),0,1),gfreq:clamp(get('gfreq',.45),0,1),
+      hue:get('hueShift',0)*Math.PI/180,audio:0,zoom:clamp(get('zoom',1),.05,3),seed:0,kaleidoSeg:0,flash:0,mouse:{x:.5,y:.5},fxVals,
+      decay:clamp((fxVals.decay||0)*.9,0,1),finish:1,asciiMode:p.asciiMode?1:0,grade:DATA.settings.safe?0:(+p.grade||0),hue2:0};
+  }
+  function visible(){
+    const g=$id('presetGrid');if(!g||document.hidden)return false;
+    const r=g.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight;
+  }
+  function tick(){
+    timer=0;
+    const s=Engine.src;
+    const key=s&&!s.empty&&s.texture?s.texture.uuid+':'+(s.video?'v':'i')+':'+DATA.settings.safe:null;
+    if(key!==srcKey){srcKey=key;queueAll(true)}
+    if(!key){$$('#presetGrid .p-thumb.on').forEach(c=>c.classList.remove('on'));return schedule(700)}
+    if(!queue.length||!visible()||Engine.isExporting()||(typeof REC!=='undefined'&&(REC.active||REC.starting)))return schedule(queue.length?400:900);
+    const name=queue.shift();
+    const card=$$('#presetGrid .preset').find(c=>c.dataset.name===name),p=presetFor(name);
+    if(card&&p){
+      const cv=card.querySelector('.p-thumb');
+      if(cv){
+        img=img||new ImageData(OW,OH);
+        let ok=false;try{ok=Engine.renderThumb(frameFor(p),OW,OH,IW,IH,img)}catch(e){ok=false}
+        if(ok){cv.getContext('2d').putImageData(img,0,0);cv.classList.add('on')}
+      }
+    }
+    schedule(queue.length?45:900);
+  }
+  function schedule(ms){
+    if(timer)return;
+    if(typeof Music!=='undefined'&&Music.isPlaying&&Music.isPlaying())ms=Math.max(ms,260); // keep beat sync smooth
+    const run=()=>requestAnimationFrame(tick);
+    timer=setTimeout(()=>{window.requestIdleCallback?requestIdleCallback(run,{timeout:600}):run()},ms);
+  }
+  function queueAll(){
+    queue=$$('#presetGrid .preset').map(c=>c.dataset.name);
+    // the active recipe and the ones in view first
+    queue.sort((a,b)=>(b===DATA.activePreset)-(a===DATA.activePreset));
+    schedule(120);
+  }
+  setTimeout(queueAll,1500); // first pass once the page has settled
+  return {queueAll,get pending(){return queue.length}};
+})();
+// Cinema: every control fades out, only the picture stays. Moving the pointer shows the top bar
+// for a moment; C / Esc (or a double-tap on touch screens) brings everything back.
+const Cinema={on:false,peekT:0,hintT:0};
+function toggleCinema(force){
+  const on=typeof force==='boolean'?force:!Cinema.on;
+  if(on===Cinema.on)return;
+  Cinema.on=on;document.body.classList.toggle('cinema',on);document.body.classList.remove('peek');
+  if(on){if(document.body.dataset.sheet)closeSheet();if(drawerOpen)closeDrawer(drawerOpen)}
+  const h=$id('cinemaHint');
+  if(on){h.textContent=tr(matchMedia('(pointer:coarse)').matches?'cin.onm':'cin.on');h.classList.add('on');clearTimeout(Cinema.hintT);Cinema.hintT=setTimeout(()=>h.classList.remove('on'),2600)}
+  else h.classList.remove('on');
+}
+(function bindCinema(){
+  window.addEventListener('pointermove',e=>{
+    if(!Cinema.on||e.pointerType==='touch')return;
+    document.body.classList.add('peek');clearTimeout(Cinema.peekT);
+    Cinema.peekT=setTimeout(()=>document.body.classList.remove('peek'),1800);
+  },{passive:true});
+  // double-tap on the picture (touch): toggle cinema
+  let lastTap=0,lx=0,ly=0;
+  window.addEventListener('pointerup',e=>{
+    if(e.pointerType!=='touch')return;
+    if(e.target.closest&&e.target.closest('button,a,input,textarea,select,label,.panel,.drawer,.sheet,#topbar,#bottomNav,#timeline,#viewer,#intro,#tour,#gen,#gal,#keys,.eh-actions,#remixChip'))return;
+    const now=e.timeStamp||performance.now(),near=Math.hypot(e.clientX-lx,e.clientY-ly)<36;
+    if(now-lastTap<320&&near){lastTap=0;toggleCinema();return}
+    lastTap=now;lx=e.clientX;ly=e.clientY;
+  },true); // capture: the stage's own gesture handlers stop the event from bubbling
+})();
+// the performance timeline only shows when there is a performance (or one is being recorded)
+setInterval(()=>{
+  let empty=true;
+  try{empty=!(Performance.recording||Performance.playing||(Performance.samples&&Performance.samples.length>1))}catch(e){}
+  document.body.classList.toggle('perf-empty',empty);
+},600);
+document.body.classList.add('perf-empty');
 function renderPresetsSafe(){try{renderPresets()}catch(e){}}
 
 function bindControls(){
@@ -3177,6 +3315,7 @@ const I18N={
     'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
     'toast.saving':'<b>PREPARING LINK…</b>',
     'toast.notStored':'<b>IMAGE NOT SAVED</b> — the link will redraw it (it may differ slightly)',
+    'cin.on':'Cinema — press C or Esc to bring the controls back','cin.onm':'Cinema — double-tap to bring the controls back',
     'gal.empty':'Nothing published yet — be the first','gal.loading':'Loading…','gal.fail':'Gallery unavailable right now',
     'gal.need':'Generate an image first: only generated images can be published','gal.done':'<b>PUBLISHED</b> — your look is in the gallery',
     'gal.pubFail':'<b>NOT PUBLISHED</b> — try again in a minute','gal.reported':'<b>THANKS</b> — reported','gal.report':'Report',
@@ -3223,6 +3362,8 @@ const I18N={
     'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
     'toast.saving':'<b>PREPARO IL LINK…</b>',
     'toast.notStored':'<b>IMMAGINE NON SALVATA</b> — il link la ridisegnerà (potrebbe differire leggermente)',
+    'cin.on':'Cinema — premi C o Esc per riavere i comandi','cin.onm':'Cinema — doppio tocco per riavere i comandi',
+    'kh.Cinema — hide the controls':'Cinema — nascondi i comandi',
     'gal.btn':'Galleria','gal.t':'Fatte con ROT','gal.sub':'Look che le persone hanno scelto di pubblicare. Toccane uno per aprirlo dal vivo, poi remixalo.',
     'gal.pub':'Pubblica il mio look','gal.empty':'Ancora niente — pubblica tu il primo','gal.loading':'Carico…','gal.fail':'Galleria non disponibile ora',
     'gal.need':'Prima genera un\u2019immagine: si possono pubblicare solo immagini generate','gal.done':'<b>PUBBLICATO</b> — il tuo look è in galleria',
@@ -3725,7 +3866,7 @@ function tourSteps(){
        b.addEventListener('click',()=>{randomizeLook();markDirty();tourTask('chaos')});
      }},
     {id:'capture',kick:tr('t5.k'),title:tr('t5.t'),
-     target:()=>m?$('.bnav[data-sheet="output"]'):(getComputedStyle($id('timeline')).display!=='none'?$id('timeline'):$('.tab[data-tab="output"]')),
+     target:()=>m?$('.bnav[data-sheet="output"]'):(getComputedStyle($id('timeline')).display!=='none'&&!document.body.classList.contains('perf-empty')?$id('timeline'):$('.tab[data-tab="output"]')),
      text:tr(m?'t5.xm':'t5.x'),
      try:()=>m?'':'<div class="tc-keys"><span class="kc" style="--i:0">P</span><span class="kc-l">'+tr('t5.frame')+'</span><span class="kc" style="--i:1">V</span><span class="kc-l">'+tr('t5.video')+'</span><span class="kc" style="--i:2">Space</span><span class="kc-l">'+tr('t5.perf')+'</span></div>'},
     {id:'music',kick:tr('t7.k'),title:tr('t7.t'),task:tr('t7.task'),
@@ -4469,7 +4610,7 @@ async function publishLook(){
 
 // ─── Keyboard shortcuts sheet ("?") ───
 const KEY_HELP=[
-  ['Play'],['R','Randomize every parameter'],['E','Extreme — unstable feed'],['H','Hypnosis mode'],['/','Filter effects'],
+  ['Play'],['R','Randomize every parameter'],['E','Extreme — unstable feed'],['H','Hypnosis mode'],['C','Cinema — hide the controls'],['/','Filter effects'],
   ['B (hold)','Compare with the original'],['Ctrl/⌘ V','Paste an image'],['G','Generate an image from text'],
   ['Capture'],['P','Save a frame (PNG)'],['V','Record video'],['Space','Record / stop performance'],['M','Mute ambient sound'],
   ['With a music track'],['Space','Play / pause'],['T','Tap tempo'],['← →','Nudge (Shift = more)'],
@@ -4542,6 +4683,7 @@ document.addEventListener('keydown',e=>{
     if(drawerOpen){closeDrawer(drawerOpen);return}
     if(document.body.dataset.sheet){closeSheet();return}
     if(DATA.hypno){toggleHypnosis();return}
+    if(Cinema.on){toggleCinema(false);return}
     return;
   }
   if(isTyping(e.target)||e.metaKey||e.ctrlKey||e.altKey)return;
@@ -4564,6 +4706,7 @@ document.addEventListener('keydown',e=>{
   if(key==='r'){e.preventDefault();randomizeLook();markDirty()}
   else if(key==='e'){e.preventDefault();toggleExtreme()}
   else if(key==='h'){e.preventDefault();toggleHypnosis()}
+  else if(key==='c'){e.preventDefault();toggleCinema()}
   else if(key==='m'){e.preventDefault();toggleAmbientMute()}
   else if(key==='p'){e.preventDefault();exportPNG()}
   else if(key==='v'){e.preventDefault();toggleRecording()}
