@@ -863,6 +863,16 @@ body.touring #emptyHint{opacity:0;visibility:hidden}
 .tc-flow{display:flex;flex-wrap:wrap;gap:6px}
 .tc-flow span{font:500 8.5px/1 var(--fm);letter-spacing:.16em;padding:8px 10px;border-radius:var(--pill);border:1px solid var(--stroke-soft);color:var(--dim);animation:flowLit 4.2s var(--ease) infinite;animation-delay:calc(var(--i) * .7s)}
 @keyframes flowLit{0%,100%{color:var(--dim);border-color:var(--stroke-soft);background:transparent}8%,22%{color:var(--tx);border-color:var(--acc);background:rgba(155,140,255,.14)}}
+.tc-gen{display:flex;gap:8px;align-items:stretch}
+.tc-gen input{flex:1;min-width:0;padding:11px 13px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--fg,#fff);font:500 13px/1.3 inherit;outline:none;transition:border-color .2s}
+.tc-gen input:focus{border-color:rgba(160,140,255,.7)}
+.tc-gen .btn{flex:none}
+@media(pointer:coarse){.tc-gen input{font-size:16px}} /* no iOS zoom on focus */
+.tc-gen-st{min-height:16px;margin-top:9px;font:500 9px/1.5 var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.tc-gen-st.on{color:#b9a8ff;animation:tcPulse 1.2s ease-in-out infinite}
+.tc-gen-st.ok{color:#9ff0c0}
+.tc-gen-st.bad{color:#ffb38a}
+@keyframes tcPulse{50%{opacity:.45}}
 .tc-sl{display:grid;gap:12px}
 .tc-sl label{display:grid;gap:7px;font:500 9px/1 var(--fm);letter-spacing:.16em;color:var(--mu);text-transform:uppercase}
 .tc-sl label span{display:flex;justify-content:space-between}
@@ -3032,28 +3042,32 @@ const I18N={
   en:{
     't0.k':'How ROT works','t0.t':'Break images. Beautifully.','t0.next':'Start the tour',
     't0.x':'ROT is a <b>live distortion instrument</b>: feed it a picture or a video, then bend it in real time. A few quick moves and you are in — we loaded a sample so you can see everything happen live.',
-    't0.flow':'SIGNAL,SHAPE,RECIPES,CHAOS,CAPTURE,MUSIC',
+    't0.flow':'SIGNAL,TEXT→IMAGE,SHAPE,RECIPES,CHAOS,CAPTURE,MUSIC',
     't1.k':'01 — Signal','t1.t':'Feed it a signal',
     't1.x':'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page, or use <b>Upload</b> in the Look panel. Right now ROT is chewing on a sample.',
     't1.xm':'Everything starts from a source. <b>Drop a photo or video anywhere</b> on the page, or open <b>LOOK</b> down here and tap Upload. Right now ROT is chewing on a sample.',
-    't2.k':'02 — Shape','t2.t':'Bend it with the masters','t2.task':'Move a slider',
+    't8.k':'02 — Text → image','t8.t':'Or just describe it','t8.task':'Generate an image',
+    't8.x':'No photo? <b>Write what you want to see</b> and ROT draws it for you — then you break it. It lives in the Look panel as <b>✦ TEXT → IMAGE</b> (or press <b>G</b>). Hit <b>Share</b> afterwards: the link opens the <b>exact same image</b> with your look.',
+    't8.xm':'No photo? <b>Write what you want to see</b> and ROT draws it for you — then you break it. It lives in <b>LOOK</b> down here as <b>✦ TEXT → IMAGE</b>. Hit <b>Share</b> afterwards: the link opens the <b>exact same image</b> with your look.',
+    't8.go':'Generate','t8.done':'Done — it is your source now. Break it, then share it.','t8.fail':'The generator is busy right now — try again later, or keep going.',
+    't2.k':'03 — Shape','t2.t':'Bend it with the masters','t2.task':'Move a slider',
     't2.x':'<b>Intensity</b> sets how hard ROT hits, <b>Chaos</b> how unpredictable it gets. Drag one — the picture behind reacts live.',
-    't3.k':'03 — Recipes','t3.t':'Or start from a recipe','t3.task':'Apply a recipe',
+    't3.k':'04 — Recipes','t3.t':'Or start from a recipe','t3.task':'Apply a recipe',
     't3.x':'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here or straight from the grid.',
     't3.xm':'<b>30 hand-made looks</b> — VHS tape, CCTV, liquid, mirrors. One tap swaps the whole setup. Pick one here.',
-    't4.k':'04 — Chaos','t4.t':'Roll the dice','t4.task':'Press R or tap the key','t4.taskm':'Tap the key',
+    't4.k':'05 — Chaos','t4.t':'Roll the dice','t4.task':'Press R or tap the key','t4.taskm':'Tap the key',
     't4.x':'Press <b>R</b> to mutate every parameter at once. <b>E</b> flips Extreme for an unstable feed — use with care.',
     't4.xm':'Randomize mutates <b>every parameter</b> at once — you will find it in <b>RECIPES</b>. On a keyboard it is the <b>R</b> key.',
     't4.l':'tap it — or hit R','t4.lm':'tap to randomize',
-    't5.k':'05 — Capture','t5.t':'Perform & export',
+    't5.k':'06 — Capture','t5.t':'Perform & export',
     't5.x':'<b>P</b> saves a frame, <b>V</b> records a video, <b>Space</b> records a performance you can replay on the timeline. Everything stays on your device.',
     't5.xm':'<b>OUTPUT</b> saves frames and records video. <b>CAPTURE</b> records a performance you can replay. Everything stays on your device.',
     't5.frame':'frame','t5.video':'video','t5.perf':'perform',
-    't7.k':'06 — Music','t7.t':'Make it hit on your beat','t7.task':'Play a beat',
+    't7.k':'07 — Music','t7.t':'Make it hit on your beat','t7.task':'Play a beat',
     't7.x':'Load a track in <b>MUSIC</b>: ROT finds the tempo and every kick, snare and hat, then the visuals hit exactly on the beat — the motion itself locks to the tempo too. Try the demo beat.',
     't7.xm':'Load a track in <b>MUSIC</b> down here: ROT finds the tempo and every kick, snare and hat, then the visuals hit exactly on the beat. Try the demo beat.',
     't7.demo':'Play demo beat','t7.own':'Load your track','t7.making':'Building beat…',
-    't6.k':'07 — Your turn','t6.t':'Now feed it yours.','t6.keep':'Keep the sample',
+    't6.k':'08 — Your turn','t6.t':'Now feed it yours.','t6.keep':'Keep the sample',
     't6.x':'Drop your own image or video, or keep playing with the sample. You can replay this tour any time from <b>Setup</b>.',
     'gen.busy':'GENERATING YOUR IMAGE…','gen.loading':'LOADING IMAGE…',
     'gen.queue':'IN QUEUE #{n} · ~{s}S',
@@ -3113,28 +3127,32 @@ const I18N={
     'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
     't0.k':'Come funziona ROT','t0.t':'Rompi le immagini. Con stile.','t0.next':'Inizia il tour',
     't0.x':'ROT è uno <b>strumento di distorsione dal vivo</b>: gli dai una foto o un video e lo pieghi in tempo reale. Pochi passaggi e ci sei — abbiamo caricato un esempio così vedi tutto succedere dal vivo.',
-    't0.flow':'SEGNALE,FORMA,RICETTE,CAOS,CATTURA,MUSICA',
+    't0.flow':'SEGNALE,TESTO→IMMAGINE,FORMA,RICETTE,CAOS,CATTURA,MUSICA',
     't1.k':'01 — Segnale','t1.t':'Dagli un segnale',
     't1.x':'Tutto parte da una sorgente. <b>Trascina una foto o un video ovunque</b> nella pagina, oppure usa <b>Upload</b> nel pannello Look. Ora ROT sta masticando un esempio.',
     't1.xm':'Tutto parte da una sorgente. <b>Trascina una foto o un video</b> nella pagina, oppure apri <b>LOOK</b> qui sotto e tocca Upload. Ora ROT sta masticando un esempio.',
-    't2.k':'02 — Forma','t2.t':'Piegalo con i master','t2.task':'Muovi uno slider',
+    't8.k':'02 — Testo → immagine','t8.t':'Oppure descrivila','t8.task':'Genera un\u2019immagine',
+    't8.x':'Niente foto? <b>Scrivi cosa vuoi vedere</b> e ROT la disegna per te — poi la distruggi. La trovi nel pannello Look come <b>✦ TESTO → IMMAGINE</b> (oppure premi <b>G</b>). Poi premi <b>Condividi</b>: il link apre <b>la stessa identica immagine</b> con il tuo look.',
+    't8.xm':'Niente foto? <b>Scrivi cosa vuoi vedere</b> e ROT la disegna per te — poi la distruggi. La trovi in <b>LOOK</b> qui sotto come <b>✦ TESTO → IMMAGINE</b>. Poi premi <b>Condividi</b>: il link apre <b>la stessa identica immagine</b> con il tuo look.',
+    't8.go':'Genera','t8.done':'Fatto — ora è la tua sorgente. Distruggila, poi condividila.','t8.fail':'Il generatore ora è occupato — riprova più tardi, oppure vai avanti.',
+    't2.k':'03 — Forma','t2.t':'Piegalo con i master','t2.task':'Muovi uno slider',
     't2.x':'<b>Intensity</b> decide quanto forte colpisce ROT, <b>Chaos</b> quanto è imprevedibile. Trascinane uno — l’immagine dietro reagisce dal vivo.',
-    't3.k':'03 — Ricette','t3.t':'Oppure parti da una ricetta','t3.task':'Applica una ricetta',
+    't3.k':'04 — Ricette','t3.t':'Oppure parti da una ricetta','t3.task':'Applica una ricetta',
     't3.x':'<b>30 look fatti a mano</b> — nastro VHS, CCTV, liquido, specchi. Un tocco cambia tutto il setup. Scegline una qui o direttamente dalla griglia.',
     't3.xm':'<b>30 look fatti a mano</b> — nastro VHS, CCTV, liquido, specchi. Un tocco cambia tutto il setup. Scegline una qui.',
-    't4.k':'04 — Caos','t4.t':'Lancia i dadi','t4.task':'Premi R o tocca il tasto','t4.taskm':'Tocca il tasto',
+    't4.k':'05 — Caos','t4.t':'Lancia i dadi','t4.task':'Premi R o tocca il tasto','t4.taskm':'Tocca il tasto',
     't4.x':'Premi <b>R</b> per stravolgere tutti i parametri insieme. <b>E</b> attiva Extreme per un segnale instabile — con cautela.',
     't4.xm':'Randomize stravolge <b>tutti i parametri</b> insieme — lo trovi in <b>RECIPES</b>. Con la tastiera è il tasto <b>R</b>.',
     't4.l':'toccalo — o premi R','t4.lm':'tocca per randomizzare',
-    't5.k':'05 — Cattura','t5.t':'Suona ed esporta',
+    't5.k':'06 — Cattura','t5.t':'Suona ed esporta',
     't5.x':'<b>P</b> salva un frame, <b>V</b> registra un video, <b>Spazio</b> registra una performance da rivedere sulla timeline. Tutto resta sul tuo dispositivo.',
     't5.xm':'<b>OUTPUT</b> salva frame e registra video. <b>CAPTURE</b> registra una performance da rivedere. Tutto resta sul tuo dispositivo.',
     't5.frame':'frame','t5.video':'video','t5.perf':'performance',
-    't7.k':'06 — Musica','t7.t':'Fallo colpire a tempo','t7.task':'Fai partire un beat',
+    't7.k':'07 — Musica','t7.t':'Fallo colpire a tempo','t7.task':'Fai partire un beat',
     't7.x':'Carica un brano in <b>MUSIC</b>: ROT trova il tempo e ogni kick, snare e hi-hat, e la grafica colpisce esattamente sul beat — anche il movimento si aggancia al tempo. Prova il beat demo.',
     't7.xm':'Carica un brano in <b>MUSIC</b> qui sotto: ROT trova il tempo e ogni kick, snare e hi-hat, e la grafica colpisce esattamente sul beat. Prova il beat demo.',
     't7.demo':'Suona beat demo','t7.own':'Carica il tuo brano','t7.making':'Creo il beat…',
-    't6.k':'07 — Tocca a te','t6.t':'Ora dagli il tuo.','t6.keep':'Tieni l’esempio',
+    't6.k':'08 — Tocca a te','t6.t':'Ora dagli il tuo.','t6.keep':'Tieni l’esempio',
     't6.x':'Trascina una tua immagine o un video, oppure continua a giocare con l’esempio. Puoi rivedere questo tour quando vuoi da <b>Setup</b>.',
     'toast.sample':'<b>ESEMPIO CARICATO</b> — carica una tua immagine o video quando vuoi',
     'toast.tip':'<b>TIP</b> — premi ? per tutte le scorciatoie',
@@ -3236,6 +3254,22 @@ function tourSteps(){
     {id:'signal',kick:tr('t1.k'),title:tr('t1.t'),pad:m?4:10,
      target:()=>m?$('.bnav[data-sheet="look"]'):$id('dropMini').closest('.section'),
      text:tr(m?'t1.xm':'t1.x')},
+    {id:'create',kick:tr('t8.k'),title:tr('t8.t'),task:tr('t8.task'),
+     target:()=>m?$('.bnav[data-sheet="look"]'):$id('btnGen'),
+     text:tr(m?'t8.xm':'t8.x'),
+     try:()=>'<form class="tc-gen" id="tcGen"><input type="text" id="tcPrompt" maxlength="200" autocomplete="off" value="'+esc(GEN_IDEAS[Math.floor(Math.random()*GEN_IDEAS.length)])+'" aria-label="Prompt"><button type="submit" class="btn hot" id="tcGenGo">'+tr('t8.go')+'</button></form><div class="tc-gen-st" id="tcGenSt" aria-live="polite"></div>',
+     mount(){
+       const f=$id('tcGen');let busy=false;
+       const say=(t,cls)=>{const st=$id('tcGenSt');if(st){st.textContent=t;st.className='tc-gen-st'+(cls?' '+cls:'')}};
+       f.addEventListener('submit',async e=>{
+         e.preventDefault();if(busy)return;
+         const q=$id('tcPrompt').value.trim();if(!q){$id('tcPrompt').focus();return}
+         busy=true;const go=$id('tcGenGo');if(go)go.disabled=true;say(tr('gen.busy'),'on');
+         try{await generateImage(q,c=>say(hordeStatusText(c),'on'));say(tr('t8.done'),'ok');tourTask('create')}
+         catch(err){say(tr('t8.fail'),'bad')}
+         busy=false;const g2=$id('tcGenGo');if(g2)g2.disabled=false;
+       });
+     }},
     {id:'shape',kick:tr('t2.k'),title:tr('t2.t'),task:tr('t2.task'),
      target:()=>m?null:$id('masterSliders'),
      text:tr('t2.x'),
@@ -3603,8 +3637,8 @@ async function regenerateShared(sm){
   let w=+sm.w|0,h=+sm.h|0;
   if(!(w>=256&&w<=576&&h>=256&&h<=576)){const s=hordeSize((w&&h)?w/h:16/9);w=s.w;h=s.h} // links made before the switch
   const url=await hordeGenerate(q,seed,w,h);
-  const meta={t:'gen',q,seed,w,h,data:url};
-  await loadRemoteImage(url,meta);preStore(meta);
+  // opened from a link: stored only if this person shares it again (no upload per visitor)
+  await loadRemoteImage(url,{t:'gen',q,seed,w,h,data:url});
 }
 function isImageLink(v){return /^https?:\/\/\S+$/i.test(String(v||'').trim())}
 
@@ -3732,8 +3766,10 @@ async function applySharedLink(){
   sharedLook=true;
   try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
   if(o.l){
-    const l=o.l,src={fx:{},m:l.m||{},pix:l.pix||0,grade:l.grade||0,asciiMode:l.a?1:0};
-    Object.keys(l.fx||{}).forEach(k=>{if(FXMAP[k])src.fx[k]=clamp(+l.fx[k]||0,0,1)});
+    const l=o.l,num=v=>Number.isFinite(+v)?+v:0,m={};
+    MASTER.forEach(x=>{if(l.m&&Number.isFinite(+l.m[x.id]))m[x.id]=+l.m[x.id]});
+    const src={fx:{},m,pix:num(l.pix),grade:num(l.grade),asciiMode:l.a?1:0};
+    Object.keys(l.fx||{}).forEach(k=>{const v=+l.fx[k];if(Object.prototype.hasOwnProperty.call(FXMAP,k)&&Number.isFinite(v))src.fx[k]=clamp(v,0,1)});
     applyPreset(src,true);if(DATA.settings.safe)capForSafeMode(P);syncUI();
   }
   const sm=o.s;
