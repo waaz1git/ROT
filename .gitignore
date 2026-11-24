@@ -24,3 +24,6 @@
 CLAUDE.md
 .mcp.json
 README.md
+
+# Local test suite (see the handoff pack)
+tests/
