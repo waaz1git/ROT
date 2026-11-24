@@ -3682,7 +3682,7 @@ async function storeShot(meta){
 }
 // started as soon as an image is generated: by the time Share is pressed the id is usually ready
 function preStore(meta){
-  if(meta&&meta.data&&!meta.id&&!meta.pending)meta.pending=storeShot(meta).catch(()=>null).finally(()=>{meta.pending=null});
+  if(meta&&meta.data&&!meta.id&&!meta.pending)meta.pending=storeShot(meta).catch(()=>{meta.failed=true}).finally(()=>{meta.pending=null});
 }
 function linkSource(){
   if(!srcMeta)return null;
@@ -3704,10 +3704,11 @@ async function shareLook(){
   const btn=$id('btnShare');
   if(btn&&btn.classList.contains('busy'))return;
   let note=null;const meta=srcMeta;
+  // a failed background upload is not retried here: waiting again would cost the tap (iOS) for little gain
   if(meta&&meta.t==='gen'&&!meta.id&&(meta.pending||meta.data)){
     if(btn)btn.classList.add('busy');
     toast(tr('toast.saving'),1600);
-    try{if(meta.pending)await meta.pending;if(!meta.id)await storeShot(meta)}catch(e){}
+    try{if(meta.pending)await meta.pending;if(!meta.id&&!meta.failed)await storeShot(meta)}catch(e){}
     finally{if(btn)btn.classList.remove('busy')}
     if(srcMeta!==meta)return; // the source changed while uploading: don't share the wrong picture
     if(!meta.id)note=tr('toast.notStored');
