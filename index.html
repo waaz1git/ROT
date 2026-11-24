@@ -795,6 +795,7 @@ body.touring #toasts{opacity:0;visibility:hidden}
 #cmpBadge i{width:8px;height:8px;border-radius:50%;background:#6ee7d2;box-shadow:0 0 12px #6ee7d2;animation:livePulse 1.2s var(--ease) infinite}
 body.comparing #cmpBadge{opacity:1;transform:translate3d(-50%,0,0) scale(1)}
 body.comparing #btnCompare{color:#fff;background:linear-gradient(135deg,#2bb8a3,#159d8b);box-shadow:0 0 24px -6px rgba(110,231,210,.8)}
+#btnShare.busy{opacity:.5;pointer-events:none}
 #btnCompare{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
 /* Overlays that sit straight on the (always dark) canvas keep the dark palette in both themes. */
@@ -3065,6 +3066,8 @@ const I18N={
     'share.text':'Look what I broke on ROT','share.manual':'Copy this link:',
     'toast.copied':'<b>LINK COPIED</b> — anyone who opens it gets this look',
     'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
+    'toast.saving':'<b>PREPARING LINK…</b>',
+    'toast.notStored':'<b>LINK COPIED</b> — the image could not be saved, so the link will redraw it (it may differ slightly)',
     'toast.opened':'<b>SHARED LOOK</b> — opened from a link','toast.openedNoImg':'<b>SHARED LOOK</b> — the image could not be loaded, showing the sample',
     'tour.ok':'Nice — got it','tour.next':'Next','eh.up':'Upload file','dz.t':'DROP TO ROT IT',
     'toast.sample':'<b>SAMPLE SOURCE</b> — upload your own image or video any time',
@@ -3103,6 +3106,8 @@ const I18N={
     'share.btn':'Condividi','share.text':'Guarda cosa ho distrutto su ROT','share.manual':'Copia questo link:',
     'toast.copied':'<b>LINK COPIATO</b> — chi lo apre vede questo look',
     'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
+    'toast.saving':'<b>PREPARO IL LINK…</b>',
+    'toast.notStored':'<b>LINK COPIATO</b> — l\u2019immagine non è stata salvata, quindi il link la ridisegnerà (potrebbe differire leggermente)',
     'toast.opened':'<b>LOOK CONDIVISO</b> — aperto da un link','toast.openedNoImg':'<b>LOOK CONDIVISO</b> — immagine non disponibile, mostro l\u2019esempio',
     'kh.Generate an image from text':'Genera un\u2019immagine da un testo',
     'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
@@ -3588,7 +3593,7 @@ async function generateImage(q,onStatus){
   const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
   const seed=Math.floor(Math.random()*1e9);
   const url=await hordeGenerate(q,seed,w,h,onStatus);
-  await loadRemoteImage(url,{t:'gen',q,seed,w,h});
+  await loadRemoteImage(url,{t:'gen',q,seed,w,h,data:url});
   return true;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
@@ -3597,7 +3602,7 @@ async function regenerateShared(sm){
   let w=+sm.w|0,h=+sm.h|0;
   if(!(w>=256&&w<=576&&h>=256&&h<=576)){const s=hordeSize((w&&h)?w/h:16/9);w=s.w;h=s.h} // links made before the switch
   const url=await hordeGenerate(q,seed,w,h);
-  await loadRemoteImage(url,{t:'gen',q,seed,w,h});
+  await loadRemoteImage(url,{t:'gen',q,seed,w,h,data:url});
 }
 function isImageLink(v){return /^https?:\/\/\S+$/i.test(String(v||'').trim())}
 
@@ -3659,19 +3664,49 @@ function lookForLink(){
   const o={fx,m};if(P.pix)o.pix=Math.round(P.pix*100)/100;if(P.grade)o.grade=P.grade;if(P.asciiMode)o.a=1;
   return o;
 }
+// Generated images are stored by the rot-share worker (Cloudflare KV, content-addressed), so a link
+// opens the exact same picture instead of asking the AI to draw it again.
+const SHARE_API='https://rot-share.nicoflp.workers.dev';
+async function storeShot(meta){
+  if(meta.id)return meta.id;
+  const blob=await (await fetch(meta.data)).blob();
+  const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob});
+  const d=await r.json().catch(()=>null);
+  if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
+  meta.id=d.id;return d.id;
+}
+function linkSource(){
+  if(!srcMeta)return null;
+  if(srcMeta.t==='img')return {t:'img',id:srcMeta.id,q:srcMeta.q};
+  if(srcMeta.t==='gen'){
+    if(srcMeta.id)return {t:'img',id:srcMeta.id,q:srcMeta.q};
+    return {t:'gen',q:srcMeta.q,seed:srcMeta.seed,w:srcMeta.w,h:srcMeta.h}; // fallback: re-render
+  }
+  if(srcMeta.t==='url')return {t:'url',u:srcMeta.u};
+  return null;
+}
 function shareURL(){
   const o={v:1,l:lookForLink()};
-  if(srcMeta&&(srcMeta.t==='gen'||srcMeta.t==='url'))o.s=srcMeta;
+  const ls=linkSource();if(ls)o.s=ls;
   return location.origin+location.pathname+'#rot='+b64u.enc(o);
 }
 async function shareLook(){
+  const btn=$id('btnShare');
+  if(btn&&btn.classList.contains('busy'))return;
+  let note=null;
+  if(srcMeta&&srcMeta.t==='gen'&&!srcMeta.id&&srcMeta.data){
+    if(btn)btn.classList.add('busy');
+    toast(tr('toast.saving'),1600);
+    try{await storeShot(srcMeta)}catch(e){note=tr('toast.notStored')}
+    if(btn)btn.classList.remove('busy');
+  }
   const url=shareURL();
   // a photo loaded from the device never leaves it: the link carries the look only
   const privateSrc=!Engine.getSrc().empty&&!srcMeta;
   if(matchMedia('(pointer:coarse)').matches&&navigator.share){
-    try{await navigator.share({title:'ROT',text:tr('share.text'),url});return}catch(e){if(e&&e.name==='AbortError')return}
+    try{await navigator.share({title:'ROT',text:tr('share.text'),url});if(note)toast(note,5200);return}catch(e){if(e&&e.name==='AbortError')return}
   }
-  try{await navigator.clipboard.writeText(url);toast(privateSrc?tr('toast.copiedPrivate'):tr('toast.copied'),privateSrc?5200:3200)}
+  try{await navigator.clipboard.writeText(url);toast(note||(privateSrc?tr('toast.copiedPrivate'):tr('toast.copied')),note||privateSrc?5200:3200)}
   catch(e){window.prompt(tr('share.manual'),url)}
 }
 let sharedLook=false;
@@ -3690,7 +3725,11 @@ async function applySharedLink(){
   }
   const sm=o.s;
   try{
-    if(sm&&sm.t==='gen'&&sm.q)await regenerateShared(sm);
+    if(sm&&sm.t==='img'&&/^[A-Za-z0-9_-]{8,32}$/.test(String(sm.id||''))){
+      try{await loadRemoteImage(SHARE_API+'/i/'+sm.id,{t:'img',id:String(sm.id),q:sm.q?String(sm.q).slice(0,400):''})}
+      catch(e){if(sm.q)await regenerateShared({q:sm.q});else throw e}
+    }
+    else if(sm&&sm.t==='gen'&&sm.q)await regenerateShared(sm);
     else if(sm&&sm.t==='url'&&isImageLink(sm.u))await loadRemoteImage(sm.u,{t:'url',u:sm.u});
     else await loadSampleSource();
     toast(tr('toast.opened'));

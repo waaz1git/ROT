@@ -6,3 +6,4 @@ exclude:
   - .claude-flow
   - .agents
   - .swarm
+  - src
