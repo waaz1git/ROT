@@ -2,11 +2,13 @@
 // https://rot-share.nicoflp.workers.dev with a KV binding SHOTS, a Workers AI binding AI and (optional) a
 // rate-limit binding RL; share links use the custom domain https://s.nicoflp.com/<id>#rot=….
 //
-//   POST /gen          { q } → { img (base64 JPEG), id?, p }: FLUX.1 schnell on Workers AI. The request is
-//                      checked by Llama Guard (fail-closed) and a word filter, rewritten into a richer prompt,
-//                      drawn, and the picture is stored here so a share link opens the exact same image (id)
-//   GET  /i/<id>       a stored generated image, immutable. Only /gen stores images: there is no upload route,
-//                      so the store cannot be used to host arbitrary files
+//   POST /gen          { q } → { img (base64 JPEG), t, p }: FLUX.1 schnell on Workers AI. The request is
+//                      checked by Llama Guard (fail-closed) and a word filter, then rewritten into a richer prompt.
+//                      t is a one-time ticket (10 min) for storing this picture
+//   POST /i            the picture, re-encoded by the site as WebP/JPEG (≤ 400 KB, ≤ 1152 px), with header
+//                      X-Ticket: t → { id } (content hash). No ticket, no upload: each stored image costs a
+//                      generation, so the store cannot be used as free file hosting
+//   GET  /i/<id>       a stored image, immutable
 //   PUT  /p/<id>       a 1200×630 JPEG frame of a shared look (id chosen by the client, write-once)
 //   GET  /p/<id>       that frame
 //   GET  /<id>, /s/<id> a tiny page whose link preview (og:image) is that frame; it forwards the visitor
@@ -20,14 +22,14 @@
 
 const SITE = 'https://nicoflp.com';
 const ALLOWED_ORIGINS = [SITE, 'https://www.nicoflp.com'];
-const MAX_BYTES = 400 * 1024;                 // a generated JPEG
+const MAX_BYTES = 400 * 1024;                 // a generated picture, re-encoded by the site
 const MAX_PREVIEW = 220 * 1024;               // preview JPEG
 const MAX_SIDE = 1152, MIN_SIDE = 64;
 const PREVIEW_W = 1200, PREVIEW_H = 630;
 const TTL = 90 * 24 * 3600;                   // images: older links fall back to redrawing
 const PREVIEW_TTL = 60 * 24 * 3600;           // previews matter while a link is being passed around
 const DAY_MAX_UPLOADS = 220;                  // ≤ ~2 KV writes each → well inside 1000 writes/day
-const DAY_MAX_BYTES = 8 * 1024 * 1024;        // images: × 90 days ≈ 0.7 GB
+const DAY_MAX_BYTES = 6 * 1024 * 1024;        // images: × 90 days ≈ 0.55 GB
 const DAY_MAX_PREVIEW_BYTES = 3 * 1024 * 1024; // previews: × 60 days ≈ 0.18 GB
 const ID_RX = /^[A-Za-z0-9_-]{8,32}$/;
 const DAY_MAX_GEN = 150;                      // FLUX images per day: inside the free Workers AI allowance
@@ -57,7 +59,7 @@ Rules:
 const cors = origin => ({
   'Access-Control-Allow-Origin': origin && ALLOWED_ORIGINS.includes(origin) ? origin : '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Ticket',
   'Access-Control-Max-Age': '86400',
   'Vary': 'Origin'
 });
@@ -81,6 +83,28 @@ async function readCapped(req, max) {
   for (const p of parts) { out.set(p, o); o += p.length; }
   return out;
 }
+
+// A complete, well-formed WebP (RIFF size matches the body) with sane dimensions, or null.
+function webpSize(b) {
+  const tag = (i, s) => String.fromCharCode(b[i], b[i + 1], b[i + 2], b[i + 3]) === s;
+  if (b.length < 30 || !tag(0, 'RIFF') || !tag(8, 'WEBP')) return null;
+  const riff = (b[4] | b[5] << 8 | b[6] << 16 | b[7] << 24) >>> 0;
+  if (riff + 8 !== b.length) return null;
+  let w = 0, h = 0;
+  if (tag(12, 'VP8 ')) {
+    if (b[23] !== 0x9d || b[24] !== 0x01 || b[25] !== 0x2a) return null;
+    w = (b[26] | b[27] << 8) & 0x3fff; h = (b[28] | b[29] << 8) & 0x3fff;
+  } else if (tag(12, 'VP8L')) {
+    if (b[20] !== 0x2f) return null;
+    const v = (b[21] | b[22] << 8 | b[23] << 16 | b[24] << 24) >>> 0;
+    w = (v & 0x3fff) + 1; h = ((v >>> 14) & 0x3fff) + 1;
+  } else if (tag(12, 'VP8X')) {
+    w = (b[24] | b[25] << 8 | b[26] << 16) + 1; h = (b[27] | b[28] << 8 | b[29] << 16) + 1;
+  } else return null;
+  if (w < MIN_SIDE || h < MIN_SIDE || w > MAX_SIDE || h > MAX_SIDE) return null;
+  return { w, h };
+}
+
 
 // A complete JPEG (SOI … EOI) whose frame header says exactly w×h, or null.
 function jpegSize(b) {
@@ -178,7 +202,23 @@ export default {
     if (!['POST', 'PUT'].includes(req.method)) return json({ error: 'not_found' }, 404, origin);
     if (!fromSite) return json({ error: 'origin' }, 403, origin);
 
-    if (req.method === 'POST' && path === '/i') return json({ error: 'gone' }, 410, origin);
+    if (req.method === 'POST' && path === '/i') {
+      const t = req.headers.get('X-Ticket') || '';
+      if (!/^[A-Za-z0-9_-]{16,32}$/.test(t) || !(await env.SHOTS.get('tk:' + t))) return json({ error: 'ticket' }, 403, origin);
+      if ((+req.headers.get('Content-Length') || 0) > MAX_BYTES) return json({ error: 'too_large' }, 413, origin);
+      if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
+      const bytes = await readCapped(req, MAX_BYTES);
+      if (!bytes) return json({ error: 'too_large' }, 413, origin);
+      const dim = webpSize(bytes) || jpegSize(bytes);
+      if (!dim || dim.w < MIN_SIDE || dim.h < MIN_SIDE || dim.w > MAX_SIDE || dim.h > MAX_SIDE) return json({ error: 'not_an_image' }, 415, origin);
+      const id = await idFor(bytes), key = 'img:' + id;
+      if (!(await exists(env, key))) {
+        if (!(await spend(env, 'img', bytes.length, DAY_MAX_UPLOADS, DAY_MAX_BYTES))) return json({ error: 'budget' }, 429, origin);
+        await env.SHOTS.put(key, bytes, { expirationTtl: TTL, metadata: { at: Date.now() } });
+      }
+      await env.SHOTS.delete('tk:' + t); // one picture per ticket
+      return json({ id }, 201, origin);
+    }
     if (req.method === 'POST' && path === '/gen') {
       if (!env.AI) return json({ error: 'unavailable' }, 503, origin);
       if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
@@ -204,22 +244,13 @@ export default {
         if (t.length >= 12 && t.length <= 700 && !blockedWords(t)) prompt = t;
       } catch (e) { /* the guard passed: draw the words as typed */ }
       let out;
-      try { out = await env.AI.run(FLUX, { prompt, steps: 6, seed: Math.floor(Math.random() * 2147483647) }); }
+      try { out = await env.AI.run(FLUX, { prompt, steps: 6 }); } // FLUX schnell here takes no seed
       catch (e) { return json({ error: 'model' }, 502, origin); }
       if (!out || typeof out.image !== 'string' || out.image.length < 200) return json({ error: 'model' }, 502, origin);
-      // keep the picture so a share link opens exactly this image (within the daily storage budget)
-      let id = null;
-      try {
-        const bin = Uint8Array.from(atob(out.image), c => c.charCodeAt(0)), dim = jpegSize(bin);
-        if (dim && bin.length <= MAX_BYTES && dim.w <= 2048 && dim.h <= 2048) {
-          id = await idFor(bin);
-          if (!(await exists(env, 'img:' + id))) {
-            if (await spend(env, 'img', bin.length, DAY_MAX_UPLOADS, DAY_MAX_BYTES)) await env.SHOTS.put('img:' + id, bin, { expirationTtl: TTL, metadata: { at: Date.now(), gen: 1 } });
-            else id = null;
-          }
-        }
-      } catch (e) { id = null; }
-      return json({ img: out.image, id, p: prompt }, 200, origin, { 'Cache-Control': 'no-store' });
+      // a one-time ticket to store this picture (the site sends it back re-encoded, ~10× smaller than FLUX's JPEG)
+      const t = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(15)))).replace(/\+/g, '-').replace(/\//g, '_');
+      await env.SHOTS.put('tk:' + t, '1', { expirationTtl: 600 });
+      return json({ img: out.image, t, p: prompt }, 200, origin, { 'Cache-Control': 'no-store' });
     }
 
     if (req.method === 'PUT' && (m = path.match(/^\/p\/([A-Za-z0-9_-]{12,32})$/))) {

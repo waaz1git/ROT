@@ -4562,17 +4562,36 @@ async function fluxGenerate(q){
     const d=await r.json().catch(()=>null);
     if(d&&d.error==='censored')throw Object.assign(new Error('censored'),{final:true});
     if(!r.ok||!d||typeof d.img!=='string'||d.img.length<200)throw Object.assign(new Error((d&&d.error)||('http'+r.status)),{status:r.status});
-    return {url:'data:image/jpeg;base64,'+d.img,id:/^[A-Za-z0-9_-]{8,32}$/.test(String(d.id||''))?d.id:null};
+    return {url:'data:image/jpeg;base64,'+d.img,ticket:/^[A-Za-z0-9_-]{16,32}$/.test(String(d.t||''))?d.t:null};
   }finally{clearTimeout(tm)}
 }
+// re-encode for the share store: WebP where the browser can make it, JPEG otherwise (both ≤ 1152 px)
+function shrinkForStore(url){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      try{
+        const k=Math.min(1,1152/Math.max(im.naturalWidth,im.naturalHeight));
+        const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        let d=c.toDataURL('image/webp',.84);
+        if(d.indexOf('data:image/webp')!==0)d=c.toDataURL('image/jpeg',.86);
+        res(d);
+      }catch(e){res(url)}
+    };
+    im.onerror=()=>res(url);
+    im.src=url;
+  });
+}
+
 async function generateImage(q,onStatus){
   q=String(q||'').trim().slice(0,400);if(!q)return false;
   let url=null,meta=null;
   try{
     if(onStatus)onStatus({queue_position:0});
-    const r=await fluxGenerate(q);url=r.url;
-    // stored by the worker itself: the share link opens exactly this picture
-    meta={t:'gen',q,src:'flux'};if(r.id)meta.id=r.id;
+    const r=await fluxGenerate(q);url=await shrinkForStore(r.url);
+    // stored with the worker's one-time ticket: the share link opens exactly this picture
+    meta={t:'gen',q,src:'flux',data:url,ticket:r.ticket};
   }catch(e){
     if(e&&e.final)throw e;
     const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
@@ -4580,7 +4599,7 @@ async function generateImage(q,onStatus){
     url=await hordeGenerate(q,seed,w,h,onStatus);
     meta={t:'gen',q,seed,w,h,data:url};
   }
-  await loadRemoteImage(url,meta);
+  await loadRemoteImage(url,meta);if(meta.ticket)preStore(meta);
   return url;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
@@ -4588,7 +4607,7 @@ async function regenerateShared(sm){
   const q=String(sm.q).slice(0,400);
   // a FLUX picture has no seed to replay: draw the same idea again (close, not identical)
   if(sm.seed==null){
-    let url;try{url=(await fluxGenerate(q)).url}catch(e){if(e&&e.final)throw e}
+    let url;try{url=await shrinkForStore((await fluxGenerate(q)).url)}catch(e){if(e&&e.final)throw e}
     if(url){await loadRemoteImage(url,{t:'gen',q,src:'flux',data:url});return}
   }
   const seed=Math.abs(+sm.seed|0);
@@ -4741,9 +4760,20 @@ function lookForLink(){
 // Generated images are stored by the rot-share worker (Cloudflare KV, content-addressed), so a link
 // opens the exact same picture instead of asking the AI to draw it again.
 const SHARE_API='https://rot-share.nicoflp.workers.dev';
-// Only the worker's /gen stores images (there is no upload route): a picture without an id is shared by
-// redrawing its prompt instead.
-async function storeShot(meta){if(meta.id)return meta.id;throw new Error('no_store')}
+// A FLUX picture is stored with the one-time ticket /gen gave for it; anything else (Horde fallback, links)
+// has no ticket and is shared by redrawing its prompt instead.
+async function storeShot(meta){
+  if(meta.id)return meta.id;
+  if(!meta.ticket||!meta.data)throw new Error('no_ticket');
+  const blob=await (await fetch(meta.data)).blob();
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp','X-Ticket':meta.ticket},body:blob,signal:ctl.signal});
+    const d=await r.json().catch(()=>null);
+    if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
+    meta.id=d.id;delete meta.data;delete meta.ticket;return d.id;
+  }finally{clearTimeout(tm)}
+}
 // started as soon as an image is generated: by the time Share is pressed the id is usually ready
 function preStore(meta){
   if(meta&&meta.data&&!meta.id&&!meta.pending)meta.pending=storeShot(meta).catch(()=>{meta.failed=true}).finally(()=>{meta.pending=null});
