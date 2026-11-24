@@ -1111,6 +1111,7 @@ body.lite .panel,body.lite .drawer,body.lite #timeline,body.lite #hud,body.lite 
 body.lite #topbar{background:linear-gradient(120deg,var(--glass-solid),var(--glass-solid))}
 body.lite #aurora i{animation-duration:90s}
 </style>
+<link rel="stylesheet" href="live/live.css?v=1">
 </head>
 <body>
 
@@ -1249,6 +1250,7 @@ body.lite #aurora i{animation-duration:90s}
     <button class="tab" role="tab" aria-selected="false" data-tab="output">OUTPUT</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="music">MUSIC</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="capture">CAPTURE</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="live">LIVE</button>
   </div>
   <div class="panel-body">
     <section class="pane on" data-pane="recipes" role="tabpanel" aria-label="Presets">
@@ -1297,6 +1299,8 @@ body.lite #aurora i{animation-duration:90s}
             <option value="540x960">540P VERT · 540 × 960</option>
             <option value="720x1280">720P VERT · 720 × 1280</option>
             <option value="1080x1920">1080P VERT · 1080 × 1920</option>
+            <option value="1080x1350">1080 4:5 · 1080 × 1350</option>
+            <option value="1080x1080">1080 SQUARE · 1080 × 1080</option>
             <option value="1440x2560">1440P VERT · 1440 × 2560</option>
             <option value="2160x3840">2160P VERT · 2160 × 3840</option>
           </select>
@@ -1453,6 +1457,7 @@ body.lite #aurora i{animation-duration:90s}
       </div>
     </section>
 
+    <section class="pane" data-pane="live" id="paneLive" role="tabpanel" aria-label="Live performance: autopilot, scenes, sequencer, mutation, MIDI"></section>
     <section class="pane" data-pane="capture" role="tabpanel" aria-label="Performance capture">
       <div class="section" style="padding-top:2px;margin-top:0">
         <div class="section-head"><div class="section-title"><b>PERFORMANCE</b> <span class="line"></span></div><div class="section-note" id="perfStatus">EMPTY</div></div>
@@ -1520,6 +1525,9 @@ body.lite #aurora i{animation-duration:90s}
   </button>
   <button class="bnav" data-sheet="music" aria-label="Open music sync">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg><span>MUSIC</span>
+  </button>
+  <button class="bnav" data-sheet="live" aria-label="Open live performance">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg><span>LIVE</span>
   </button>
 </nav>
 
@@ -1800,10 +1808,20 @@ const FX=[
   {id:'ascii',  name:'ASCII / halftone',  def:.00, on:false, cat:'SIGNAL', isNew:true},
   {id:'bloom',  name:'Bloom / glow',      def:.30, on:false, cat:'LIGHT',  isNew:true},
   {id:'dirt',   name:'Lens dirt',         def:.20, on:false, cat:'LIGHT',  isNew:true},
-  {id:'decay',  name:'Decay over time',   def:.15, on:false, cat:'LIGHT',  isNew:true}
+  {id:'decay',  name:'Decay over time',   def:.15, on:false, cat:'LIGHT',  isNew:true},
+  // ROT LAB: original effects
+  {id:'flesh',  name:'Flesh warp',        def:.45, on:false, cat:'LAB', isNew:true},
+  {id:'melt',   name:'Reality melt',      def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'fracture',name:'Fracture',         def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'parasite',name:'Parasite',         def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'void',   name:'Void',              def:.35, on:false, cat:'LAB', isNew:true},
+  {id:'collapse',name:'Chromatic collapse',def:.40,on:false, cat:'LAB', isNew:true},
+  {id:'leak',   name:'Memory leak',       def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'transmission',name:'Bad transmission',def:.40,on:false,cat:'LAB', isNew:true},
+  {id:'blackout',name:'Blackout',         def:.25, on:false, cat:'LAB', isNew:true}
 ];
 const FXMAP=Object.fromEntries(FX.map(f=>[f.id,f]));
-const CATS=['OPTICAL','SIGNAL','LIGHT'];
+const CATS=['OPTICAL','SIGNAL','LIGHT','LAB'];
 
 const MASTER=[
   {id:'intensity',name:'Intensity',min:0,max:2,def:1,step:.01},
@@ -1930,8 +1948,8 @@ const VS_QUAD='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,
 
 const FRAG_MAIN=`varying vec2 vUv;
 uniform sampler2D uTex,uPrev;
-uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg;
-uniform vec2 uRes,uMouse,uTexCoverage;
+uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg,uFreeze;
+uniform vec2 uRes,uMouse,uTexCoverage,uShake;
 ${FX.map(f=>`uniform float u_${f.id};`).join('\n')}
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
@@ -1941,7 +1959,7 @@ vec3 S(vec2 u){u=mir(u)-.5;if(uAsp>uSA)u.y*=uSA/uAsp;else u.x*=uAsp/uSA;u=clamp(
 vec3 hr(vec3 c,float a){vec3 k=vec3(.57735);return c*cos(a)+cross(k,c)*sin(a)+k*dot(k,c)*(1.-cos(a));}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 void main(){
- vec2 uv=vUv;float t=uT+uSeed;
+ vec2 uv=vUv+uShake;float t=uT+uSeed;
  if(abs(uZoom-1.)>.0001){uv=(uv-.5)/max(.05,uZoom)+.5;}
  vec2 p=uv-.5;p.x*=uAsp;float k=u_fish*2.2*sin(t*.55+1.);
  p*=max(.15,1.+k*dot(p,p)*1.2);uv=vec2(p.x/uAsp,p.y)+.5;
@@ -1983,6 +2001,44 @@ void main(){
   vec2 rp0=(uv-.5)*vec2(uAsp,1.);float rr=length(rp0);
   float rw=sin(rr*30.-t*3.4)*exp(-rr*2.4)*u_ripple*.02;
   uv+=normalize(rp0+vec2(1e-5))*rw;
+ }
+ // ── ROT LAB, geometry
+ if(u_flesh>.001){
+  // breathing tissue: a domain-warped field that swells with a slow pulse and the music
+  vec2 fp=uv*vec2(uAsp,1.)*3.6;float ft2=t*.33;
+  float fa=fbm(fp+vec2(ft2,-ft2*.7));
+  float fb2=fbm(fp*1.6-fa*2.1+vec2(-ft2*.5,ft2));
+  float pulse=.55+.45*sin(t*1.6+fa*6.)+uAudio*.5;
+  vec2 fg=vec2(fbm(fp+fb2*2.+3.1),fbm(fp+fb2*2.-1.7))-.5;
+  uv+=fg*.11*u_flesh*pulse;
+ }
+ if(u_melt>.001){
+  // columns drip downward by different lengths; bright areas melt further
+  float mcol=floor(uv.x*uRes.x/3.);
+  float drip=n(vec2(mcol*.13,floor(t*.25)))*.65+n(vec2(mcol*.71,7.))*.35;
+  float ml=lum(S(uv));
+  uv.y+=u_melt*.3*drip*drip*(.45+ml)*(.65+.35*sin(t*.35+mcol*.05));
+ }
+ float fracEdge=0.;
+ if(u_fracture>.001){
+  // voronoi shards, each nudged and turned on its own; the gaps become cracks
+  vec2 fq=uv*vec2(uAsp,1.)*(2.5+4.*u_fracture);vec2 fi=floor(fq),ff=fract(fq);
+  float md=8.,md2=8.;vec2 cid=vec2(0.);
+  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){
+   vec2 o=vec2(float(i),float(j));vec2 pt=o+vec2(h(fi+o),h(fi+o+7.3));float d=length(pt-ff);
+   if(d<md){md2=md;md=d;cid=fi+o;}else if(d<md2)md2=d;
+  }
+  float fsh=h(cid+floor(t*.5)*.13);float fang=(fsh-.5)*.4*u_fracture;vec2 fc=uv-.5;
+  uv=mat2(cos(fang),-sin(fang),sin(fang),cos(fang))*fc*(1.+(h(cid+3.)-.5)*.14*u_fracture)+.5+(vec2(h(cid+1.),h(cid+2.))-.5)*.09*u_fracture;
+  fracEdge=smoothstep(.07,0.,md2-md)*clamp(u_fracture,0.,1.);
+ }
+ float txN=0.;
+ if(u_transmission>.001){
+  // analog signal losing hold: the picture rolls vertically, bends sideways, then catches again
+  txN=clamp(u_transmission,0.,1.);
+  float roll=step(.62,h(vec2(floor(t*.45),11.)));
+  uv.y+=roll*fract(t*.8)*txN;
+  uv.x+=sin(uv.y*5.+t*2.1)*.022*txN+(n(vec2(uv.y*38.,t*3.))-.5)*.035*txN;
  }
  if(u_disp>.001){
   float l0=lum(S(uv));float e=.004;
@@ -2045,6 +2101,59 @@ void main(){
  }
  
  
+ // ── ROT LAB, colour
+ if(u_flesh>.001){
+  float fl=clamp(u_flesh,0.,1.);
+  float vein=1.-smoothstep(0.,.035,abs(fbm(uv*vec2(uAsp,1.)*6.+t*.04)-.5));
+  c=mix(c,c*vec3(1.12,.74,.72)+vec3(.07,0.,.02),fl*.55);
+  c+=vec3(.28,.03,.05)*lum(c)*lum(c)*fl*.6;c*=1.-vein*.42*fl;
+ }
+ if(fracEdge>0.){c*=1.-fracEdge*.8;c+=vec3(1.,.92,.85)*fracEdge*smoothstep(.6,1.,h(floor(vUv*uRes/3.)))*.25;}
+ if(u_parasite>.001){
+  // an infection that spreads over the picture as the amount rises, with a glowing front
+  float pa=clamp(u_parasite,0.,1.);vec2 pp=uv*vec2(uAsp,1.)*3.;
+  float grow=fbm(pp+vec2(t*.05,0.))*.8+.3*fbm(pp*4.-t*.2);
+  float front=1.02-pa*.75-.05*sin(t*.3);
+  float inf=smoothstep(front-.04,front+.04,grow);float rim=inf*(1.-inf)*4.;
+  vec3 sick=hr(1.-c,2.4+t*.2)*.8+vec3(.08,.22,.04)*fbm(pp*9.+t);
+  c=mix(c,sick,inf*.85)+vec3(.55,1.,.3)*rim*.4*pa;
+ }
+ if(u_void>.001){
+  // the picture dissolves into black holes, dark areas first, with a violet rim
+  float va=clamp(u_void,0.,1.);
+  float vn=fbm(uv*vec2(uAsp,1.)*2.5+vec2(0.,t*.08))*.75+lum(c)*.35;
+  float th=.12+va*.5;float hole=smoothstep(th,th-.06,vn);float rim=smoothstep(th+.05,th,vn)-hole;
+  c=mix(c,vec3(0.),hole);c+=vec3(.55,.35,1.)*rim*1.2*va;
+ }
+ if(u_collapse>.001){
+  // colour channels lose depth, then fold into each other in drifting bands
+  float cc2=clamp(u_collapse,0.,1.);float lvls=mix(40.,2.,cc2*cc2);
+  vec3 q=floor(c*lvls+.5)/lvls;float pk=h(vec2(floor(t*.6+floor(vUv.y*6.)*.31),5.));
+  vec3 cl=pk<.33?vec3(q.r,q.r*.35,q.b):(pk<.66?vec3(q.g*.3,q.g,q.r):vec3(q.b*.9,q.b*.5,q.b*1.2));
+  c=mix(c,mix(q,cl,cc2),smoothstep(0.,.35,cc2));
+ }
+ if(u_leak>.001){
+  // frames pile up instead of being freed: the previous picture smears along the image gradients
+  float la=clamp(u_leak,0.,1.);float ll=lum(c);
+  vec2 lg=vec2(dFdx(ll),dFdy(ll));
+  vec3 pm=hr(texture2D(uPrev,mir(vUv-lg*2.5*la+vec2(0.,.002*la))).rgb,.035*la);
+  c=mix(c,max(c,pm*.975)+pm*.015,la);
+ }
+ if(txN>0.){
+  vec3 gh=S(uv+vec2(.028,0.));c=mix(c,c*.85+gh*.3,txN*.7);
+  float snow=h(floor(vUv*uRes*.5)+fract(t*61.)*vec2(17.,31.));
+  float barN=smoothstep(.46,.5,abs(fract(vUv.y*1.3-t*.3)-.5));
+  c=mix(c,vec3(snow),txN*(.06+.3*barN));
+  c*=1.-.22*txN*step(.5,fract(vUv.y*uRes.y*.5));
+ }
+ if(u_blackout>.001){
+  // selected frames and bands go black (rate follows glitch frequency; capped in safe mode)
+  float ba=clamp(u_blackout,0.,1.);float bt=floor(t*(2.+4.*uGF));
+  float full=step(1.-ba*.16,h(vec2(bt,21.)));
+  float rowsb=floor(vUv.y*mix(3.,14.,h(vec2(bt,22.))));
+  float bandb=step(1.-ba*.5,h(vec2(rowsb,bt)))*step(.35,h(vec2(bt,23.)));
+  c*=1.-max(full,bandb);
+ }
  float lv=mix(64.,3.,clamp(u_post,0.,1.));float dth=fract(dot(floor(vUv*uRes),vec2(.7548776662,.56984029)))-.5;
  c=mix(c,floor(c*lv+.5+dth)/lv,step(.001,u_post));
  float dk=clamp(u_decay,0.,1.);
@@ -2058,7 +2167,9 @@ void main(){
   c+=vec3(.35,.62,1.)*glr*gls*u_glare*1.4;
   c+=vec3(1.,.55,.75)*glr*exp(-abs(vUv.x-.5)*42.)*.06*u_glare;
  }
- gl_FragColor=vec4(mix(c0,hr(c,uHue),uMix),1.);
+ vec3 outc=mix(c0,hr(c,uHue),uMix);
+ if(uFreeze>.001)outc=mix(outc,texture2D(uPrev,vUv).rgb,clamp(uFreeze,0.,1.));
+ gl_FragColor=vec4(outc,1.);
 }`;
 
 
@@ -2091,9 +2202,9 @@ void main(){
 
 
 const FRAG_FINAL=`varying vec2 vUv;
-uniform sampler2D uTex,uBloom,uAscii;
+uniform sampler2D uTex,uBloom,uAscii,uOver;
 uniform vec2 uOutRes;
-uniform float uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
+uniform float uOverOn,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 vec2 bufUV(vec2 u){
@@ -2157,6 +2268,7 @@ void main(){
  c=mix(c,vec3(lum(c))*vec3(1.1,.78,.72),dm*.22*smoothstep(.65,.15,edge));
  if(uSafe>.5){float l=lum(c);c=mix(c,vec3(l),.08);c=min(c,vec3(1.35));}
  if(abs(uHue2)>.0001){float l=lum(c);c=mix(c,vec3(l)*vec3(1.15,.85,.85),clamp(abs(uHue2)*.15,0.,.2));}
+ if(uOverOn>.5){vec4 ov=texture2D(uOver,vUv);c=mix(c,ov.rgb,ov.a);}
  if(uFlash>.0001)c=mix(c,vec3(1.,.97,.92),clamp(uFlash,0.,1.));
  gl_FragColor=vec4(clamp(c,0.,1.),1.);
 }`;
@@ -2172,6 +2284,8 @@ const EXPORT_SIZES=[
   {id:'540x960',label:'540P VERT',w:540,h:960},
   {id:'720x1280',label:'720P VERT',w:720,h:1280},
   {id:'1080x1920',label:'1080P VERT',w:1080,h:1920},
+  {id:'1080x1080',label:'1080 SQUARE',w:1080,h:1080},
+  {id:'1080x1350',label:'1080 4:5',w:1080,h:1350},
   {id:'1440x2560',label:'1440P VERT',w:1440,h:2560},
   {id:'2160x3840',label:'2160P VERT',w:2160,h:3840}
 ];
@@ -2407,7 +2521,7 @@ const Engine=(()=>{
     uTex:{value:null},uPrev:{value:null},uT:{value:0},uAsp:{value:1.78},
     uMix:{value:1},uSA:{value:1.78},uHue:{value:0},uOrg:{value:.5},
     uRnd:{value:.5},uGF:{value:.45},
-    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},
+    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},uFreeze:{value:0},uShake:{value:new THREE.Vector2(0,0)},
     uMouse:{value:new THREE.Vector2(.5,.5)},
     uRes:{value:new THREE.Vector2(320,180)},uAudio:{value:0},uTexCoverage:{value:new THREE.Vector2(1,1)}
   };
@@ -2419,7 +2533,7 @@ const Engine=(()=>{
     uTex:{value:null},uBloom:{value:null},uAscii:{value:null},uOutRes:{value:new THREE.Vector2(2,2)},uBufAsp:{value:1.78},
     uT:{value:0},uBloomAmt:{value:.3},uDirt:{value:.2},uTear:{value:0},uDecay:{value:0},
     uAsciiAmt:{value:0},uAsciiMode:{value:0},uGrade:{value:0},uFinish:{value:1},uVig:{value:.82},uSafe:{value:0},
-    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0}
+    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uOver:{value:null}
   };
 
   function makeRT(w,h,linear){
@@ -2444,7 +2558,7 @@ const Engine=(()=>{
     quad=new THREE.PlaneGeometry(2,2);
     asciiTex=makeAscii();
     FU.uAscii.value=asciiTex;
-    matMain=new THREE.ShaderMaterial({uniforms:U,vertexShader:VS_QUAD,fragmentShader:FRAG_MAIN,depthTest:false,depthWrite:false});
+    matMain=new THREE.ShaderMaterial({uniforms:U,vertexShader:VS_QUAD,fragmentShader:FRAG_MAIN,depthTest:false,depthWrite:false,extensions:{derivatives:true}});
     matBright=new THREE.ShaderMaterial({uniforms:BU1,vertexShader:VS_QUAD,fragmentShader:FRAG_BRIGHT,depthTest:false,depthWrite:false});
     matBlur=new THREE.ShaderMaterial({uniforms:BU2,vertexShader:VS_QUAD,fragmentShader:FRAG_BLURV,depthTest:false,depthWrite:false});
     matFinal=new THREE.ShaderMaterial({uniforms:FU,vertexShader:VS_QUAD,fragmentShader:FRAG_FINAL,depthTest:false,depthWrite:false});
@@ -2541,6 +2655,11 @@ const Engine=(()=>{
     U.uZoom.value=frame.zoom==null?1:frame.zoom;U.uSeed.value=frame.seed||0;U.uKaleidoSeg.value=frame.kaleidoSeg||0;
     U.uTexCoverage.value.set(src.covX,src.covY);
     U.uMouse.value.set(frame.mouse.x,frame.mouse.y);
+    U.uFreeze.value=frame.freeze||0;
+    if(frame.shake)U.uShake.value.set(frame.shake[0]||0,frame.shake[1]||0);else U.uShake.value.set(0,0);
+    // overlay layer (clip text / waveform): a canvas texture owned by the clip module
+    const ov=frame.overlay;
+    if(ov&&ov.tex){FU.uOver.value=ov.tex;FU.uOverOn.value=1}else{FU.uOverOn.value=0;if(!FU.uOver.value)FU.uOver.value=asciiTex}
     const v=frame.fxVals;
     FX.forEach(f=>{U['u_'+f.id].value=v[f.id]||0});
     FU.uT.value=t;FU.uBloomAmt.value=(v.bloom||0)*1.7;FU.uDirt.value=v.dirt||0;
@@ -5010,6 +5129,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
 
+  if(typeof Live!=='undefined'&&Live.ready&&Live.key(key,e))return;
   if(key==='r'){e.preventDefault();randomizeLook();markDirty()}
   else if(key==='e'){e.preventDefault();toggleExtreme()}
   else if(key==='h'){e.preventDefault();toggleHypnosis()}
@@ -7272,7 +7392,7 @@ const PLACEHOLDER=(()=>{
 })();
 
 
-const SAFE_LIMITS={glitch:.55,tear:.55,mosh:.55,vhs:.55,skip:.55,rgb:.7,ca:.7};
+const SAFE_LIMITS={glitch:.55,tear:.55,mosh:.55,vhs:.55,skip:.55,rgb:.7,ca:.7,blackout:.2,transmission:.5,collapse:.6};
 const EXTREME={on:false,cur:FX.map(()=>0),tgt:FX.map(()=>0),next:0,nuke:0};
 const jn=x=>(Math.sin(x*1.7)+Math.sin(x*2.9+1.3)+.5*Math.sin(x*4.3+.7))/5+.5;
 const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false,nextDraw:0,minFrame:100,finish:1,drawLast:0,drawEMA:16.7,janks:0,upAt:0};
@@ -7494,6 +7614,9 @@ function loop(now){
     }
   }
 
+  // ROT Live (autopilot, sequencer, scenes, MIDI): additive modulation, still under the caps below
+  const LV=(typeof Live!=='undefined'&&Live.ready)?Live.frame(dt,mus,T,now):null;
+  if(LV)LV.applyFx(frame.fxVals);
   // Safety caps go last, so no multiplier, audio boost or burst can exceed them.
   if(DATA.settings.safe){
     FX.forEach(f=>{frame.fxVals[f.id]=Math.min(frame.fxVals[f.id],SAFE_LIMITS[f.id]||1)});
@@ -7521,6 +7644,8 @@ function loop(now){
   frame.seed=mus&&mus.loaded&&!DATA.settings.safe?mus.seed:0;
   frame.kaleidoSeg=mus&&mus.loaded?mus.kaleidoSeg:0;
   frame.flash=DATA.settings.safe?0:clamp(musicFlash*(DATA.settings.reduce?.55:1),0,1);
+  frame.freeze=0;frame.shake=null;
+  if(LV)LV.post(frame);
 
   
 
@@ -7742,5 +7867,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else startApp();
 
 </script>
+<!-- ROT Live: autopilot, mutation, MIDI, scenes, sequencer, quick clip, quick play (they use the globals above) -->
+<script src="live/core.js?v=1"></script>
+<script src="live/autopilot.js?v=1"></script>
+<script src="live/mutate.js?v=1"></script>
+<script src="live/scenes.js?v=1"></script>
+<script src="live/seq.js?v=1"></script>
+<script src="live/midi.js?v=1"></script>
+<script src="live/clip.js?v=1"></script>
+<script src="live/quick.js?v=1"></script>
+<script src="live/ui.js?v=1"></script>
 </body>
 </html>
