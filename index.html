@@ -1063,6 +1063,33 @@ body.reduce-motion #tourRing,body.reduce-motion #tourCard{transition-duration:.0
 body.reduce-motion #tourRing::after,body.reduce-motion .tc-flow span,body.reduce-motion .tc-keys .kc,body.reduce-motion .tc-next.ready{animation:none}
 body.reduce-motion .tc-body>*{animation-duration:.01s}
 
+/* ─── tutorial in the light theme: paper card, ink text, the same motion ─── */
+[data-theme="bone"] #tour{
+  --tx:#1c1a17;--mu:#5c564c;--dim:#8f877a;--acc:#4f3bd6;--acc-2:#5a46dc;--acc-deep:#3b2ab5;--mint:#0d8a79;--lime:#4f7a22;
+  --stroke:rgba(45,35,20,.16);--stroke-soft:rgba(45,35,20,.09);--glass-faint:rgba(60,45,25,.03);color-scheme:light}
+[data-theme="bone"] #tourRing{box-shadow:0 0 0 200vmax rgba(28,22,14,.5)}
+[data-theme="bone"] #tourRing::before{border-color:rgba(79,59,214,.9);box-shadow:0 0 0 3px rgba(251,248,242,.55),0 0 26px -2px rgba(79,59,214,.55)}
+[data-theme="bone"] #tourCard{background:linear-gradient(160deg,rgba(253,251,247,.97),rgba(242,236,226,.97));border-color:rgba(45,35,20,.14);
+  box-shadow:0 40px 90px -30px rgba(40,28,10,.55),0 24px 60px -40px rgba(79,59,214,.45),inset 0 1px 0 rgba(255,255,255,.9)}
+[data-theme="bone"] #tourCard::before{background:radial-gradient(320px circle at var(--mx,50%) var(--my,0%),rgba(79,59,214,.1),transparent 65%)}
+[data-theme="bone"] .tc-prog i{background:rgba(45,35,20,.1)}
+[data-theme="bone"] .tc-task{border-color:rgba(79,59,214,.35);color:var(--acc)}
+[data-theme="bone"] .tc-task.done{border-color:rgba(13,138,121,.5);background:rgba(13,138,121,.08);color:var(--mint)}
+[data-theme="bone"] .tc-task .tk svg{stroke:#fbf8f2}
+[data-theme="bone"] .tc-flow span{border-color:var(--stroke)}
+@keyframes flowLitBone{0%,100%{color:var(--dim);border-color:var(--stroke);background:transparent}8%,22%{color:var(--tx);border-color:var(--acc);background:rgba(79,59,214,.1)}}
+[data-theme="bone"] .tc-flow span{animation-name:flowLitBone}
+[data-theme="bone"] .tc-gen input{border-color:rgba(45,35,20,.18);background:rgba(255,255,255,.7);color:var(--tx)}
+[data-theme="bone"] .tc-gen input:focus{border-color:var(--acc)}
+[data-theme="bone"] .tc-gen-st.on{color:var(--acc)}
+[data-theme="bone"] .tc-gen-st.ok{color:var(--mint)}
+[data-theme="bone"] .tc-gen-st.bad{color:#b4501a}
+[data-theme="bone"] .tc-chip{border-color:rgba(45,35,20,.12)}
+[data-theme="bone"] .kc{color:var(--tx);background:linear-gradient(180deg,#fffdf9,#efe8dc);border-color:rgba(45,35,20,.18);box-shadow:0 4px 0 rgba(60,45,25,.28),inset 0 1px 0 #fff}
+[data-theme="bone"] .kc.press,[data-theme="bone"] .kc:active{box-shadow:0 0 0 rgba(60,45,25,.28),inset 0 1px 0 #fff}
+[data-theme="bone"] .kc.big{color:#fff;background:linear-gradient(160deg,var(--acc),var(--acc-deep));border-color:transparent;box-shadow:0 5px 0 #2a1d8a,0 18px 40px -14px rgba(79,59,214,.6)}
+[data-theme="bone"] #tour .btn:not(.hot):not(.acid){color:var(--tx);background:rgba(255,255,255,.6);border-color:var(--stroke)}
+
 /* ─── readability on phones & tablets: the micro labels (6–9px) scaled ~1.2×, min 9px ─── */
 @media(max-width:900px),(pointer:coarse){
   .brand-word sup,.brand-sub,.ph-label small,.section-note,.btn.sm,.btn.xs,.btn .k,.ctrl-sub,.lock-row span,.source-meter,.chip,.fx-cat,.fx-row.new .fx-name::after,.preset .p-num,.preset .p-tag,.big-action .ba-s,.tab,#hud,.tl-title,.tl-btn,.tl-hint,.bnav,.drawer-sub,.drawer-foot,.j-meta,.set-group h3::before,.set-note,.snippet,details.adv summary,.viewer-meta,.viewer-bar .btn,.intro-kicker,.intro-sub,.intro-meta,#introLog,#skipIntro,.gate-kicker,.gate-card .warn-list,.gate-check,.gate-foot,.music-drop span,.music-zip span,.music-zip-note,.music-track-sub,.music-wave-hint,.music-range-row,.music-transport .btn,.music-bpm small,.music-bar span,.music-visual,.music-analyze-meta,.music-presets .btn,.music-route-head select,.music-route-grid select,.music-route-grid.two label,.music-empty,#hypnoExit{font-size:9px}
@@ -1071,7 +1098,47 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   #emptyHint .eh-k,#emptyHint .eh-s,input[type="text"], input[type="number"], input[type="password"], textarea, select,.big-action .ba-k,.gate-card p{font-size:11px}
 }
 
+
+
+/* ─── motion system: the tutorial's language everywhere (rise + fade in a cascade, snappy curve) ───
+   only transform and opacity, so it costs no layout; 'backwards' fill so children keep their own transforms */
+.mo-in>*{animation:moIn .62s var(--snap) backwards;animation-delay:calc(var(--i,0) * 42ms)}
+@keyframes moIn{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.preset-grid.mo-in>*{animation-name:moPop;animation-delay:calc(var(--i,0) * 30ms)}
+@keyframes moPop{from{opacity:0;transform:translate3d(0,10px,0) scale(.94)}to{opacity:1;transform:none}}
+body.safe .mo-in>*,body.reduce-motion .mo-in>*{animation:none}
+@media(prefers-reduced-motion:reduce){.mo-in>*{animation:none}}
+/* press: everything you can tap gives a little */
+.btn:active,.chip:active,.preset:active,.bnav:active,.tab:active,.icon-btn:active,#genStyles button:active,.gal-it:active{transform:scale(.96);transition:transform .08s}
+/* toasts: a springy entrance without the costly blur filter */
+.toast{animation:toastSpring .62s var(--snap) both}
+.toast.out{animation:toastAway .3s var(--ease) both}
+@keyframes toastSpring{0%{opacity:0;transform:translate3d(0,18px,0) scale(.9)}55%{opacity:1;transform:translate3d(0,-3px,0) scale(1.02)}100%{opacity:1;transform:none}}
+@keyframes toastAway{to{opacity:0;transform:translate3d(0,-10px,0) scale(.96)}}
+/* value labels tick when they change */
+.mo-tick{animation:moTick .32s var(--snap)}
+@keyframes moTick{0%{opacity:.35;transform:translate3d(0,-5px,0)}100%{opacity:1;transform:none}}
+body.safe .mo-tick,body.reduce-motion .mo-tick{animation:none}
+/* ─── performance: lighter frosted glass, blur-free background lights ─── */
+/* backdrop blur is re-rendered every frame because the canvas under it moves; a smaller radius costs far less */
+#topbar,.panel{-webkit-backdrop-filter:blur(10px) saturate(130%);backdrop-filter:blur(10px) saturate(130%)}
+.drawer{-webkit-backdrop-filter:blur(12px) saturate(130%);backdrop-filter:blur(12px) saturate(130%)}
+#timeline,#hud,#bottomNav,.toast{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+/* the lights were radial gradients run through a 72px blur; a softer gradient gives the same glow for free */
+#aurora i{filter:none}
+#aurora i:nth-child(1){background:radial-gradient(circle closest-side,rgba(123,94,255,.46),rgba(123,94,255,.2) 42%,rgba(123,94,255,.06) 72%,transparent)}
+#aurora i:nth-child(2){background:radial-gradient(circle closest-side,rgba(64,205,213,.34),rgba(64,205,213,.14) 42%,rgba(64,205,213,.04) 72%,transparent)}
+#aurora i:nth-child(3){background:radial-gradient(circle closest-side,rgba(255,105,158,.27),rgba(255,105,158,.11) 42%,rgba(255,105,158,.03) 72%,transparent)}
+[data-theme="bone"] #aurora i:nth-child(1){background:radial-gradient(circle closest-side,rgba(110,90,230,.26),rgba(110,90,230,.1) 45%,transparent)}
+[data-theme="bone"] #aurora i:nth-child(2){background:radial-gradient(circle closest-side,rgba(20,160,150,.2),rgba(20,160,150,.08) 45%,transparent)}
+[data-theme="bone"] #aurora i:nth-child(3){background:radial-gradient(circle closest-side,rgba(230,60,110,.18),rgba(230,60,110,.07) 45%,transparent)}
+/* lite: phones and GPUs that are struggling get solid panels, no blur at all */
+body.lite #topbar,body.lite .panel,body.lite .drawer,body.lite #timeline,body.lite #hud,body.lite #bottomNav,body.lite .toast,body.lite #remixChip{-webkit-backdrop-filter:none;backdrop-filter:none}
+body.lite .panel,body.lite .drawer,body.lite #timeline,body.lite #hud,body.lite #bottomNav,body.lite .toast{background:var(--glass-solid)}
+body.lite #topbar{background:linear-gradient(120deg,var(--glass-solid),var(--glass-solid))}
+body.lite #aurora i{animation-duration:90s}
 </style>
+<link rel="stylesheet" href="live/live.css?v=1">
 </head>
 <body>
 
@@ -1114,7 +1181,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
       <span data-i18n="share.btn">Share</span>
     </button>
-    <button class="tbtn" id="btnGallery" title="Made with ROT" aria-label="Open the gallery">
+    <button class="tbtn" id="btnGallery" title="Made with ROT" aria-label="Open the gallery" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
       <span data-i18n="gal.btn">Gallery</span>
     </button>
@@ -1210,6 +1277,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <button class="tab" role="tab" aria-selected="false" data-tab="output">OUTPUT</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="music">MUSIC</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="capture">CAPTURE</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="live">LIVE</button>
   </div>
   <div class="panel-body">
     <section class="pane on" data-pane="recipes" role="tabpanel" aria-label="Presets">
@@ -1258,6 +1326,8 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
             <option value="540x960">540P VERT · 540 × 960</option>
             <option value="720x1280">720P VERT · 720 × 1280</option>
             <option value="1080x1920">1080P VERT · 1080 × 1920</option>
+            <option value="1080x1350">1080 4:5 · 1080 × 1350</option>
+            <option value="1080x1080">1080 SQUARE · 1080 × 1080</option>
             <option value="1440x2560">1440P VERT · 1440 × 2560</option>
             <option value="2160x3840">2160P VERT · 2160 × 3840</option>
           </select>
@@ -1414,6 +1484,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       </div>
     </section>
 
+    <section class="pane" data-pane="live" id="paneLive" role="tabpanel" aria-label="Live performance: autopilot, scenes, sequencer, mutation, MIDI"></section>
     <section class="pane" data-pane="capture" role="tabpanel" aria-label="Performance capture">
       <div class="section" style="padding-top:2px;margin-top:0">
         <div class="section-head"><div class="section-title"><b>PERFORMANCE</b> <span class="line"></span></div><div class="section-note" id="perfStatus">EMPTY</div></div>
@@ -1481,6 +1552,9 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   </button>
   <button class="bnav" data-sheet="music" aria-label="Open music sync">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg><span>MUSIC</span>
+  </button>
+  <button class="bnav" data-sheet="live" aria-label="Open live performance">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg><span>LIVE</span>
   </button>
 </nav>
 
@@ -1709,6 +1783,22 @@ function toPowerOf2Canvas(img,maxDim){
   return {canvas,realW:w,realH:h,pw,ph,coverage:{x:w/pw,y:h/ph}};
 }
 let toastTimer=0;
+// Motion: replays the tutorial's cascade on a container's children (capped, then cleaned up)
+const Motion={
+  ok(){return !(DATA.settings&&(DATA.settings.safe||DATA.settings.reduce))&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)},
+  stagger(root,max){
+    if(!root||!this.ok())return;
+    let i=0;for(const k of root.children){k.style.setProperty('--i',Math.min(i++,max||14))}
+    root.classList.remove('mo-in');void root.offsetWidth;root.classList.add('mo-in');
+    clearTimeout(root._moT);root._moT=setTimeout(()=>root.classList.remove('mo-in'),1500);
+  },
+  tick(el){if(!el||!this.ok())return;el.classList.remove('mo-tick');void el.offsetWidth;el.classList.add('mo-tick')}
+};
+// phones: solid panels from the start (frosted glass over a live canvas is the costliest thing on mobile GPUs)
+if(matchMedia('(pointer:coarse) and (max-width:900px)').matches)document.body.classList.add('lite');
+// write a label only when its value changes: every write is a DOM mutation (and the Italian layer re-reads it).
+// The node check catches other code having rewritten the element meanwhile.
+function setTxt(el,v){if(!el)return;v=String(v);if(el._t===v&&el._n&&el._n===el.firstChild)return;el.textContent=v;el._t=v;el._n=el.firstChild}
 function toast(msg,ms=3200){
   const host=$id('toasts');if(!host)return;
   const el=document.createElement('div');el.className='toast';el.innerHTML=msg;
@@ -1745,10 +1835,20 @@ const FX=[
   {id:'ascii',  name:'ASCII / halftone',  def:.00, on:false, cat:'SIGNAL', isNew:true},
   {id:'bloom',  name:'Bloom / glow',      def:.30, on:false, cat:'LIGHT',  isNew:true},
   {id:'dirt',   name:'Lens dirt',         def:.20, on:false, cat:'LIGHT',  isNew:true},
-  {id:'decay',  name:'Decay over time',   def:.15, on:false, cat:'LIGHT',  isNew:true}
+  {id:'decay',  name:'Decay over time',   def:.15, on:false, cat:'LIGHT',  isNew:true},
+  // ROT LAB: original effects
+  {id:'flesh',  name:'Flesh warp',        def:.45, on:false, cat:'LAB', isNew:true},
+  {id:'melt',   name:'Reality melt',      def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'fracture',name:'Fracture',         def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'parasite',name:'Parasite',         def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'void',   name:'Void',              def:.35, on:false, cat:'LAB', isNew:true},
+  {id:'collapse',name:'Chromatic collapse',def:.40,on:false, cat:'LAB', isNew:true},
+  {id:'leak',   name:'Memory leak',       def:.40, on:false, cat:'LAB', isNew:true},
+  {id:'transmission',name:'Bad transmission',def:.40,on:false,cat:'LAB', isNew:true},
+  {id:'blackout',name:'Blackout',         def:.25, on:false, cat:'LAB', isNew:true}
 ];
 const FXMAP=Object.fromEntries(FX.map(f=>[f.id,f]));
-const CATS=['OPTICAL','SIGNAL','LIGHT'];
+const CATS=['OPTICAL','SIGNAL','LIGHT','LAB'];
 
 const MASTER=[
   {id:'intensity',name:'Intensity',min:0,max:2,def:1,step:.01},
@@ -1875,8 +1975,8 @@ const VS_QUAD='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,
 
 const FRAG_MAIN=`varying vec2 vUv;
 uniform sampler2D uTex,uPrev;
-uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg;
-uniform vec2 uRes,uMouse,uTexCoverage;
+uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg,uFreeze,uClock;
+uniform vec2 uRes,uMouse,uTexCoverage,uShake;
 ${FX.map(f=>`uniform float u_${f.id};`).join('\n')}
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+1.),f.x),f.y);}
@@ -1886,7 +1986,7 @@ vec3 S(vec2 u){u=mir(u)-.5;if(uAsp>uSA)u.y*=uSA/uAsp;else u.x*=uAsp/uSA;u=clamp(
 vec3 hr(vec3 c,float a){vec3 k=vec3(.57735);return c*cos(a)+cross(k,c)*sin(a)+k*dot(k,c)*(1.-cos(a));}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 void main(){
- vec2 uv=vUv;float t=uT+uSeed;
+ vec2 uv=vUv+uShake;float t=uT+uSeed;
  if(abs(uZoom-1.)>.0001){uv=(uv-.5)/max(.05,uZoom)+.5;}
  vec2 p=uv-.5;p.x*=uAsp;float k=u_fish*2.2*sin(t*.55+1.);
  p*=max(.15,1.+k*dot(p,p)*1.2);uv=vec2(p.x/uAsp,p.y)+.5;
@@ -1928,6 +2028,44 @@ void main(){
   vec2 rp0=(uv-.5)*vec2(uAsp,1.);float rr=length(rp0);
   float rw=sin(rr*30.-t*3.4)*exp(-rr*2.4)*u_ripple*.02;
   uv+=normalize(rp0+vec2(1e-5))*rw;
+ }
+ // ── ROT LAB, geometry
+ if(u_flesh>.001){
+  // breathing tissue: a domain-warped field that swells with a slow pulse and the music
+  vec2 fp=uv*vec2(uAsp,1.)*3.6;float ft2=t*.33;
+  float fa=fbm(fp+vec2(ft2,-ft2*.7));
+  float fb2=fbm(fp*1.6-fa*2.1+vec2(-ft2*.5,ft2));
+  float pulse=.55+.45*sin(t*1.6+fa*6.)+uAudio*.5;
+  vec2 fg=vec2(fbm(fp+fb2*2.+3.1),fbm(fp+fb2*2.-1.7))-.5;
+  uv+=fg*.11*u_flesh*pulse;
+ }
+ if(u_melt>.001){
+  // columns drip downward by different lengths; bright areas melt further
+  float mcol=floor(uv.x*uRes.x/3.);
+  float drip=n(vec2(mcol*.13,floor(t*.25)))*.65+n(vec2(mcol*.71,7.))*.35;
+  float ml=lum(S(uv));
+  uv.y+=u_melt*.3*drip*drip*(.45+ml)*(.65+.35*sin(t*.35+mcol*.05));
+ }
+ float fracEdge=0.;
+ if(u_fracture>.001){
+  // voronoi shards, each nudged and turned on its own; the gaps become cracks
+  vec2 fq=uv*vec2(uAsp,1.)*(2.5+4.*u_fracture);vec2 fi=floor(fq),ff=fract(fq);
+  float md=8.,md2=8.;vec2 cid=vec2(0.);
+  for(int j=-1;j<=1;j++)for(int i=-1;i<=1;i++){
+   vec2 o=vec2(float(i),float(j));vec2 pt=o+vec2(h(fi+o),h(fi+o+7.3));float d=length(pt-ff);
+   if(d<md){md2=md;md=d;cid=fi+o;}else if(d<md2)md2=d;
+  }
+  float fsh=h(cid+floor(t*.5)*.13);float fang=(fsh-.5)*.4*u_fracture;vec2 fc=uv-.5;
+  uv=mat2(cos(fang),-sin(fang),sin(fang),cos(fang))*fc*(1.+(h(cid+3.)-.5)*.14*u_fracture)+.5+(vec2(h(cid+1.),h(cid+2.))-.5)*.09*u_fracture;
+  fracEdge=smoothstep(.07,0.,md2-md)*clamp(u_fracture,0.,1.);
+ }
+ float txN=0.;
+ if(u_transmission>.001){
+  // analog signal losing hold: the picture rolls vertically, bends sideways, then catches again
+  txN=clamp(u_transmission,0.,1.);
+  float roll=step(.62,h(vec2(floor(t*.45),11.)));
+  uv.y+=roll*fract(t*.8)*txN;
+  uv.x+=sin(uv.y*5.+t*2.1)*.022*txN+(n(vec2(uv.y*38.,t*3.))-.5)*.035*txN;
  }
  if(u_disp>.001){
   float l0=lum(S(uv));float e=.004;
@@ -1990,6 +2128,59 @@ void main(){
  }
  
  
+ // ── ROT LAB, colour
+ if(u_flesh>.001){
+  float fl=clamp(u_flesh,0.,1.);
+  float vein=1.-smoothstep(0.,.035,abs(fbm(uv*vec2(uAsp,1.)*6.+t*.04)-.5));
+  c=mix(c,c*vec3(1.12,.74,.72)+vec3(.07,0.,.02),fl*.55);
+  c+=vec3(.28,.03,.05)*lum(c)*lum(c)*fl*.6;c*=1.-vein*.42*fl;
+ }
+ if(fracEdge>0.){c*=1.-fracEdge*.8;c+=vec3(1.,.92,.85)*fracEdge*smoothstep(.6,1.,h(floor(vUv*uRes/3.)))*.25;}
+ if(u_parasite>.001){
+  // an infection that spreads over the picture as the amount rises, with a glowing front
+  float pa=clamp(u_parasite,0.,1.);vec2 pp=uv*vec2(uAsp,1.)*3.;
+  float grow=fbm(pp+vec2(t*.05,0.))*.8+.3*fbm(pp*4.-t*.2);
+  float front=1.02-pa*.75-.05*sin(t*.3);
+  float inf=smoothstep(front-.04,front+.04,grow);float rim=inf*(1.-inf)*4.;
+  vec3 sick=hr(1.-c,2.4+t*.2)*.8+vec3(.08,.22,.04)*fbm(pp*9.+t);
+  c=mix(c,sick,inf*.85)+vec3(.55,1.,.3)*rim*.4*pa;
+ }
+ if(u_void>.001){
+  // the picture dissolves into black holes, dark areas first, with a violet rim
+  float va=clamp(u_void,0.,1.);
+  float vn=fbm(uv*vec2(uAsp,1.)*2.5+vec2(0.,t*.08))*.75+lum(c)*.35;
+  float th=.12+va*.5;float hole=smoothstep(th,th-.06,vn);float rim=smoothstep(th+.05,th,vn)-hole;
+  c=mix(c,vec3(0.),hole);c+=vec3(.55,.35,1.)*rim*1.2*va;
+ }
+ if(u_collapse>.001){
+  // colour channels lose depth, then fold into each other in drifting bands
+  float cc2=clamp(u_collapse,0.,1.);float lvls=mix(40.,2.,cc2*cc2);
+  vec3 q=floor(c*lvls+.5)/lvls;float pk=h(vec2(floor(t*.6+floor(vUv.y*6.)*.31),5.));
+  vec3 cl=pk<.33?vec3(q.r,q.r*.35,q.b):(pk<.66?vec3(q.g*.3,q.g,q.r):vec3(q.b*.9,q.b*.5,q.b*1.2));
+  c=mix(c,mix(q,cl,cc2),smoothstep(0.,.35,cc2));
+ }
+ if(u_leak>.001){
+  // frames pile up instead of being freed: the previous picture smears along the image gradients
+  float la=clamp(u_leak,0.,1.);float ll=lum(c);
+  vec2 lg=vec2(lum(S(uv+vec2(.004,0.)))-ll,lum(S(uv+vec2(0.,.004)))-ll);
+  vec3 pm=hr(texture2D(uPrev,mir(vUv-lg*.05*la+vec2(0.,.002*la))).rgb,.035*la);
+  c=mix(c,max(c,pm*.975)+pm*.015,la);
+ }
+ if(txN>0.){
+  vec3 gh=S(uv+vec2(.028,0.));c=mix(c,c*.85+gh*.3,txN*.7);
+  float snow=h(floor(vUv*uRes*.5)+fract(t*61.)*vec2(17.,31.));
+  float barN=smoothstep(.46,.5,abs(fract(vUv.y*1.3-t*.3)-.5));
+  c=mix(c,vec3(snow),txN*(.06+.3*barN));
+  c*=1.-.22*txN*step(.5,fract(vUv.y*uRes.y*.5));
+ }
+ if(u_blackout>.001){
+  // selected frames and bands go black (rate follows glitch frequency; capped in safe mode)
+  float ba=clamp(u_blackout,0.,1.);float bt=floor(uClock*(1.5+2.5*uGF)); // real seconds: at most 4 windows a second, whatever the tempo
+  float full=step(1.-ba*.16,h(vec2(bt,21.)));
+  float rowsb=floor(vUv.y*mix(3.,14.,h(vec2(bt,22.))));
+  float bandb=step(1.-ba*.5,h(vec2(rowsb,bt)))*step(.35,h(vec2(bt,23.)));
+  c*=1.-max(full,bandb);
+ }
  float lv=mix(64.,3.,clamp(u_post,0.,1.));float dth=fract(dot(floor(vUv*uRes),vec2(.7548776662,.56984029)))-.5;
  c=mix(c,floor(c*lv+.5+dth)/lv,step(.001,u_post));
  float dk=clamp(u_decay,0.,1.);
@@ -2003,7 +2194,9 @@ void main(){
   c+=vec3(.35,.62,1.)*glr*gls*u_glare*1.4;
   c+=vec3(1.,.55,.75)*glr*exp(-abs(vUv.x-.5)*42.)*.06*u_glare;
  }
- gl_FragColor=vec4(mix(c0,hr(c,uHue),uMix),1.);
+ vec3 outc=mix(c0,hr(c,uHue),uMix);
+ if(uFreeze>.001)outc=mix(outc,texture2D(uPrev,vUv).rgb,clamp(uFreeze,0.,1.));
+ gl_FragColor=vec4(outc,1.);
 }`;
 
 
@@ -2036,9 +2229,9 @@ void main(){
 
 
 const FRAG_FINAL=`varying vec2 vUv;
-uniform sampler2D uTex,uBloom,uAscii;
+uniform sampler2D uTex,uBloom,uAscii,uOver;
 uniform vec2 uOutRes;
-uniform float uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
+uniform float uOverOn,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 vec2 bufUV(vec2 u){
@@ -2102,6 +2295,7 @@ void main(){
  c=mix(c,vec3(lum(c))*vec3(1.1,.78,.72),dm*.22*smoothstep(.65,.15,edge));
  if(uSafe>.5){float l=lum(c);c=mix(c,vec3(l),.08);c=min(c,vec3(1.35));}
  if(abs(uHue2)>.0001){float l=lum(c);c=mix(c,vec3(l)*vec3(1.15,.85,.85),clamp(abs(uHue2)*.15,0.,.2));}
+ if(uOverOn>.5){vec4 ov=texture2D(uOver,vUv);c=mix(c,ov.rgb,ov.a);}
  if(uFlash>.0001)c=mix(c,vec3(1.,.97,.92),clamp(uFlash,0.,1.));
  gl_FragColor=vec4(clamp(c,0.,1.),1.);
 }`;
@@ -2117,6 +2311,8 @@ const EXPORT_SIZES=[
   {id:'540x960',label:'540P VERT',w:540,h:960},
   {id:'720x1280',label:'720P VERT',w:720,h:1280},
   {id:'1080x1920',label:'1080P VERT',w:1080,h:1920},
+  {id:'1080x1080',label:'1080 SQUARE',w:1080,h:1080},
+  {id:'1080x1350',label:'1080 4:5',w:1080,h:1350},
   {id:'1440x2560',label:'1440P VERT',w:1440,h:2560},
   {id:'2160x3840',label:'2160P VERT',w:2160,h:3840}
 ];
@@ -2352,7 +2548,7 @@ const Engine=(()=>{
     uTex:{value:null},uPrev:{value:null},uT:{value:0},uAsp:{value:1.78},
     uMix:{value:1},uSA:{value:1.78},uHue:{value:0},uOrg:{value:.5},
     uRnd:{value:.5},uGF:{value:.45},
-    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},
+    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},uFreeze:{value:0},uClock:{value:0},uShake:{value:new THREE.Vector2(0,0)},
     uMouse:{value:new THREE.Vector2(.5,.5)},
     uRes:{value:new THREE.Vector2(320,180)},uAudio:{value:0},uTexCoverage:{value:new THREE.Vector2(1,1)}
   };
@@ -2364,7 +2560,7 @@ const Engine=(()=>{
     uTex:{value:null},uBloom:{value:null},uAscii:{value:null},uOutRes:{value:new THREE.Vector2(2,2)},uBufAsp:{value:1.78},
     uT:{value:0},uBloomAmt:{value:.3},uDirt:{value:.2},uTear:{value:0},uDecay:{value:0},
     uAsciiAmt:{value:0},uAsciiMode:{value:0},uGrade:{value:0},uFinish:{value:1},uVig:{value:.82},uSafe:{value:0},
-    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0}
+    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uOver:{value:null}
   };
 
   function makeRT(w,h,linear){
@@ -2486,6 +2682,11 @@ const Engine=(()=>{
     U.uZoom.value=frame.zoom==null?1:frame.zoom;U.uSeed.value=frame.seed||0;U.uKaleidoSeg.value=frame.kaleidoSeg||0;
     U.uTexCoverage.value.set(src.covX,src.covY);
     U.uMouse.value.set(frame.mouse.x,frame.mouse.y);
+    U.uFreeze.value=firstFrame?0:(frame.freeze||0);U.uClock.value=performance.now()/1000%10000;
+    if(frame.shake)U.uShake.value.set(frame.shake[0]||0,frame.shake[1]||0);else U.uShake.value.set(0,0);
+    // overlay layer (clip text / waveform): a canvas texture owned by the clip module
+    const ov=frame.overlay;
+    if(ov&&ov.tex){FU.uOver.value=ov.tex;FU.uOverOn.value=1}else{FU.uOverOn.value=0;FU.uOver.value=asciiTex}
     const v=frame.fxVals;
     FX.forEach(f=>{U['u_'+f.id].value=v[f.id]||0});
     FU.uT.value=t;FU.uBloomAmt.value=(v.bloom||0)*1.7;FU.uDirt.value=v.dirt||0;
@@ -2779,7 +2980,7 @@ const Thumbs=(()=>{
         if(ok){cv.getContext('2d').putImageData(img,0,0);cv.classList.add('on')}
       }
     }
-    schedule(queue.length?45:900);
+    schedule(queue.length?90:900);
   }
   function schedule(ms){
     if(timer)return;
@@ -2977,6 +3178,7 @@ function setTab(name){
   $$('.tab').forEach(t=>{const on=t.dataset.tab===name;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false')});
   $$('.pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===name));
   syncBottomNav();
+  const pane=$('.pane.on');if(pane){Motion.stagger(pane);if(name==='recipes')Motion.stagger($id('presetGrid'),18)}
 }
 function bindTabs(){
   $$('.tab').forEach(t=>t.addEventListener('click',()=>setTab(t.dataset.tab)));
@@ -2996,6 +3198,7 @@ function syncBottomNav(){
 function openSheet(which){
   document.body.dataset.sheet=which;
   syncBottomNav();
+  if(which==='look')Motion.stagger($('#panelLook .panel-body'));
   setTimeout(()=>{const p=which==='look'?$id('panelLook'):$id('panelRight');if(p)p.scrollTop=0},50);
 }
 function closeSheet(){
@@ -3350,6 +3553,7 @@ function openDrawer(el){
   drawerOpen=el;
   el.classList.add('open');
   el.setAttribute('aria-hidden','false');
+  Motion.stagger(el.querySelector('.drawer-body'));
   $id('backdrop').classList.add('on');
   setBackgroundInert(true);
   setTimeout(()=>{
@@ -4375,18 +4579,65 @@ function hordeStatusText(c){
   if(c&&c.queue_position>0)return tr('gen.queue').replace('{n}',c.queue_position).replace('{s}',Math.max(1,Math.round(c.wait_time||0)));
   return tr('gen.busy');
 }
+// First choice: FLUX.1 schnell through the rot-share worker (Workers AI). It rewrites the idea into a richer
+// prompt, draws a 1024 px picture in a few seconds and refuses unsafe requests. Any other failure
+// (quota, outage, timeout) falls back to the AI Horde.
+async function fluxGenerate(q){
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),45000);
+  try{
+    const r=await fetch(SHARE_API+'/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q}),signal:ctl.signal});
+    const d=await r.json().catch(()=>null);
+    if(d&&d.error==='censored')throw Object.assign(new Error('censored'),{final:true});
+    if(!r.ok||!d||typeof d.img!=='string'||d.img.length<200)throw Object.assign(new Error((d&&d.error)||('http'+r.status)),{status:r.status});
+    return {url:'data:image/jpeg;base64,'+d.img,ticket:/^[A-Za-z0-9_-]{16,32}$/.test(String(d.t||''))?d.t:null};
+  }finally{clearTimeout(tm)}
+}
+// re-encode for the share store: WebP where the browser can make it, JPEG otherwise (both ≤ 1152 px)
+function shrinkForStore(url){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      try{
+        const k=Math.min(1,1152/Math.max(im.naturalWidth,im.naturalHeight));
+        const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        let d=c.toDataURL('image/webp',.84);
+        if(d.indexOf('data:image/webp')!==0)d=c.toDataURL('image/jpeg',.86);
+        res(d);
+      }catch(e){res(url)}
+    };
+    im.onerror=()=>res(url);
+    im.src=url;
+  });
+}
+
 async function generateImage(q,onStatus){
   q=String(q||'').trim().slice(0,400);if(!q)return false;
-  const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
-  const seed=Math.floor(Math.random()*1e9);
-  const url=await hordeGenerate(q,seed,w,h,onStatus);
-  const meta={t:'gen',q,seed,w,h,data:url};
-  await loadRemoteImage(url,meta);preStore(meta);
+  let url=null,meta=null;
+  try{
+    if(onStatus)onStatus({queue_position:0});
+    const r=await fluxGenerate(q);url=await shrinkForStore(r.url);
+    // stored with the worker's one-time ticket: the share link opens exactly this picture
+    meta={t:'gen',q,src:'flux',data:url,ticket:r.ticket};
+  }catch(e){
+    if(e&&e.final)throw e;
+    const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
+    const seed=Math.floor(Math.random()*1e9);
+    url=await hordeGenerate(q,seed,w,h,onStatus);
+    meta={t:'gen',q,seed,w,h,data:url};
+  }
+  await loadRemoteImage(url,meta);if(meta.ticket)preStore(meta);
   return url;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
 async function regenerateShared(sm){
-  const q=String(sm.q).slice(0,400),seed=Math.abs(+sm.seed|0);
+  const q=String(sm.q).slice(0,400);
+  // a FLUX picture has no seed to replay: draw the same idea again (close, not identical)
+  if(sm.seed==null){
+    let url;try{url=await shrinkForStore((await fluxGenerate(q)).url)}catch(e){if(e&&e.final)throw e}
+    if(url){await loadRemoteImage(url,{t:'gen',q,src:'flux',data:url});return}
+  }
+  const seed=Math.abs(+sm.seed|0);
   let w=+sm.w|0,h=+sm.h|0;
   if(!(w>=256&&w<=576&&h>=256&&h<=576)){const s=hordeSize((w&&h)?w/h:16/9);w=s.w;h=s.h} // links made before the switch
   const url=await hordeGenerate(q,seed,w,h);
@@ -4402,6 +4653,7 @@ function openGen(){
   if(document.body.dataset.sheet)closeSheet();
   if(drawerOpen)closeDrawer(drawerOpen);
   g.classList.add('on');g.setAttribute('aria-hidden','false');
+  Motion.stagger(g.querySelector('.gen-card'));
   setTimeout(()=>{try{$id('genPrompt').focus()}catch(e){}},80);
 }
 // Waiting field: ordered (Bayer) dither of a drifting plasma; brighter where the pointer is.
@@ -4535,15 +4787,18 @@ function lookForLink(){
 // Generated images are stored by the rot-share worker (Cloudflare KV, content-addressed), so a link
 // opens the exact same picture instead of asking the AI to draw it again.
 const SHARE_API='https://rot-share.nicoflp.workers.dev';
+// A FLUX picture is stored with the one-time ticket /gen gave for it; anything else (Horde fallback, links)
+// has no ticket and is shared by redrawing its prompt instead.
 async function storeShot(meta){
   if(meta.id)return meta.id;
+  if(!meta.ticket||!meta.data)throw new Error('no_ticket');
   const blob=await (await fetch(meta.data)).blob();
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
   try{
-    const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob,signal:ctl.signal});
+    const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp','X-Ticket':meta.ticket},body:blob,signal:ctl.signal});
     const d=await r.json().catch(()=>null);
     if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
-    meta.id=d.id;delete meta.data;return d.id;
+    meta.id=d.id;delete meta.data;delete meta.ticket;return d.id;
   }finally{clearTimeout(tm)}
 }
 // started as soon as an image is generated: by the time Share is pressed the id is usually ready
@@ -4593,11 +4848,13 @@ async function snapPreview(){
     if(sum/(d.length/(4*97))>24)break;
     await new Promise(r=>requestAnimationFrame(()=>r()));
   }
-  for(const q of [.74,.6,.46,.34]){
+  // aim for ~60 KB (a link card doesn't need more, and the daily preview budget then lasts twice as long)
+  let fit=null;
+  for(const q of [.7,.58,.46,.34]){
     const b=await new Promise(r=>c.toBlob(r,'image/jpeg',q));
-    if(b&&b.size<=210*1024)return b;
+    if(b&&b.size<=210*1024){fit=b;if(b.size<=60*1024)break}
   }
-  return null;
+  return fit;
 }
 async function sendPreview(){
   if(!PV.id||PV.sent)return PV.sent;
@@ -4755,6 +5012,7 @@ function renderGallery(state){
   if(state){g.innerHTML='<div class="gal-empty">'+esc(tr(state))+'</div>';return}
   if(!Gallery.items.length){g.innerHTML='<div class="gal-empty">'+esc(tr('gal.empty'))+'</div>';return}
   g.innerHTML=Gallery.items.map(it=>'<button type="button" class="gal-it" data-id="'+esc(it.id)+'"><img loading="lazy" alt="" src="'+esc(SHARE_API+'/p/'+it.p)+'"><span class="gal-rep" role="button" tabindex="0" title="'+esc(tr('gal.report'))+'" aria-label="'+esc(tr('gal.report'))+'">⚑</span></button>').join('');
+  Motion.stagger(g,18);
   $$('#galGrid img').forEach(im=>im.addEventListener('error',()=>{const b=im.closest('.gal-it');if(b)b.remove()}));
 }
 async function loadGallery(){
@@ -4770,7 +5028,7 @@ function openGallery(){
   if(document.body.dataset.sheet)closeSheet();
   if(drawerOpen)closeDrawer(drawerOpen);
   const g=$id('gal');g.classList.add('on');g.setAttribute('aria-hidden','false');Gallery.open=true;
-  syncGalPublish();loadGallery();setTimeout(()=>glitchIn($id('galTitle')),60);
+  syncGalPublish();loadGallery();Motion.stagger(g.querySelector('.gal-card'));setTimeout(()=>glitchIn($id('galTitle')),60);
 }
 function closeGallery(){const g=$id('gal');g.classList.remove('on');g.setAttribute('aria-hidden','true');Gallery.open=false}
 async function publishLook(){
@@ -4861,18 +5119,18 @@ function updateHUD(force){
   if(!force&&now-lastHudAt<460)return;
   lastHudAt=now;
   const fps=Math.round(1000/Math.max(1,DATA.fpsEMA));
-  const fpsEl=$id('hudFps');if(fpsEl)fpsEl.textContent=String(Math.min(999,Math.max(0,fps))).padStart(2,'0');
-  const resEl=$id('hudRes');if(resEl)resEl.textContent=renderResLabel();
+  const fpsEl=$id('hudFps');if(fpsEl)setTxt(fpsEl,String(Math.min(999,Math.max(0,fps))).padStart(2,'0'));
+  const resEl=$id('hudRes');if(resEl)setTxt(resEl,renderResLabel());
   const pct=Math.round(clamp(DATA.entropy,0,1)*100);
   const bar=$id('hudDecay');if(bar)bar.style.transform='scaleX('+(pct/100)+')';
-  const txt=$id('hudDecayTxt');if(txt)txt.textContent=pct+'%';
+  const txt=$id('hudDecayTxt');if(txt)setTxt(txt,pct+'%');
   const sig=$id('hudSig');
   if(sig){sig.classList.toggle('bad',fps<28);sig.classList.toggle('off',DATA.fpsEMA>200)}
-  const st=$id('hudSigTxt');if(st)st.textContent=fps<28?'STRAIN':'LIVE';
+  const st=$id('hudSigTxt');if(st)setTxt(st,fps<28?'STRAIN':'LIVE');
   const state=$id('tickerState');
-  if(state)state.textContent=DATA.recording?'RECORDING':(DATA.hypno?'HYPNOSIS CYCLE':(DATA.extreme?'EXTREME FEED':(DATA.exporting?'EXPORTING':'LIVE DISTORTION')));
+  if(state)setTxt(state,DATA.recording?'RECORDING':(DATA.hypno?'HYPNOSIS CYCLE':(DATA.extreme?'EXTREME FEED':(DATA.exporting?'EXPORTING':'LIVE DISTORTION'))));
   const clock=$id('tickerClock');
-  if(clock){const up=Math.max(0,Math.floor((Date.now()-DATA.bootAt)/1000));clock.textContent=fmtTime(up)}
+  if(clock){const up=Math.max(0,Math.floor((Date.now()-DATA.bootAt)/1000));setTxt(clock,fmtTime(up))}
   if(typeof syncPerfUI==='function')syncPerfUI();
 }
 
@@ -4905,6 +5163,7 @@ document.addEventListener('keydown',e=>{
     return;
   }
 
+  if(typeof Live!=='undefined'&&Live.ready&&Live.key(key,e))return;
   if(key==='r'){e.preventDefault();randomizeLook();markDirty()}
   else if(key==='e'){e.preventDefault();toggleExtreme()}
   else if(key==='h'){e.preventDefault();toggleHypnosis()}
@@ -6398,8 +6657,8 @@ const Music=(()=>{
 
   function updateUI(now,dt){
     const cur=$id('musicCur');
-    if(cur)cur.textContent=fmtTime(el.currentTime||0);
-    const total=$id('musicTotal');if(total)total.textContent=fmtTime(duration||0);
+    if(cur)setTxt(cur,fmtTime(el.currentTime||0));
+    const total=$id('musicTotal');if(total)setTxt(total,fmtTime(duration||0));
     const wrap=$id('musicWaveWrap');
     if(wrap){wrap.setAttribute('aria-valuemax',String(Math.round(duration)));wrap.setAttribute('aria-valuenow',String(Math.round(el.currentTime||0)))}
     const dot=$id('musicBeatDot');
@@ -6407,16 +6666,16 @@ const Music=(()=>{
     const setBar=(id,v)=>{const e=$id(id);if(e)e.style.setProperty('--v',String(clamp(v,0,1)))};
     setBar('musicBassBar',level.bass);setBar('musicMidBar',level.mid);setBar('musicHighBar',level.high);
     const sigNote=$id('musicSignalNote');
-    if(sigNote)sigNote.textContent=loaded?(playing?'LIVE FFT':'PAUSED'):'SILENT';
+    if(sigNote)setTxt(sigNote,loaded?(playing?'LIVE FFT':'PAUSED'):'SILENT');
     const dropTxt=$id('musicDropText');
     if(dropTxt){
-      if(pulse.drop>.2)dropTxt.textContent='DROP';
-      else if(dropShownAt&&now-dropShownAt<4000)dropTxt.textContent='LAST DROP '+(1-(now-dropShownAt)/4000*1).toFixed(1)+'S';
-      else dropTxt.textContent=playing?'LISTENING':'NO DROP';
+      if(pulse.drop>.2)setTxt(dropTxt,'DROP');
+      else if(dropShownAt&&now-dropShownAt<4000)setTxt(dropTxt,'LAST DROP '+(1-(now-dropShownAt)/4000*1).toFixed(1)+'S');
+      else setTxt(dropTxt,playing?'LISTENING':'NO DROP');
     }
     const sync=$id('musicSyncNote');
     if(sync){
-      sync.textContent=!loaded?'IDLE':(!playing?'PAUSED':('BAR '+Math.max(0,out.barIndex)+' / BEAT '+Math.max(0,out.beatIndex)));
+      setTxt(sync,!loaded?'IDLE':(!playing?'PAUSED':('BAR '+Math.max(0,out.barIndex)+' / BEAT '+Math.max(0,out.beatIndex))));
     }
     if(now-spectrumAt>42){spectrumAt=now;drawSpectrum()}
     drawHead();
@@ -6434,6 +6693,7 @@ const Music=(()=>{
     update:update,syncUI:syncUI,
     hasTrack:()=>loaded,isPlaying:()=>playing,
     currentTime:()=>el?el.currentTime:0,duration:()=>duration,
+    setRoutes:(r,react)=>{if(Array.isArray(r))settings.routes=r;if(react!=null)settings.reactOn=!!react;renderRoutes();syncUI();persist()},
     get settings(){return settings},get mods(){return out.mod},get signals(){return out},
     get media(){return el},get buffer(){return buffer},get beats(){return beatTimes},
     get hits(){return {kick:evKick,snare:evSnare,hat:evHat}}
@@ -6520,11 +6780,11 @@ function chooseMp4Mime(){
 function syncExportUI(){
   const def=exportSizeDef();
   const rs=$id('exportRes');if(rs)rs.value=def.id;
-  const rn=$id('resNote');if(rn)rn.textContent=def.label;
+  const rn=$id('resNote');if(rn&&rn.textContent!==def.label){rn.textContent=def.label;Motion.tick(rn)}
   const on=$id('outputNote');if(on)on.textContent='MP4 / H.264 / '+exportTag(def);
   const dur=$id('exportDur');
   if(dur){const v=clamp(Math.round(+DATA.settings.duration||6),3,120);dur.value=String(v);fillRange(dur)}
-  const dn=$id('durNote');if(dn)dn.textContent=String(clamp(Math.round(+DATA.settings.duration||6),3,120)).padStart(2,'0')+' S';
+  const dn=$id('durNote'),dv=String(clamp(Math.round(+DATA.settings.duration||6),3,120)).padStart(2,'0')+' S';if(dn&&dn.textContent!==dv){dn.textContent=dv;Motion.tick(dn)}
   const fn=$id('fpsNote');if(fn)fn.textContent='60 FPS · LOCKED';
   const au=$id('chkAudio');if(au)au.checked=!!DATA.settings.includeAudio;
   const share=$id('btnShareLast');if(share)share.disabled=!DATA.lastExport;
@@ -7167,7 +7427,7 @@ const PLACEHOLDER=(()=>{
 })();
 
 
-const SAFE_LIMITS={glitch:.55,tear:.55,mosh:.55,vhs:.55,skip:.55,rgb:.7,ca:.7};
+const SAFE_LIMITS={glitch:.55,tear:.55,mosh:.55,vhs:.55,skip:.55,rgb:.7,ca:.7,blackout:.2,transmission:.5,collapse:.6};
 const EXTREME={on:false,cur:FX.map(()=>0),tgt:FX.map(()=>0),next:0,nuke:0};
 const jn=x=>(Math.sin(x*1.7)+Math.sin(x*2.9+1.3)+.5*Math.sin(x*4.3+.7))/5+.5;
 const VIEW={t:0,last:0,hold:0,adaptiveAt:0,hidden:false,started:false,nextDraw:0,minFrame:100,finish:1,drawLast:0,drawEMA:16.7,janks:0,upAt:0};
@@ -7229,7 +7489,16 @@ function adaptQuality(now){
   const budget=Math.max(1000/60,Math.min(40,VIEW.minFrame||16.7));
   if(now-(VIEW.minAt||0)>5000){VIEW.minAt=now;VIEW.minFrame=100}
   const q=Engine.getQuality(),janks=VIEW.janks;VIEW.janks=0;
-  if((VIEW.drawEMA>budget*1.17||janks>=3)&&q>.5){Engine.setQuality(Math.max(.5,q-.1));VIEW.upAt=now+4000;return}
+  // one slow half-second (a GC pause, a tab switch, a toast) is noise: step down only after two in a row,
+  // or at once on a heavy burst of missed frames
+  const slow=VIEW.drawEMA>budget*1.17||janks>=3;
+  VIEW.slowN=slow?(VIEW.slowN||0)+1:0;
+  if(slow&&q>.5&&(VIEW.slowN>=2||janks>=6)){
+    Engine.setQuality(Math.max(.5,q-.1));VIEW.upAt=now+4000;VIEW.slowN=0;
+    // the GPU is struggling: drop the frosted-glass blur behind the panels for the rest of the visit
+    if(q-.1<.75&&!document.body.classList.contains('lite'))document.body.classList.add('lite');
+    return;
+  }
   if(VIEW.drawEMA<budget*1.04&&janks===0&&q<1&&now>VIEW.upAt){Engine.setQuality(Math.min(1,q+.05));VIEW.upAt=now+2500}
 }
 
@@ -7380,12 +7649,16 @@ function loop(now){
     }
   }
 
+  // ROT Live (autopilot, sequencer, scenes, MIDI): additive modulation, still under the caps below
+  const LV=(typeof Live!=='undefined'&&Live.ready)?Live.frame(dt,mus,T,now):null;
+  if(LV)LV.applyFx(frame.fxVals);
   // Safety caps go last, so no multiplier, audio boost or burst can exceed them.
   if(DATA.settings.safe){
     FX.forEach(f=>{frame.fxVals[f.id]=Math.min(frame.fxVals[f.id],SAFE_LIMITS[f.id]||1)});
   }
   if(DATA.settings.reduce){
     FX.forEach(f=>{frame.fxVals[f.id]=Math.min(frame.fxVals[f.id],1.05)});
+    frame.fxVals.blackout=Math.min(frame.fxVals.blackout||0,.3);
   }
   frame.t=T;
   // hold-to-compare eases the wet mix down to the untouched source and back
@@ -7407,6 +7680,8 @@ function loop(now){
   frame.seed=mus&&mus.loaded&&!DATA.settings.safe?mus.seed:0;
   frame.kaleidoSeg=mus&&mus.loaded?mus.kaleidoSeg:0;
   frame.flash=DATA.settings.safe?0:clamp(musicFlash*(DATA.settings.reduce?.55:1),0,1);
+  frame.freeze=0;frame.shake=null;
+  if(LV)LV.post(frame);
 
   
 
@@ -7628,5 +7903,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else startApp();
 
 </script>
+<!-- ROT Live: autopilot, mutation, MIDI, scenes, sequencer, quick clip, quick play (they use the globals above) -->
+<script src="live/core.js?v=1"></script>
+<script src="live/autopilot.js?v=1"></script>
+<script src="live/mutate.js?v=1"></script>
+<script src="live/scenes.js?v=1"></script>
+<script src="live/seq.js?v=1"></script>
+<script src="live/midi.js?v=1"></script>
+<script src="live/clip.js?v=1"></script>
+<script src="live/quick.js?v=1"></script>
+<script src="live/ui.js?v=1"></script>
+<script src="live/motion.js?v=1"></script>
 </body>
 </html>
