@@ -125,6 +125,33 @@ body.clean #aurora,body.clean #scan,body.clean #vignette,body.clean #edge{opacit
 #emptyHint{position:fixed;inset:0;z-index:4;display:grid;place-content:center;text-align:center;pointer-events:none;padding:24px;transition:opacity var(--t-slow) var(--ease),transform var(--t-slow) var(--ease);will-change:opacity,transform}
 #emptyHint>*{transition:transform var(--t-slow) var(--snap)}
 #emptyHint.off{opacity:0;visibility:hidden;transform:translate3d(0,0,0) scale(1.035)}
+@keyframes rotSlice{
+  0%{clip-path:inset(0);transform:none;text-shadow:none}
+  10%{clip-path:inset(10% 0 56% 0);transform:translate3d(-7px,0,0);text-shadow:-4px 0 rgba(255,42,109,.9),4px 0 rgba(5,217,232,.9)}
+  20%{clip-path:inset(58% 0 6% 0);transform:translate3d(6px,0,0);text-shadow:4px 0 rgba(255,42,109,.9),-4px 0 rgba(5,217,232,.9)}
+  30%{clip-path:inset(28% 0 38% 0);transform:translate3d(-3px,0,0)}
+  40%{clip-path:inset(0);transform:translate3d(1px,0,0);text-shadow:-2px 0 rgba(255,42,109,.7),2px 0 rgba(5,217,232,.7)}
+  55%,100%{clip-path:inset(0);transform:none;text-shadow:none}
+}
+@keyframes rotTwitch{
+  0%,88%,100%{clip-path:inset(0);transform:none;text-shadow:0 4px 60px rgba(4,3,14,.9)}
+  89%{clip-path:inset(18% 0 52% 0);transform:translate3d(-6px,0,0);text-shadow:-3px 0 rgba(255,42,109,.85),3px 0 rgba(5,217,232,.85)}
+  90.5%{clip-path:inset(60% 0 4% 0);transform:translate3d(5px,0,0);text-shadow:3px 0 rgba(255,42,109,.85),-3px 0 rgba(5,217,232,.85)}
+  92%{clip-path:inset(0);transform:translate3d(-1px,0,0);text-shadow:-1px 0 rgba(255,42,109,.6),1px 0 rgba(5,217,232,.6)}
+  93.5%{clip-path:inset(0);transform:none;text-shadow:0 4px 60px rgba(4,3,14,.9)}
+}
+@keyframes cvCut{
+  0%{clip-path:inset(0);transform:translate(-50%,-50%);filter:none}
+  12%{clip-path:inset(0 0 62% 0);transform:translate(calc(-50% - 14px),-50%);filter:hue-rotate(70deg) saturate(1.8)}
+  24%{clip-path:inset(44% 0 18% 0);transform:translate(calc(-50% + 12px),-50%);filter:hue-rotate(-50deg) contrast(1.4)}
+  36%{clip-path:inset(70% 0 0 0);transform:translate(calc(-50% - 6px),-50%);filter:saturate(2)}
+  50%{clip-path:inset(0);transform:translate(calc(-50% + 3px),-50%);filter:contrast(1.25)}
+  70%,100%{clip-path:inset(0);transform:translate(-50%,-50%);filter:none}
+}
+.gl-in{animation:rotSlice .62s steps(1,end) both}
+#cv.src-in{animation:cvCut .5s steps(1,end) both}
+#emptyHint:not(.off) .eh-t{animation:rotTwitch 6.5s linear infinite}
+@media(prefers-reduced-motion:reduce){.gl-in,#cv.src-in,#emptyHint .eh-t{animation:none!important}}
 #emptyHint .eh-k{font:500 9px/1 var(--fm);letter-spacing:.5em;color:var(--mint);margin-bottom:16px;text-transform:uppercase}
 #emptyHint .eh-t{font:700 clamp(24px,4.6vw,62px)/1.02 var(--fd);letter-spacing:-.035em;color:var(--tx);text-shadow:0 4px 60px rgba(4,3,14,.9)}
 #emptyHint .eh-s{font:400 9px/1 var(--fm);letter-spacing:.3em;color:var(--mu);margin-top:18px;text-transform:uppercase}
@@ -134,6 +161,12 @@ body:has(#intro:not(.out)) #emptyHint{opacity:0;visibility:hidden}
 #emptyHint .eh-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px;pointer-events:auto}
 #emptyHint .eh-actions .btn{min-width:168px;min-height:44px;padding:0 20px}
 #emptyHint.off .eh-actions{pointer-events:none}
+/* desktop: center in the free space between the two panels, and size the title to fit it */
+@media(min-width:901px){
+  #emptyHint{padding-left:calc(var(--pw) + 40px);padding-right:calc(var(--pw) + 40px)}
+  #emptyHint .eh-t{font-size:clamp(22px,calc((100vw - 2 * var(--pw) - 80px) / 11.5),62px)}
+  #emptyHint .eh-actions .btn{min-width:150px}
+}
 
 
 #topbar{
@@ -745,6 +778,15 @@ body.reduce-motion #dropZone .dz-frame,body.reduce-motion #dropZone .dz-icon{ani
 .gen-busy i{flex:1;height:3px;border-radius:var(--pill);background:rgba(255,255,255,.1);overflow:hidden;position:relative}
 .gen-busy i::after{content:"";position:absolute;inset:0;width:40%;background:linear-gradient(90deg,var(--acc),var(--mint));animation:indet 1.2s var(--ease) infinite}
 #gen.busy .gen-busy{display:flex}
+.gen-fx{display:none;position:relative;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--stroke);background:#07060f;aspect-ratio:var(--gen-ar,3/2);max-height:46vh;margin:0 auto}
+.gen-fx canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;cursor:crosshair;touch-action:none}
+.gen-fx::after{content:"";position:absolute;inset:auto 0 0;height:46px;background:linear-gradient(transparent,rgba(5,4,12,.92));pointer-events:none}
+.gen-fx-q{position:absolute;z-index:1;left:12px;right:12px;bottom:10px;font:500 9px/1.4 var(--fm);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.72);
+  text-shadow:0 1px 8px rgba(0,0,0,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;transition:opacity .4s}
+#gen.busy #genPrompt,#gen.busy .gen-styles{display:none}
+#gen.busy .gen-fx{display:block;animation:genFxIn .5s var(--snap,ease) both}
+#gen.reveal .gen-fx-q{opacity:0}
+@keyframes genFxIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 #gen.busy #genGo,#gen.busy #genIdea{opacity:.45;pointer-events:none}
 .gen-note{font:400 11px/1.4 var(--fd);color:var(--dim);margin:14px 0 0}
 .gen-note b{color:var(--mu);font-weight:600}
@@ -1461,6 +1503,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <p class="gen-sub" data-i18n="gen.sub">Describe an image and ROT generates it as your source — or paste an image link.</p>
     <textarea id="genPrompt" rows="3" maxlength="400" data-i18n-ph="gen.ph" placeholder="a neon jellyfish drifting in a dark ocean"></textarea>
     <div class="gen-styles" id="genStyles"></div>
+    <div class="gen-fx" id="genFxWrap" aria-hidden="true"><canvas id="genFx"></canvas><span class="gen-fx-q" id="genFxQ"></span></div>
     <div class="gen-foot">
       <button class="btn dark" id="genIdea" type="button" data-i18n="gen.idea">Surprise me</button>
       <button class="btn hot" id="genGo" type="submit" data-i18n="gen.go">Generate</button>
@@ -2288,6 +2331,7 @@ const Engine=(()=>{
     U.uTex.value=tex;U.uSA.value=src.w/src.h;U.uTexCoverage.value.set(src.covX,src.covY);
     firstFrame=true;
     if(!exporting)fit(true);
+    if(!src.empty&&!exporting){const cv=document.getElementById('cv');if(cv){cv.classList.remove('src-in');void cv.offsetWidth;cv.classList.add('src-in')}}
   }
   function getSrc(){return src}
   function uploadFrame(frame){
@@ -3174,6 +3218,306 @@ function detectLang(){
   const l=((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase();
   return l.startsWith('it')?'it':'en';
 }
+// Italian for the rest of the interface (panels, sliders, effects, music, export, setup).
+// Strings in the markup and in UI code stay English; when the language is Italian every visible
+// text node and label is looked up here (case-insensitive) and swapped, keeping UPPERCASE where the
+// original was uppercase. Switching back to English restores the originals.
+const UI_IT={
+  // top bar / ticker / hud
+  'distortion instrument / v2.1':'Strumento di distorsione / v2.1','no source':'nessuna sorgente','live distortion':'distorsione live',
+  'r randomize · v record · p frame':'r casuale · v registra · p frame','compare':'confronta','theme':'tema','setup':'impostazioni',
+  'strain':'sforzo','image':'immagine','video':'video','sample':'esempio',
+  // look panel
+  'distortion':'distorsione','source':'sorgente','drop image / video here':'trascina immagine / video qui','or click to browse':'o clicca per sfogliare',
+  'upload':'carica','clear':'svuota','empty':'vuota','still / landscape':'statica / orizzontale','still / portrait':'statica / verticale','still / square':'statica / quadrata',
+  'intensity':'intensità','speed':'velocità','chaos':'caos','wet mix':'mix effetto','organic distortion':'distorsione organica','randomness':'casualità',
+  'glitch frequency':'frequenza glitch','hue shift':'rotazione colore','camera zoom':'zoom camera','render resolution':'risoluzione di rendering',
+  'native':'nativa','stage':'schermo','· adaptive quality may reduce detail':'· la qualità adattiva può ridurre il dettaglio',
+  'pixelation':'pixelatura','color grade / lut':'Color grading / LUT','none':'nessuno','none / raw':'nessuno / grezzo','bleach bypass':'bleach bypass',
+  'cyanosis':'cianosi','infrared':'infrarosso','sepia rot':'seppia marcia','acid':'acido','ascii mode':'Modalità ASCII','glyph':'glifi',
+  'ascii glyphs':'Glifi ASCII','halftone dots':'retino a punti','adaptive resolution':'risoluzione adattiva','frame skip / strobe':'salto frame / strobo',
+  'effects':'effetti','all':'tutti','all off':'spegni tutti','optical':'ottici','signal':'segnale','light':'luce','opt':'ott','sig':'seg','lig':'luc',
+  'no effects match':'nessun effetto trovato','double-click an effect label to solo it.':'doppio clic sul nome di un effetto per isolarlo.',
+  'randomize ·':'casuale ·','extreme ·':'estremo ·','hypnosis':'ipnosi','filter effects':'filtra effetti',
+  // effects
+  'liquid warp':'deformazione liquida','fisheye lens':'lente fisheye','feedback trails':'scie feedback','texture displacement':'spostamento texture',
+  'kaleidoscope':'caleidoscopio','fluid warp':'deformazione fluida','ghost echo':'eco fantasma','fake parallax':'finta parallasse','mirror fold':'piega a specchio',
+  'ripple field':'campo d’onde','rgb split':'Separazione RGB','chromatic ab.':'aberrazione crom.','datamosh smear':'sbavatura datamosh',
+  'pixel sorting':'pixel sorting','vhs / scanlines':'VHS / scanline','glitch displacement':'spostamento glitch','frame skipping':'salto frame',
+  'macroblocking':'macroblocchi','posterize / dither':'posterizza / dither','scan tear':'strappo di scansione','ascii / halftone':'ASCII / retino',
+  'prismatic light':'luce prismatica','neon contours':'contorni neon','anamorphic glare':'riflesso anamorfico','bloom / glow':'bloom / bagliore',
+  'lens dirt':'sporco sulla lente','decay over time':'decadimento nel tempo',
+  // control panel
+  'control':'controllo','recipes · output · capture':'ricette · output · cattura','recipes':'ricette','output':'output','music':'musica','capture':'cattura',
+  'randomize':'casuale','mutate every parameter':'muta ogni parametro','extreme':'estremo','unstable feed':'segnale instabile',
+  'save':'salva','mutate':'muta','pin current':'fissa attuale','clean':'pulito','export look json':'esporta look json',
+  'the engine morphs between looks instead of cutting. randomize is safe-capped when safe mode is on.':'Il motore sfuma tra un look e l’altro invece di tagliare. Casuale viene limitato quando la SAFE MODE è attiva.',
+  'resolution':'risoluzione','vert':'vert','mp4 and 60 fps stay locked.':'MP4 e 60 FPS restano fissi.','duration':'durata','frame rate':'frame rate',
+  'constant for the whole take':'costante per tutta la ripresa','container':'formato','locked':'fisso','no webm, no gif':'niente WebM, niente GIF',
+  'include audio if present':'includi l’audio se presente','frame png':'frame png','● start rec':'● avvia rec','■ stop rec':'■ ferma rec',
+  'share last export':'condividi ultimo export','ready / press start rec':'pronto / premi avvia rec','press':'premi','start rec':'avvia rec',', then':', poi',
+  'stop rec':'ferma rec','when you are done. the take is capped at the duration above — even if the music is longer.':'quando hai finito. La ripresa si ferma alla durata scelta sopra — anche se la musica è più lunga.',
+  'quick':'rapidi','keyboard':'tastiera','fullscreen':'schermo intero','frame ·':'frame ·','start/stop rec ·':'avvia/ferma rec ·',
+  'music / performance ·':'musica / performance ·','tap ·':'tap ·','seek ·':'sposta ·','close.':'chiudi.',
+  // music
+  'track':'brano','no track':'nessun brano','drop music here':'trascina la musica qui',
+  'mp3 / flac / ogg / wav — max 200 mb — click to browse':'mp3 / flac / ogg / wav — max 200 mb — clicca per sfogliare',
+  'no track loaded':'nessun brano caricato','local file / never uploaded':'file locale / mai caricato online','load a track to see waveform':'carica un brano per vedere la forma d’onda',
+  'shift-drag = export range':'shift-trascina = intervallo export','clear range':'cancella intervallo','play':'play','stop':'stop','loop':'loop','mute':'muto',
+  'lock':'aggancia','volume':'volume','playback rate':'velocità di riproduzione','tempo':'tempo','manual':'manuale','grid offset':'offset griglia',
+  'waiting for track':'in attesa del brano','analyze':'analizza','analyzing':'analizzo','live':'live','silent':'silenzio','bass':'bassi','mid':'medi','treble':'alti',
+  'beat':'beat','no drop':'nessun drop','music drives visuals':'la musica guida la grafica','sensitivity':'sensibilità','smoothing':'morbidezza',
+  'onset threshold':'soglia attacchi','sync latency':'latenza sync','drop detector':'rilevatore drop','drop threshold':'soglia drop','modulation':'modulazione',
+  'auto-map':'auto-mappa','+ route':'+ collegamento','kick punch':'kick che picchia','liquid on bass':'liquido sui bassi','glitch on snare':'glitch sul rullante',
+  'light on downbeat':'luce sul primo battito','decay on bar':'decadimento a battuta','full chaos drops':'caos totale sui drop','neon pulse':'pulsazione neon',
+  'every route reads a musical source and writes one control. amount can go negative.':'Ogni collegamento legge una sorgente musicale e muove un controllo. La quantità può essere negativa.',
+  'sync / safety':'sync / sicurezza','idle':'fermo','beat division (tempo lock)':'divisione del beat (aggancio al tempo)','1/4 beat':'1/4 di beat','1/2 beat':'1/2 beat',
+  '1× beat':'1× beat','2× beat':'2× beat','4× beat':'4× beat','glitch seed per beat':'nuovo glitch a ogni beat','kaleidoscope per bar':'caleidoscopio a ogni battuta',
+  'extreme burst on downbeat':'esplosione estrema sul primo battito','hypnosis runs on bars':'ipnosi a tempo di battuta','use waveform range for export':'usa l’intervallo della forma d’onda per l’export',
+  'reduce flashing':'riduci i lampi','safety':'sicurezza','kick':'kick','snare':'rullante','hi-hat':'hi-hat','energy':'energia','beat phase':'fase beat','bar phase':'fase battuta',
+  'downbeat':'primo battito','onset':'attacco','linear':'lineare','exponential':'esponenziale','stepped':'a scatti',
+  // performance / input
+  'performance':'performance','hit':'premi','rec':'rec',', then move any slider. rot stores the gesture and loops it forever. one slot is kept locally.':', poi muovi uno slider qualsiasi. ROT memorizza il gesto e lo ripete all’infinito. Viene tenuto uno slot in locale.',
+  '● rec performance':'● registra performance','▶ play':'▶ play','loop on':'loop attivo','loop off':'loop spento','replay speed':'velocità di replay','slot / local':'slot / locale',
+  'the performance timeline floats at the bottom on desktop. click it to scrub.':'Su desktop la timeline della performance è in basso. Cliccala per scorrere.',
+  'input':'input','gestures':'gesti','pinch = intensity':'pizzica = intensità','shake = extreme':'scuoti = estremo','perf':'perf','/ timeline':'/ timeline',
+  'no performance / hit rec':'nessuna performance / premi rec',
+  // setup drawer
+  'system / safety / audio':'sistema / sicurezza / audio','appearance':'aspetto','surface':'superficie','void / dark':'vuoto / scuro','bone / light':'osso / chiaro',
+  'scanlines':'scanline','reset floating panels':'ripristina pannelli','motion & safety':'movimento e sicurezza','reduce ui motion':'riduci animazioni interfaccia',
+  'replay':'rivedi','show · ?':'mostra · ?','entropy / decay':'entropia / decadimento','audio':'audio','ambient drone (off by default)':'drone ambient (spento di default)',
+  'reactive source':'sorgente reattiva','ambient only':'solo ambient','microphone':'microfono','audio file':'file audio','enable mic':'attiva microfono',
+  'load audio':'carica audio','audio drives the effects':'l’audio guida gli effetti','haptic ticks':'vibrazione al tocco','data':'dati','export look':'esporta look',
+  'reset look':'ripristina look','clear all local data':'cancella tutti i dati locali','shortcuts':'scorciatoie','mute ·':'muto ·','png ·':'png ·','record ·':'registra ·',
+  'close ·':'chiudi ·','hypnosis ·':'ipnosi ·','about':'info',
+  // export viewer / misc
+  'export / ready':'export / pronto','download':'scarica','share':'condividi','distort again':'distorci ancora','close':'chiudi','drop to rot it':'rilascia per distruggerla',
+  'photo':'foto','paint':'pittura','original':'originale','tip':'consiglio','sample loaded':'esempio caricato',
+  // popup messages
+  'all fx off':'effetti spenti',
+  'analysis failed':'analisi fallita',
+  'audio blocked':'audio bloccato',
+  'audio decode failed':'audio non decodificabile',
+  'audio reactive':'audio reattivo',
+  'busy':'occupato',
+  'cannot chain':'impossibile concatenare',
+  'chain failed':'concatenazione fallita',
+  'chained':'concatenato',
+  'demo beat':'beat demo',
+  'double tempo':'tempo doppio',
+  'drop detected':'drop rilevato',
+  'entropy reset':'entropia azzerata',
+  'export failed':'export fallito',
+  'extreme mode':'modalità estremo',
+  'file too large':'file troppo grande',
+  'filename bpm':'bpm dal nome file',
+  'frame exported':'frame esportato',
+  'fullscreen blocked':'schermo intero bloccato',
+  'gpu context lost':'gpu persa',
+  'gpu restored':'gpu ripristinata',
+  'half tempo':'metà tempo',
+  'hypnosis ended':'ipnosi finita',
+  'image error':'errore immagine',
+  'image source':'sorgente immagine',
+  'local data cleared':'dati locali cancellati',
+  'look exported':'look esportato',
+  'look reset':'look ripristinato',
+  'master reset':'master ripristinati',
+  'mic blocked':'microfono bloccato',
+  'mic denied':'microfono negato',
+  'mic input':'ingresso microfono',
+  'motion blocked':'movimento bloccato',
+  'motion denied':'movimento negato',
+  'mp4 exported':'mp4 esportato',
+  'mp4 unavailable':'mp4 non disponibile',
+  'music loaded':'musica caricata',
+  'music reactivity':'reattività musicale',
+  'music unavailable':'musica non disponibile',
+  'mutated':'mutato',
+  'mutation':'mutazione',
+  'no audio context':'audio non disponibile',
+  'no audio file':'nessun file audio',
+  'no motion sensor':'nessun sensore di movimento',
+  'no music':'nessuna musica',
+  'no performance':'nessuna performance',
+  'not audio':'non è audio',
+  'nothing to share':'niente da condividere',
+  'panels reset':'pannelli ripristinati',
+  'performance play':'performance in riproduzione',
+  'performance rec':'registrazione performance',
+  'performance saved':'performance salvata',
+  'pinch':'pizzica',
+  'playback blocked':'riproduzione bloccata',
+  'playback error':'errore di riproduzione',
+  'png failed':'png fallito',
+  'range':'intervallo',
+  'reactive preset':'preset reattivo',
+  'rec failed':'registrazione fallita',
+  'recipe':'ricetta',
+  'recipe deleted':'ricetta eliminata',
+  'recipe saved':'ricetta salvata',
+  'recording':'registrazione',
+  'recording cap':'limite registrazione',
+  'recording unsupported':'registrazione non supportata',
+  'render res':'risoluzione',
+  'routes cleared':'collegamenti cancellati',
+  'safe mode off':'safe mode spenta',
+  'safe mode on':'safe mode attiva',
+  'sample error':'errore esempio',
+  'shake':'scuoti',
+  'shake armed':'scuoti attivo',
+  'share unsupported':'condivisione non supportata',
+  'shared':'condiviso',
+  'solo':'solo',
+  'source cleared':'sorgente rimossa',
+  'source failed':'sorgente non caricata',
+  'still source':'sorgente statica',
+  'tempo lock':'aggancio al tempo',
+  'tempo locked':'tempo agganciato',
+  'timeline cleared':'timeline cancellata',
+  'timeline empty':'timeline vuota',
+  'too short':'troppo corta',
+  'unsupported file':'file non supportato',
+  'video error':'errore video',
+  'video source':'sorgente video',
+  'welcome to rot':'benvenuto in rot',
+  '200 mb max':'max 200 mb',
+  '30 seconds':'30 secondi',
+  'fft online':'fft attiva',
+  'https or localhost required':'serve https o localhost',
+  'mp3, flac, ogg or wav only':'solo mp3, flac, ogg o wav',
+  'above 180 bpm limit':'oltre il limite di 180 bpm',
+  'back to the console':'di nuovo alla console',
+  'below 70 bpm limit':'sotto il limite di 70 bpm',
+  'browser unsupported':'browser non supportato',
+  'clean canvas':'tela pulita',
+  'clean slate':'si riparte da zero',
+  'codec not supported here':'codec non supportato qui',
+  'codec or file problem':'problema di codec o di file',
+  'codec unsupported':'codec non supportato',
+  'could not decode':'impossibile decodificare',
+  'could not prepare texture':'impossibile preparare la texture',
+  'download the file instead':'scarica il file invece',
+  'enable in browser settings':'attivalo nelle impostazioni del browser',
+  'export is now the live source':'l’export ora è la sorgente live',
+  'export something first':'prima esporta qualcosa',
+  'extreme burst':'esplosione estrema',
+  'factory defaults':'valori di fabbrica',
+  'full signal restored':'segnale completo ripristinato',
+  'full spectrum event':'evento a spettro pieno',
+  'image could not be decoded':'immagine non decodificabile',
+  'image loaded into the shader':'immagine caricata nello shader',
+  'image, video or audio only':'solo immagini, video o audio',
+  'keep tapping':'continua a battere',
+  'kick, energy and zoom wired':'kick, energia e zoom collegati',
+  'load a track in the music tab':'carica un brano nella scheda musica',
+  'load music first':'prima carica la musica',
+  'load one in setup':'caricane uno in impostazioni',
+  'move sliders, then stop':'muovi gli slider, poi ferma',
+  'new nervous system':'nuovo sistema nervoso',
+  'nothing captured':'niente registrato',
+  'off':'spento',
+  'press h or esc to leave':'premi h o esc per uscire',
+  'press stop rec to export the take':'premi ferma rec per esportare la ripresa',
+  'record one first':'prima registrane una',
+  'reload the page':'ricarica la pagina',
+  'reloading':'ricarico',
+  'resolution is locked during a take':'la risoluzione è bloccata durante una ripresa',
+  'restoring when possible':'ripristino appena possibile',
+  'shake the device to flip extreme':'scuoti il dispositivo per attivare estremo',
+  'strobe effects capped':'effetti strobo limitati',
+  'tap again':'tocca di nuovo',
+  'tap the screen, then try again':'tocca lo schermo, poi riprova',
+  'this browser cannot decode music':'questo browser non decodifica la musica',
+  'this browser cannot record h.264 mp4. use chrome or edge.':'questo browser non registra mp4 h.264. usa chrome o edge.',
+  'too short, cleared':'troppo corta, cancellata',
+  'two fingers on the canvas, pull apart to push intensity':'due dita sulla tela, allargale per spingere l’intensità',
+  'upload an image or video to begin':'carica un’immagine o un video per iniziare',
+  'use frame png in this browser':'in questo browser usa frame png',
+  'use the e key':'usa il tasto e',
+  'wait for the current export':'aspetta che finisca l’export in corso',
+  '± one generation':'± una generazione',
+  // recipe tags (recipe names stay as they are)
+  'fluid':'fluido','optic':'ottico','dimension':'dimensione','mirror':'specchio','decay':'decadimento','ghost':'fantasma','depth':'profondità',
+  'print':'stampa','entropy':'entropia','glass':'vetro','ice':'ghiaccio','split':'diviso','heat':'calore',
+  // attributes
+  'copy a link to this look':'copia un link a questo look','hold to see the original (b)':'tieni premuto per vedere l’originale (b)',
+  'toggle light / dark surface':'alterna superficie chiara / scura','settings':'impostazioni','collapse panel':'riduci pannello','close panel':'chiudi pannello',
+  'reset master sliders':'ripristina gli slider master','delete route':'elimina collegamento','attack':'attacco','release':'rilascio',
+  'minimize timeline':'riduci timeline','record performance':'registra performance','play performance':'riproduci performance','loop performance':'performance in loop',
+  'clear performance':'cancella performance','close settings':'chiudi impostazioni','name this look':'dai un nome a questo look',
+  'disabilita tutto - turn off every effect':'disabilita tutto - spegni ogni effetto',
+  'shift-drag the waveform to mark a range. tempo lock replaces free-running shader time with musical time.':'Shift-trascina sulla forma d’onda per segnare un intervallo. L’aggancio al tempo sostituisce il tempo libero dello shader con il tempo musicale.',
+  'on touch devices, drag two fingers to push intensity, swipe to randomize, or shake to flip extreme mode.':'Sui dispositivi touch trascina con due dita per spingere l’intensità, scorri per un look casuale, oppure scuoti per attivare la modalità Estremo.',
+  'fft bass pushes intensity, mids push chaos, highs push glitch and bloom. audio only starts after a user gesture.':'I bassi spingono l’intensità, i medi il caos, gli alti glitch e bloom. L’audio parte solo dopo un tuo gesto.',
+  'rot stores settings, recipes, the last look and the last performance in localstorage. nothing is uploaded.':'ROT salva impostazioni, ricette, l’ultimo look e l’ultima performance nel browser (localStorage). Non viene caricato nulla online.',
+  'rot 2.1 — a single-file webgl distortion instrument with a completely rebuilt aurora-glass interface. three.js r128. every frame is generated locally.':'ROT 2.1 — uno strumento di distorsione WebGL in un unico file, con un’interfaccia aurora-glass completamente rifatta. Three.js r128. Ogni frame è generato in locale.'
+};
+// strings with numbers or a fixed suffix
+const UI_IT_RX=[
+  [/^(\d+) active$/i,'$1 attivi'],[/^(\d+) recipes$/i,'$1 ricette'],[/^(\d+) routes?$/i,'$1 collegamenti'],
+  [/^(.+) — double-click to solo$/i,(m,a)=>uiIt(a)+' — doppio clic per isolarlo'],
+  [/^(\d+(?:\.\d+)?) s$/i,'$1 s'],[/^(\d+) fps · locked$/i,'$1 fps · fisso'],[/^mp4 · locked$/i,'mp4 · fisso'],
+  [/^(\d+p) vert · (.+)$/i,'$1 vert · $2'],[/^native · (.+)$/i,'nativa · $1'],[/^(.+) \/ stage$/i,'$1 / schermo'],
+  [/^recording · (.+)$/i,'registrazione · $1'],[/^analyzing (\d+)%$/i,'analizzo $1%']
+];
+function uiIt(t){
+  const d=/^([—–-]\s*)(.+)$/.exec(t);if(d){const r=uiIt(d[2]);return r===d[2]?t:d[1]+r}
+  const k=t.toLowerCase();
+  let v=Object.prototype.hasOwnProperty.call(UI_IT,k)?UI_IT[k]:null;
+  if(v==null)for(const [rx,to] of UI_IT_RX){if(rx.test(t)){v=t.replace(rx,to);break}}
+  if(v==null)return t;
+  return /[a-z]/i.test(t)&&t===t.toUpperCase()?v.toUpperCase():(t[0]&&t[0]===t[0].toUpperCase()&&/[a-z]/i.test(t[0])?v[0].toUpperCase()+v.slice(1):v);
+}
+const UiLoc=(()=>{
+  const orig=new WeakMap(),mine=new WeakMap(),attrOrig=new WeakMap();
+  const SKIP='script,style,textarea,#tour,#intro,#gate,#hud,#tickerClock,#musicCur,[data-i18n],[data-noloc]';
+  const ATTRS=['title','aria-label','placeholder'];
+  function text(n){
+    const el=n.parentElement;if(!el||el.closest(SKIP))return;
+    const cur=n.data;
+    if(mine.get(n)!==cur)orig.set(n,cur); // changed by the app (or first visit): that is the new English original
+    const o=orig.get(n);if(o==null)return;
+    const t=o.trim();if(!t||!/[a-z]/i.test(t))return;
+    const want=LANG==='it'?o.replace(t,uiIt(t)):o;
+    if(cur!==want){n.data=want}
+    mine.set(n,want);
+  }
+  function attrs(el){
+    if(el.closest(SKIP))return;
+    let o=attrOrig.get(el);if(!o){o={};attrOrig.set(el,o)}
+    for(const a of ATTRS){
+      if(!el.hasAttribute(a))continue;
+      const cur=el.getAttribute(a);
+      if(o[a+'$']!==cur)o[a]=cur;
+      const want=LANG==='it'?uiIt(o[a].trim()):o[a];
+      if(cur!==want)el.setAttribute(a,want);
+      o[a+'$']=want;
+    }
+  }
+  function tree(root){
+    if(!root)return;
+    if(root.nodeType===3){text(root);return}
+    if(root.nodeType!==1)return;
+    attrs(root);
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);let n;
+    while(n=w.nextNode()){if(n.nodeType===3)text(n);else attrs(n)}
+  }
+  let mo=null,busy=false;
+  function observe(){
+    if(mo)return;
+    mo=new MutationObserver(list=>{
+      if(busy)return;busy=true;
+      try{for(const m of list){
+        if(m.type==='characterData')text(m.target);
+        else if(m.type==='attributes')attrs(m.target);
+        else m.addedNodes.forEach(tree);
+      }}finally{busy=false}
+    });
+    mo.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS});
+  }
+  return {apply(){tree(document.body);observe()}};
+})();
 function applyLang(l,save){
   LANG=l==='it'?'it':'en';
   if(save)storeSet('rot2.lang',LANG);
@@ -3186,6 +3530,7 @@ function applyLang(l,save){
     if(el.innerHTML!==v)el.innerHTML=v;
   });
   const sel=$id('setLang');if(sel)sel.value=LANG;
+  try{UiLoc.apply()}catch(e){}
   try{if(Tour.on){const keep=Tour.i;runTourCleanup();Tour.steps=tourSteps();Tour.i=keep;renderTourStep(true)}}catch(e){} // Tour is declared later; on first call it is not ready yet
 }
 applyLang(detectLang(),false);
@@ -3404,7 +3749,7 @@ function renderTourStep(first){
       '<p class="tc-text" style="--i:2">'+s.text+'</p>'+
       (s.try&&s.try()?'<div class="tc-try" style="--i:3">'+s.try()+'</div>':'')+
       (s.task?'<div class="tc-task'+(done?' done':'')+'" id="tcTask" style="--i:4"><span class="tk">'+TOUR_TICK+'</span><span>'+(done?tr('tour.ok'):s.task)+'</span></div>':'');
-    scrambleTo($id('tcTitle'),s.title);
+    scrambleTo($id('tcTitle'),s.title);glitchIn($id('tcTitle'));
     $id('tcStep').textContent=pad2(Tour.i+1)+' / '+pad2(Tour.steps.length);
     $$('#tcProg i').forEach((el,k)=>el.classList.toggle('done',k<=Tour.i));
     $id('tcBack').style.visibility=Tour.i?'visible':'hidden';
@@ -3629,7 +3974,7 @@ async function generateImage(q,onStatus){
   const url=await hordeGenerate(q,seed,w,h,onStatus);
   const meta={t:'gen',q,seed,w,h,data:url};
   await loadRemoteImage(url,meta);preStore(meta);
-  return true;
+  return url;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
 async function regenerateShared(sm){
@@ -3643,6 +3988,7 @@ async function regenerateShared(sm){
 function isImageLink(v){return /^https?:\/\/\S+$/i.test(String(v||'').trim())}
 
 function openGen(){
+  setTimeout(()=>glitchIn($id('genTitle')),60);
   const g=$id('gen');if(g.classList.contains('on'))return;
   if(Tour.on)endTour(true);
   if(document.body.dataset.sheet)closeSheet();
@@ -3650,7 +3996,83 @@ function openGen(){
   g.classList.add('on');g.setAttribute('aria-hidden','false');
   setTimeout(()=>{try{$id('genPrompt').focus()}catch(e){}},80);
 }
-function closeGen(){const g=$id('gen');g.classList.remove('on','busy');g.setAttribute('aria-hidden','true')}
+// Waiting field: ordered (Bayer) dither of a drifting plasma; brighter where the pointer is.
+// 'queue' is sparse and slow, 'gen' dense and fast; reveal() pixel-sharpens the result into view.
+const GenFx=(()=>{
+  const B=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+.5)/16);
+  let cv=null,ctx=null,img=null,W=0,H=0,raf=0,t0=0,phase='queue',heat=0,px=.5,py=.5,pt=-1e9,bound=false;
+  const A=[155,140,255],M=[110,231,210],K=[255,92,180];
+  function bind(){
+    if(bound)return;bound=true;
+    cv=$id('genFx');ctx=cv.getContext('2d',{alpha:false});
+    const mv=e=>{const r=cv.getBoundingClientRect();px=(e.clientX-r.left)/r.width;py=(e.clientY-r.top)/r.height;pt=performance.now()};
+    cv.addEventListener('pointermove',mv);cv.addEventListener('pointerdown',mv);
+  }
+  function size(ar){
+    W=ar>=1?120:Math.round(120*ar);H=Math.max(40,Math.round(W/ar));
+    cv.width=W;cv.height=H;img=ctx.createImageData(W,H);
+    $id('genFxWrap').style.setProperty('--gen-ar',ar.toFixed(3));
+  }
+  function frame(now){
+    raf=requestAnimationFrame(frame);
+    const reduce=motionQuery.matches,t=(now-t0)/1000*(reduce?.25:1);
+    const target=phase==='gen'?1:0;heat+=(target-heat)*.04;
+    const sp=.55+heat*1.1,dens=.30+heat*.32;
+    // pointer blob: follows the pointer, orbits on its own when idle
+    const idle=now-pt>1800,bx=idle?.5+.28*Math.cos(t*.7):px,by=idle?.5+.22*Math.sin(t*.9):py;
+    const d=img.data;let i=0;
+    for(let y=0;y<H;y++){
+      const v=y/H;
+      for(let x=0;x<W;x++,i+=4){
+        const u=x/W;
+        let f=Math.sin(u*7.1+t*sp)+Math.sin(v*9.3-t*sp*1.3)+Math.sin((u+v)*6.2+t*sp*.7)+Math.sin(Math.hypot(u-.5,v-.5)*14-t*sp*1.6);
+        f=f*.125+.5;
+        const dx=u-bx,dy=(v-by)*H/W,g=Math.exp(-(dx*dx+dy*dy)*38);
+        f=f*dens+g*.42+heat*.08;
+        const on=f>B[(y&3)*4+(x&3)];
+        if(on){
+          const k=.5+.5*Math.sin(u*3+v*2+t*.6),h=g>.62&&((x+y)&1)?1:0;
+          d[i]=h?K[0]:A[0]+(M[0]-A[0])*k;d[i+1]=h?K[1]:A[1]+(M[1]-A[1])*k;d[i+2]=h?K[2]:A[2]+(M[2]-A[2])*k;
+        }else{d[i]=7;d[i+1]=6;d[i+2]=16}
+        d[i+3]=255;
+      }
+    }
+    ctx.putImageData(img,0,0);
+  }
+  return {
+    start(ar,q){
+      bind();size(clamp(ar||1.5,.5,2.2));phase='queue';heat=0;t0=performance.now();
+      $id('genFxQ').textContent=q?'“'+q+'”':'';
+      cancelAnimationFrame(raf);raf=requestAnimationFrame(frame);
+    },
+    phase(p){phase=p},
+    stop(){cancelAnimationFrame(raf);raf=0},
+    // sharpen the real picture into the field: 8 → full resolution in ~0.8s
+    reveal(url){
+      return new Promise(res=>{
+        cancelAnimationFrame(raf);raf=0;
+        const im=new Image();im.onerror=()=>res();
+        im.onload=()=>{
+          const g=$id('gen');g.classList.add('reveal');
+          const ar=im.naturalWidth/im.naturalHeight;
+          cv.width=Math.min(1152,im.naturalWidth);cv.height=Math.round(cv.width/ar);
+          $id('genFxWrap').style.setProperty('--gen-ar',ar.toFixed(3));
+          const tmp=document.createElement('canvas'),tc=tmp.getContext('2d');
+          const steps=motionQuery.matches?[cv.width]:[8,14,24,40,70,120,220,cv.width];let k=0;
+          (function step(){
+            const w=steps[k],h=Math.max(1,Math.round(w/ar));
+            tmp.width=w;tmp.height=h;tc.imageSmoothingEnabled=true;tc.drawImage(im,0,0,w,h);
+            ctx.imageSmoothingEnabled=false;ctx.drawImage(tmp,0,0,cv.width,cv.height);
+            if(++k<steps.length)setTimeout(step,95);else setTimeout(res,360);
+          })();
+        };
+        im.src=url;
+      });
+    }
+  };
+})();
+function glitchIn(el){if(!el)return;el.classList.remove('gl-in');void el.offsetWidth;el.classList.add('gl-in')}
+function closeGen(){const g=$id('gen');GenFx.stop();g.classList.remove('on','busy','reveal');g.setAttribute('aria-hidden','true')}
 (function bindGen(){
   const st=$id('genStyles');let style=null;
   st.innerHTML=GEN_STYLES.map(([k])=>'<button type="button" data-k="'+k+'">'+k+'</button>').join('');
@@ -3667,10 +4089,12 @@ function closeGen(){const g=$id('gen');g.classList.remove('on','busy');g.setAttr
     try{
       if(isImageLink(raw)){await loadRemoteImage(raw,{t:'url',u:raw});toast(tr('toast.linkImg'))}
       else{const sty=style?GEN_STYLES.find(x=>x[0]===style)[1]:'';let last='';
-        await generateImage(sty?raw+', '+sty:raw,c=>{const t=hordeStatusText(c);if(t!==last){last=t;$id('genBusyTxt').textContent=t}});toast(tr('toast.gen'))}
+        const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));GenFx.start(w/h,raw);
+        const url=await generateImage(sty?raw+', '+sty:raw,c=>{GenFx.phase(c&&c.queue_position>0?'queue':'gen');const t=hordeStatusText(c);if(t!==last){last=t;$id('genBusyTxt').textContent=t}});
+        await GenFx.reveal(url);toast(tr('toast.gen'))}
       closeGen();
     }catch(err){
-      g.classList.remove('busy');
+      GenFx.stop();g.classList.remove('busy','reveal');
       const m=err&&err.message;
       toast(m==='cors'?tr('toast.cors'):isImageLink(raw)?tr('toast.linkFail'):m==='censored'?tr('toast.censored'):(err&&err.status===429)?tr('toast.busy'):tr('toast.genFail'),4600);
     }
@@ -6033,7 +6457,7 @@ const Performance=(()=>{
       c.fillStyle='rgba(160,147,155,.55)';
       c.font=Math.max(7,Math.round(8*dpr))+'px "JetBrains Mono",monospace';
       c.textAlign='center';c.textBaseline='middle';
-      c.fillText('NO PERFORMANCE / HIT REC',w/2,h/2);
+      c.fillText(LANG==='it'?'NESSUNA PERFORMANCE / PREMI REC':'NO PERFORMANCE / HIT REC',w/2,h/2);
       return;
     }
     const avgAt=(pos)=>{
