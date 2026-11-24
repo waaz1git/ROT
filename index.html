@@ -3058,6 +3058,7 @@ const I18N={
     'toast.gen':'<b>IMAGE GENERATED</b> — now break it','toast.linkImg':'<b>IMAGE LOADED</b> — from link',
     'toast.cors':'<b>CAN\u2019T USE THAT IMAGE</b> — the site hosting it blocks other sites; download it and upload the file',
     'toast.genFail':'<b>GENERATION FAILED</b> — the image service did not answer, try again',
+    'toast.linkFail':'<b>LINK NOT LOADED</b> — check that it points straight to an image (.jpg, .png, .webp)',
     'share.text':'Look what I broke on ROT','share.manual':'Copy this link:',
     'toast.copied':'<b>LINK COPIED</b> — anyone who opens it gets this look',
     'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
@@ -3092,6 +3093,7 @@ const I18N={
     'toast.gen':'<b>IMMAGINE GENERATA</b> — ora distruggila','toast.linkImg':'<b>IMMAGINE CARICATA</b> — dal link',
     'toast.cors':'<b>IMMAGINE NON UTILIZZABILE</b> — il sito che la ospita blocca gli altri siti; scaricala e caricala come file',
     'toast.genFail':'<b>GENERAZIONE FALLITA</b> — il servizio non ha risposto, riprova',
+    'toast.linkFail':'<b>LINK NON CARICATO</b> — controlla che porti direttamente a un\u2019immagine (.jpg, .png, .webp)',
     'share.btn':'Condividi','share.text':'Guarda cosa ho distrutto su ROT','share.manual':'Copia questo link:',
     'toast.copied':'<b>LINK COPIATO</b> — chi lo apre vede questo look',
     'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
@@ -3521,6 +3523,9 @@ function loadRemoteImage(url,meta){
       if(token!==sourceToken)return resolve(false);
       try{
         const pot=toPowerOf2Canvas(im,2048);
+        // a cross-origin image without permission taints the canvas; reading one pixel throws here,
+        // instead of later inside the WebGL upload where it would break the render loop
+        pot.canvas.getContext('2d').getImageData(0,0,1,1);
         const t=new THREE.CanvasTexture(pot.canvas);
         t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
         Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
@@ -3570,7 +3575,7 @@ function closeGen(){const g=$id('gen');g.classList.remove('on','busy');g.setAttr
       closeGen();
     }catch(err){
       g.classList.remove('busy');
-      toast(err&&err.message==='cors'?tr('toast.cors'):tr('toast.genFail'),4200);
+      toast(err&&err.message==='cors'?tr('toast.cors'):(isImageLink(raw)?tr('toast.linkFail'):tr('toast.genFail')),4200);
     }
   });
   ['btnGen','ehGen'].forEach(id=>{const b=$id(id);if(b)b.addEventListener('click',openGen)});
