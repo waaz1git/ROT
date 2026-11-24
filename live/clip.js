@@ -7,6 +7,13 @@
 const Clip=(()=>{
   const S=Live.part('clip',{fmt:'1080x1920',bars:8,secs:10,start:'here',recipe:'__current',ap:'keep',wave:'bottom',text:'',textPos:'bottom',textSize:'m'});
   const FMTS=[['1080x1920','9:16'],['1080x1350','4:5'],['1080x1080','1:1'],['1920x1080','16:9']];
+  if(!FMTS.some(f=>f[0]===S.fmt))S.fmt='1080x1920';
+  S.bars=[4,8,16,32].includes(+S.bars)?+S.bars:8;S.secs=[6,10,15,30].includes(+S.secs)?+S.secs:10;
+  if(!['here','top','range'].includes(S.start))S.start='here';if(!['keep','follow','direct','chaos','off'].includes(S.ap))S.ap='keep';
+  if(!['bottom','center','off'].includes(S.wave))S.wave='bottom';if(!['top','center','bottom'].includes(S.textPos))S.textPos='bottom';
+  if(!['s','m','l'].includes(S.textSize))S.textSize='m';S.text=String(S.text).slice(0,60);
+  const OVL={tex:null}; // the object handed to the engine every frame (no per-frame allocation)
+  let cvRect=null;const readRect=()=>{const c=$id('cv');cvRect=c?c.getBoundingClientRect():{left:0,top:0,width:innerWidth,height:innerHeight}};
   let mode=null; // null | 'preview' | 'export'
   let ov=null;   // {cv,ctx,tex,w,h,key,peaks,a,b,lastX}
   let restore=null,stopT=0;
@@ -18,8 +25,9 @@ const Clip=(()=>{
   }
   function snapToBar(t){
     const g=grid();if(!g.beats.length)return Math.max(0,t);
-    const t0=g.beats[0];let i=Math.max(0,Math.round((t-t0)/g.period));
-    while(((i-g.bs)%4+4)%4!==0)i++;
+    const t0=g.beats[0],i0=Math.round((t0-(+Music.settings.gridOffset||0))/g.period); // Music's index of beats[0]
+    let i=Math.max(0,Math.round((t-t0)/g.period));
+    while(((i+i0-g.bs)%4+4)%4!==0)i++;
     return t0+i*g.period;
   }
   function window_(){
@@ -34,16 +42,16 @@ const Clip=(()=>{
   function fmtSize(){const [w,h]=S.fmt.split('x').map(Number);return {w,h}}
   function needOverlay(){return mode&&((S.wave!=='off'&&Music.hasTrack())||S.text.trim())}
   function overlayTick(ctx){
-    if(!needOverlay()){if(ctx.out.overlay)ctx.out.overlay=null;return}
+    if(!needOverlay()){if(ctx.out.overlay)ctx.out.overlay=null;if(ov&&!mode)dropOverlay();return}
     const exp=Engine.isExporting(),f=fmtSize();
     let cw,ch;
-    if(exp){const k=Math.min(1,1080/Math.max(f.w,f.h));cw=Math.round(f.w*k);ch=Math.round(f.h*k)}
-    else{const r=$id('cv').getBoundingClientRect(),k=Math.min(1,1280/Math.max(1,r.width,r.height));cw=Math.max(64,Math.round(r.width*k));ch=Math.max(64,Math.round(r.height*k))}
+    if(exp){cw=f.w;ch=f.h}
+    else{if(!cvRect)readRect();const r=cvRect,k=Math.min(Math.min(2,devicePixelRatio||1),1920/Math.max(1,r.width,r.height));cw=Math.max(64,Math.round(r.width*k));ch=Math.max(64,Math.round(r.height*k))}
     if(!ov||ov.w!==cw||ov.h!==ch){
       if(ov&&ov.tex)ov.tex.dispose();
       const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
       const tex=new THREE.CanvasTexture(cv);tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.generateMipmaps=false;
-      ov={cv,ctx:cv.getContext('2d'),tex,w:cw,h:ch,key:'',peaks:ov&&ov.peaks,a:ov&&ov.a,b:ov&&ov.b,lastX:-1};
+      ov={cv,ctx:cv.getContext('2d'),tex,w:cw,h:ch,key:'',peaks:ov&&ov.peaks,win:ov&&ov.win};
     }
     // in the preview, draw inside the frame of the final shape; in the export, the frame is the whole picture
     let bx=0,by=0,bw=cw,bh=ch;
@@ -53,17 +61,17 @@ const Clip=(()=>{
     const px=Math.round(prog*240);
     const key=[cw,ch,bx,by,S.text,S.textPos,S.textSize,S.wave,px].join('|');
     if(key!==ov.key){ov.key=key;draw(bx,by,bw,bh,prog,win);ov.tex.needsUpdate=true}
-    ctx.out.overlay={tex:ov.tex};
+    OVL.tex=ov.tex;ctx.out.overlay=OVL;
   }
   function peaks(win){
     const buf=Music.buffer;if(!buf||!win)return null;
-    const id=win.a.toFixed(2)+':'+win.b.toFixed(2);if(ov.peaks&&ov.peaks.id===id)return ov.peaks.v;
+    const id=win.a.toFixed(2)+':'+win.b.toFixed(2);if(ov.peaks&&ov.peaks.id===id&&ov.peaks.buf===buf)return ov.peaks.v;
     const d=buf.getChannelData(0),sr=buf.sampleRate,N=240,v=new Float32Array(N);
     const i0=Math.floor(win.a*sr),i1=Math.min(d.length,Math.floor(win.b*sr)),step=Math.max(1,Math.floor((i1-i0)/N));
     let mx=1e-6;
     for(let k=0;k<N;k++){let m=0;const s=i0+k*step;for(let j=0;j<step;j+=8){const x=Math.abs(d[s+j]||0);if(x>m)m=x}v[k]=m;if(m>mx)mx=m}
     for(let k=0;k<N;k++)v[k]/=mx;
-    ov.peaks={id,v};return v;
+    ov.peaks={id,v,buf};return v;
   }
   function draw(bx,by,bw,bh,prog,win){
     const c=ov.ctx;c.clearRect(0,0,ov.w,ov.h);
@@ -111,21 +119,22 @@ const Clip=(()=>{
     if(S.ap!=='keep'&&typeof Autopilot!=='undefined'){if(S.ap==='off')Autopilot.setOn(false);else{Autopilot.setMode(S.ap);Autopilot.setOn(true)}}
     if(ov)ov.win=null;
   }
+  function dropOverlay(){if(ov&&ov.tex)ov.tex.dispose();ov=null;OVL.tex=null}
   function teardown(keepLook){
     clearTimeout(stopT);guide(false);
     if(restore&&restore.ap&&S.ap!=='keep'&&typeof Autopilot!=='undefined'){Autopilot.setMode(restore.ap.mode);Autopilot.setOn(restore.ap.on)}
     if(restore&&!keepLook&&S.recipe!=='__current')applyPreset(restore.look,false);
-    restore=null;mode=null;if(ov)ov.win=null;sync();
+    restore=null;mode=null;if(ov)ov.win=null;Live.out.overlay=null;dropOverlay();sync();
   }
   async function preview(){
     if(mode)return stop();
     close();mode='preview';setup();guide(true);sync();
     const win=window_();
-    if(win){await Music.seekTo(win.a);Music.play();stopT=setTimeout(()=>{Music.pause();stop()},win.len/(Music.settings.rate||1)*1000+200)}
+    if(win){await Music.seekTo(win.a);if(mode!=='preview')return;Music.play();stopT=setTimeout(()=>{if(mode==='preview'){Music.pause();stop()}},win.len/(Music.settings.rate||1)*1000+200)}
     else stopT=setTimeout(stop,S.secs*1000);
     toast('<b>PREVIEW</b> — '+FMTS.find(x=>x[0]===S.fmt)[1]+' · press Esc or the Clip button to stop',3000);
   }
-  function stop(){if(mode==='preview'){Music.pause();teardown(true)}}
+  function stop(){if(mode==='preview'){Music.pause();teardown(false)}}
   async function exportClip(){
     if(REC.active||REC.starting||REC.stopping||REC.finalizing)return toast(tr('story.busy'));
     if(mode==='preview')stop();
@@ -136,14 +145,14 @@ const Clip=(()=>{
     DATA.settings.exportRes=S.fmt;DATA.settings.includeAudio=true;
     if(win){ms.range={a:win.a,b:win.b};ms.useRange=true;DATA.settings.duration=clamp(Math.ceil(win.len/(ms.rate||1))+1,3,120)}
     else DATA.settings.duration=clamp(S.secs,3,120);
-    saveSettings();syncExportUI();
+    syncExportUI();pendingRestore=()=>{DATA.settings.exportRes=prev.res;DATA.settings.duration=prev.dur;DATA.settings.includeAudio=prev.audio;saveSettings()};
     toast('<b>QUICK CLIP</b> — recording '+(win?S.bars+' bars':S.secs+' s')+' · '+FMTS.find(x=>x[0]===S.fmt)[1],2600);
     await startRecording();
     const iv=setInterval(()=>{
       if(REC.active||REC.starting||REC.stopping||REC.finalizing)return;
       clearInterval(iv);
       DATA.settings.exportRes=prev.res;DATA.settings.duration=prev.dur;DATA.settings.includeAudio=prev.audio;ms.range=prev.range;ms.useRange=prev.useRange;
-      saveSettings();syncExportUI();try{Music.syncUI()}catch(e){}
+      pendingRestore=null;saveSettings();syncExportUI();try{Music.syncUI()}catch(e){}
       teardown(true);
     },400);
   }
@@ -205,13 +214,16 @@ const Clip=(()=>{
     el.info.textContent=win?S.bars+' bars = '+win.len.toFixed(1)+' s, from '+fmtTime(win.a)+' (on a downbeat).':'';
   }
 
+  let pendingRestore=null;
+  addEventListener('pagehide',()=>{if(pendingRestore)pendingRestore()});
   Live.addTicker(overlayTick);
   Live.addAction('clip','Quick clip',()=>open());
   window.addEventListener('keydown',e=>{
+    if(dlg&&dlg.classList.contains('on')&&e.key!=='Escape'){if(e.key.length===1&&!e.metaKey&&!e.ctrlKey)e.stopPropagation();return}
     if(e.key!=='Escape')return;
     if(dlg&&dlg.classList.contains('on')){e.preventDefault();e.stopPropagation();close()}
     else if(mode==='preview'){e.preventDefault();stop()}
   },true);
-  addEventListener('resize',()=>{if(mode==='preview')guide(true)});
+  addEventListener('resize',()=>{cvRect=null;if(mode==='preview')guide(true)});
   return {open,close,preview,stop,exportClip,get mode(){return mode},get settings(){return S},get overlayCanvas(){return ov&&ov.cv},window:window_,snapToBar};
 })();

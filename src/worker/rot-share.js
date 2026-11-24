@@ -1,42 +1,51 @@
-// rot-share — Cloudflare Worker behind ROT's share links. Deployed at https://rot-share.nicoflp.workers.dev
-// with a KV binding SHOTS and (optional) a rate-limit binding RL;
-// share links use the custom domain https://s.nicoflp.com/<id>#rot=….
+// rot-share — Cloudflare Worker behind ROT's share links and text → image. Deployed at
+// https://rot-share.nicoflp.workers.dev with a KV binding SHOTS, a Workers AI binding AI and (optional) a
+// rate-limit binding RL; share links use the custom domain https://s.nicoflp.com/<id>#rot=….
 //
-//   POST /gen          { q } → { img (base64 JPEG), p (the prompt actually drawn) }: text → image with
-//                      FLUX.1 schnell on Workers AI (binding AI); a small language model first checks the
-//                      request and rewrites it into a richer prompt
-//   POST /i            a WebP or JPEG made by the ROT generator (≤ 400 KB, ≤ 1152 px) → { id } (content hash)
-//   GET  /i/<id>       the stored image, immutable
+//   POST /gen          { q } → { img (base64 JPEG), id?, p }: FLUX.1 schnell on Workers AI. The request is
+//                      checked by Llama Guard (fail-closed) and a word filter, rewritten into a richer prompt,
+//                      drawn, and the picture is stored here so a share link opens the exact same image (id)
+//   GET  /i/<id>       a stored generated image, immutable. Only /gen stores images: there is no upload route,
+//                      so the store cannot be used to host arbitrary files
 //   PUT  /p/<id>       a 1200×630 JPEG frame of a shared look (id chosen by the client, write-once)
 //   GET  /p/<id>       that frame
 //   GET  /<id>, /s/<id> a tiny page whose link preview (og:image) is that frame; it forwards the visitor
 //                      to https://nicoflp.com/ keeping the #rot=… part of the address
-//   GET  /g            the public gallery (newest first)
-//   POST /g            { img, p, l } publish a generated-image look to the gallery
-//   POST /g/report     { id } — three reports hide an entry
+//   /g, /g/report      the public gallery is closed: uploads could not be moderated (GET answers an empty list)
 //
-// Abuse limits: only well-formed images of the exact kinds ROT makes, a per-network burst limit, and
-// daily budgets (count and bytes) that keep the free KV quota safe. When a limit is hit the site still
-// works: links fall back to redrawing, previews to the default card.
+// Abuse limits: a per-network burst limit and daily budgets (count and bytes) that keep the free KV and
+// Workers AI quotas safe. The Origin check only stops other websites' scripts; scripted clients are held by
+// the budgets. When a limit is hit the site still works: the generator falls back to the AI Horde, links to
+// redrawing, previews to the default card.
 
 const SITE = 'https://nicoflp.com';
 const ALLOWED_ORIGINS = [SITE, 'https://www.nicoflp.com'];
-const MAX_BYTES = 400 * 1024;                 // generated WebP
+const MAX_BYTES = 400 * 1024;                 // a generated JPEG
 const MAX_PREVIEW = 220 * 1024;               // preview JPEG
 const MAX_SIDE = 1152, MIN_SIDE = 64;
 const PREVIEW_W = 1200, PREVIEW_H = 630;
-const TTL = 180 * 24 * 3600;                  // images: older links fall back to redrawing
+const TTL = 90 * 24 * 3600;                   // images: older links fall back to redrawing
 const PREVIEW_TTL = 60 * 24 * 3600;           // previews matter while a link is being passed around
 const DAY_MAX_UPLOADS = 220;                  // ≤ ~2 KV writes each → well inside 1000 writes/day
-const DAY_MAX_BYTES = 4 * 1024 * 1024;        // images: × 180 days ≈ 0.7 GB
+const DAY_MAX_BYTES = 8 * 1024 * 1024;        // images: × 90 days ≈ 0.7 GB
 const DAY_MAX_PREVIEW_BYTES = 3 * 1024 * 1024; // previews: × 60 days ≈ 0.18 GB
-const GALLERY_MAX = 60, GALLERY_HIDE_AT = 3, DAY_MAX_GALLERY = 120;
 const ID_RX = /^[A-Za-z0-9_-]{8,32}$/;
 const DAY_MAX_GEN = 150;                      // FLUX images per day: inside the free Workers AI allowance
 const FLUX = '@cf/black-forest-labs/flux-1-schnell';
 const LLM = '@cf/meta/llama-3.1-8b-instruct-fast';
-// refused before any model runs (the language model below catches what words alone miss)
-const BLOCK_RX = /\b(nude|nudity|naked|nsfw|porn\w*|sex|sexy|sexual|hentai|erotic\w*|topless|lingerie|undress\w*|fetish|genitals?|loli\w*|shota|child\s*porn|cp|gore|beheading|dismember\w*)\b/i;
+const GUARD = '@cf/meta/llama-guard-3-8b';
+// A first word filter on a normalised copy of the text (leetspeak, spaced letters, invisible characters);
+// Llama Guard then judges the request itself, and anything it cannot judge is refused.
+const BLOCK_RX = /\b(nude|nudes|nudity|naked|nsfw|porn\w*|sex|sexy|sexual\w*|hentai|erotic\w*|topless|bottomless|lingerie|undress\w*|strip\w*\s+(?:naked|off)|fetish\w*|genitals?|penis|vagina|breasts?|boobs?|nipples?|butt\s*naked|upskirt|downblouse|fellatio|blowjob|handjob|cunnilingus|intercourse|orgasm\w*|making\s+love|aroused|loli\w*|shota\w*|child\s*porn|cp|csam|gore|gory|beheading|decapitat\w*|dismember\w*|disembowel\w*|mutilat\w*|severed\s+(?:head|limb|arm|leg)s?|blood\s+pool\w*)\b/i;
+const MINOR_RX = /\b(child|children|kid|kids|girl|boy|teen|teens|teenager|minor|underage|schoolgirl|schoolboy|toddler|baby|\d{1,2}\s*(?:yo|y\/o|years?\s*old|year-old))\b/i;
+const BODY_RX = /\b(bikini|swimsuit|underwear|bath|bathing|shower|bed|lingerie|kiss\w*|pose|posing|seductive|sensual|wet)\b/i;
+function normalise(s) {
+  let t = String(s).normalize('NFKC').replace(/[\u00ad\u200b-\u200f\u2060\ufeff]/g, '').toLowerCase();
+  t = t.replace(/0/g, 'o').replace(/[1!|]/g, 'i').replace(/3/g, 'e').replace(/[4@]/g, 'a').replace(/[5$]/g, 's').replace(/7/g, 't');
+  t = t.replace(/\b(?:[a-z][\s._*-]+){2,}[a-z]\b/g, m => m.replace(/[\s._*-]+/g, ''));   // "n u d e" → "nude"
+  return t;
+}
+const blockedWords = s => { const t = normalise(s); return BLOCK_RX.test(t) || (MINOR_RX.test(t) && BODY_RX.test(t)); };
 const ENHANCE = `You turn short ideas into image prompts for a text-to-image model.
 Rules:
 - If the idea asks for sexual or nude content, anything sexual involving minors, a real person in a compromising or
@@ -71,27 +80,6 @@ async function readCapped(req, max) {
   let o = 0;
   for (const p of parts) { out.set(p, o); o += p.length; }
   return out;
-}
-
-// A complete, well-formed WebP (RIFF size matches the body) with sane dimensions, or null.
-function webpSize(b) {
-  const tag = (i, s) => String.fromCharCode(b[i], b[i + 1], b[i + 2], b[i + 3]) === s;
-  if (b.length < 30 || !tag(0, 'RIFF') || !tag(8, 'WEBP')) return null;
-  const riff = (b[4] | b[5] << 8 | b[6] << 16 | b[7] << 24) >>> 0;
-  if (riff + 8 !== b.length) return null;
-  let w = 0, h = 0;
-  if (tag(12, 'VP8 ')) {
-    if (b[23] !== 0x9d || b[24] !== 0x01 || b[25] !== 0x2a) return null;
-    w = (b[26] | b[27] << 8) & 0x3fff; h = (b[28] | b[29] << 8) & 0x3fff;
-  } else if (tag(12, 'VP8L')) {
-    if (b[20] !== 0x2f) return null;
-    const v = (b[21] | b[22] << 8 | b[23] << 16 | b[24] << 24) >>> 0;
-    w = (v & 0x3fff) + 1; h = ((v >>> 14) & 0x3fff) + 1;
-  } else if (tag(12, 'VP8X')) {
-    w = (b[24] | b[25] << 8 | b[26] << 16) + 1; h = (b[27] | b[28] << 8 | b[29] << 16) + 1;
-  } else return null;
-  if (w < MIN_SIDE || h < MIN_SIDE || w > MAX_SIDE || h > MAX_SIDE) return null;
-  return { w, h };
 }
 
 // A complete JPEG (SOI … EOI) whose frame header says exactly w×h, or null.
@@ -154,7 +142,6 @@ function sharePage(origin, id, hasPreview) {
 <body><a id="go" href="${SITE}/">Open ROT</a><script>document.getElementById('go').href=${JSON.stringify(SITE + '/')}+(location.hash||'')</script></body></html>`;
 }
 
-async function readGallery(env) { return (await env.SHOTS.get('gallery', { type: 'json' })) || []; }
 
 export default {
   async fetch(req, env) {
@@ -185,29 +172,13 @@ export default {
         headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': has ? 'public, max-age=86400' : 'public, max-age=60', 'X-Content-Type-Options': 'nosniff' }
       });
     }
-    if (req.method === 'GET' && path === '/g') {
-      const list = (await readGallery(env)).filter(e => (e.r || 0) < GALLERY_HIDE_AT).map(({ id, img, p, l, at }) => ({ id, img, p, l, at }));
-      return json({ items: list }, 200, origin, { 'Cache-Control': 'public, max-age=20' });
-    }
+    if (req.method === 'GET' && path === '/g') return json({ items: [], closed: true }, 200, origin, { 'Cache-Control': 'public, max-age=300' });
 
     // ---- writes: only from the site
     if (!['POST', 'PUT'].includes(req.method)) return json({ error: 'not_found' }, 404, origin);
     if (!fromSite) return json({ error: 'origin' }, 403, origin);
 
-    if (req.method === 'POST' && path === '/i') {
-      if ((+req.headers.get('Content-Length') || 0) > MAX_BYTES) return json({ error: 'too_large' }, 413, origin);
-      if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
-      const bytes = await readCapped(req, MAX_BYTES);
-      if (!bytes) return json({ error: 'too_large' }, 413, origin);
-      const dim = webpSize(bytes) || jpegSize(bytes); // WebP, or JPEG from browsers that cannot encode WebP
-      if (!dim || dim.w < MIN_SIDE || dim.h < MIN_SIDE || dim.w > MAX_SIDE || dim.h > MAX_SIDE) return json({ error: 'not_an_image' }, 415, origin);
-      const id = await idFor(bytes), key = 'img:' + id;
-      if (await exists(env, key)) return json({ id }, 200, origin);
-      if (!(await spend(env, 'img', bytes.length, DAY_MAX_UPLOADS, DAY_MAX_BYTES))) return json({ error: 'budget' }, 429, origin);
-      await env.SHOTS.put(key, bytes, { expirationTtl: TTL, metadata: { at: Date.now() } });
-      return json({ id }, 201, origin);
-    }
-
+    if (req.method === 'POST' && path === '/i') return json({ error: 'gone' }, 410, origin);
     if (req.method === 'POST' && path === '/gen') {
       if (!env.AI) return json({ error: 'unavailable' }, 503, origin);
       if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
@@ -216,21 +187,39 @@ export default {
       try { o = JSON.parse(new TextDecoder().decode(body || new Uint8Array(0))); } catch (e) {}
       const q = String((o && o.q) || '').replace(/\s+/g, ' ').trim().slice(0, 400);
       if (!q) return json({ error: 'bad_request' }, 400, origin);
-      if (BLOCK_RX.test(q)) return json({ error: 'censored' }, 422, origin);
+      if (blockedWords(q)) return json({ error: 'censored' }, 422, origin);
       if (!(await spend(env, 'gen', 0, DAY_MAX_GEN, 1))) return json({ error: 'budget' }, 429, origin);
+      // Llama Guard decides on the request; an error or an unclear answer is a refusal (the site then uses the Horde)
+      let verdict = '';
+      try { const g = await env.AI.run(GUARD, { messages: [{ role: 'user', content: 'Draw an image of: ' + q }] }); verdict = String((g && (g.response && (g.response.safe != null ? (g.response.safe ? 'safe' : 'unsafe') : g.response))) || '').trim().toLowerCase(); }
+      catch (e) { return json({ error: 'unavailable' }, 503, origin); }
+      if (/^unsafe/.test(verdict)) return json({ error: 'censored' }, 422, origin);
+      if (!/^safe/.test(verdict)) return json({ error: 'unavailable' }, 503, origin);
       let prompt = q;
       try {
         const r = await env.AI.run(LLM, { messages: [{ role: 'system', content: ENHANCE }, { role: 'user', content: q }], max_tokens: 140, temperature: 0.6 });
-        const t = String((r && r.response) || '').replace(/^["'\s]+|["'\s]+$/g, '').replace(/\s+/g, ' ');
-        if (/^BLOCKED\b/i.test(t)) return json({ error: 'censored' }, 422, origin);
-        if (t.length >= 12 && t.length <= 700 && !BLOCK_RX.test(t)) prompt = t;
-      } catch (e) { /* no rewrite: draw the words as typed */ }
+        const t = String((r && r.response) || '').replace(/[*_`#>]/g, '').replace(/^["'\s]+|["'\s]+$/g, '').replace(/\s+/g, ' ');
+        // a refusal in any wording counts, not only a reply that starts with BLOCKED
+        if (/\bBLOCKED\b/i.test(t) || /^(i'?m sorry|sorry|i can(?:no|')t|i cannot|i won'?t|i'?m (?:not able|unable)|as an ai)/i.test(t)) return json({ error: 'censored' }, 422, origin);
+        if (t.length >= 12 && t.length <= 700 && !blockedWords(t)) prompt = t;
+      } catch (e) { /* the guard passed: draw the words as typed */ }
       let out;
+      try { out = await env.AI.run(FLUX, { prompt, steps: 6, seed: Math.floor(Math.random() * 2147483647) }); }
+      catch (e) { return json({ error: 'model' }, 502, origin); }
+      if (!out || typeof out.image !== 'string' || out.image.length < 200) return json({ error: 'model' }, 502, origin);
+      // keep the picture so a share link opens exactly this image (within the daily storage budget)
+      let id = null;
       try {
-        out = await env.AI.run(FLUX, { prompt, steps: 6, seed: Math.floor(Math.random() * 2147483647) });
-      } catch (e) { return json({ error: 'model' }, 502, origin); }
-      if (!out || !out.image) return json({ error: 'model' }, 502, origin);
-      return json({ img: out.image, p: prompt }, 200, origin, { 'Cache-Control': 'no-store' });
+        const bin = Uint8Array.from(atob(out.image), c => c.charCodeAt(0)), dim = jpegSize(bin);
+        if (dim && bin.length <= MAX_BYTES && dim.w <= 2048 && dim.h <= 2048) {
+          id = await idFor(bin);
+          if (!(await exists(env, 'img:' + id))) {
+            if (await spend(env, 'img', bin.length, DAY_MAX_UPLOADS, DAY_MAX_BYTES)) await env.SHOTS.put('img:' + id, bin, { expirationTtl: TTL, metadata: { at: Date.now(), gen: 1 } });
+            else id = null;
+          }
+        }
+      } catch (e) { id = null; }
+      return json({ img: out.image, id, p: prompt }, 200, origin, { 'Cache-Control': 'no-store' });
     }
 
     if (req.method === 'PUT' && (m = path.match(/^\/p\/([A-Za-z0-9_-]{12,32})$/))) {
@@ -247,35 +236,7 @@ export default {
       return json({ id: m[1] }, 201, origin);
     }
 
-    if (req.method === 'POST' && (path === '/g' || path === '/g/report')) {
-      if (!(await burstOk(env, req))) return json({ error: 'rate_limited' }, 429, origin);
-      const body = await readCapped(req, 4096);
-      let o = null;
-      try { o = JSON.parse(new TextDecoder().decode(body || new Uint8Array(0))); } catch (e) {}
-      if (!o || typeof o !== 'object') return json({ error: 'bad_request' }, 400, origin);
-
-      if (path === '/g/report') {
-        if (!ID_RX.test(String(o.id || ''))) return json({ error: 'bad_request' }, 400, origin);
-        const list = await readGallery(env), e = list.find(x => x.id === o.id);
-        if (!e) return json({ ok: true }, 200, origin);
-        e.r = (e.r || 0) + 1;
-        await env.SHOTS.put('gallery', JSON.stringify(list));
-        return json({ ok: true, hidden: e.r >= GALLERY_HIDE_AT }, 200, origin);
-      }
-
-      // publish: only images the generator made (they passed the AI Horde safety filter) with a stored preview
-      const img = String(o.img || ''), p = String(o.p || ''), l = String(o.l || '');
-      if (!ID_RX.test(img) || !ID_RX.test(p) || !/^[A-Za-z0-9_-]{8,3000}$/.test(l)) return json({ error: 'bad_request' }, 400, origin);
-      if (!(await exists(env, 'img:' + img)) || !(await exists(env, 'pv:' + p))) return json({ error: 'not_found' }, 404, origin);
-      const list = await readGallery(env);
-      const dup = list.find(x => x.p === p);
-      if (dup) return json({ id: dup.id }, 200, origin);
-      if (!(await spend(env, 'gal', 0, DAY_MAX_GALLERY, 1))) return json({ error: 'budget' }, 429, origin);
-      const id = p;
-      list.unshift({ id, img, p, l, at: Date.now(), r: 0 });
-      await env.SHOTS.put('gallery', JSON.stringify(list.slice(0, GALLERY_MAX)));
-      return json({ id }, 201, origin);
-    }
+    if (req.method === 'POST' && (path === '/g' || path === '/g/report')) return json({ error: 'gallery_closed' }, 410, origin);
 
     return json({ error: 'not_found' }, 404, origin);
   }

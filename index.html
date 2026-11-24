@@ -1154,7 +1154,7 @@ body.lite #aurora i{animation-duration:90s}
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
       <span data-i18n="share.btn">Share</span>
     </button>
-    <button class="tbtn" id="btnGallery" title="Made with ROT" aria-label="Open the gallery">
+    <button class="tbtn" id="btnGallery" title="Made with ROT" aria-label="Open the gallery" hidden>
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
       <span data-i18n="gal.btn">Gallery</span>
     </button>
@@ -1948,7 +1948,7 @@ const VS_QUAD='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,
 
 const FRAG_MAIN=`varying vec2 vUv;
 uniform sampler2D uTex,uPrev;
-uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg,uFreeze;
+uniform float uT,uAsp,uMix,uSA,uHue,uOrg,uRnd,uGF,uAudio,uZoom,uSeed,uKaleidoSeg,uFreeze,uClock;
 uniform vec2 uRes,uMouse,uTexCoverage,uShake;
 ${FX.map(f=>`uniform float u_${f.id};`).join('\n')}
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -2135,8 +2135,8 @@ void main(){
  if(u_leak>.001){
   // frames pile up instead of being freed: the previous picture smears along the image gradients
   float la=clamp(u_leak,0.,1.);float ll=lum(c);
-  vec2 lg=vec2(dFdx(ll),dFdy(ll));
-  vec3 pm=hr(texture2D(uPrev,mir(vUv-lg*2.5*la+vec2(0.,.002*la))).rgb,.035*la);
+  vec2 lg=vec2(lum(S(uv+vec2(.004,0.)))-ll,lum(S(uv+vec2(0.,.004)))-ll);
+  vec3 pm=hr(texture2D(uPrev,mir(vUv-lg*.05*la+vec2(0.,.002*la))).rgb,.035*la);
   c=mix(c,max(c,pm*.975)+pm*.015,la);
  }
  if(txN>0.){
@@ -2148,7 +2148,7 @@ void main(){
  }
  if(u_blackout>.001){
   // selected frames and bands go black (rate follows glitch frequency; capped in safe mode)
-  float ba=clamp(u_blackout,0.,1.);float bt=floor(t*(2.+4.*uGF));
+  float ba=clamp(u_blackout,0.,1.);float bt=floor(uClock*(1.5+2.5*uGF)); // real seconds: at most 4 windows a second, whatever the tempo
   float full=step(1.-ba*.16,h(vec2(bt,21.)));
   float rowsb=floor(vUv.y*mix(3.,14.,h(vec2(bt,22.))));
   float bandb=step(1.-ba*.5,h(vec2(rowsb,bt)))*step(.35,h(vec2(bt,23.)));
@@ -2521,7 +2521,7 @@ const Engine=(()=>{
     uTex:{value:null},uPrev:{value:null},uT:{value:0},uAsp:{value:1.78},
     uMix:{value:1},uSA:{value:1.78},uHue:{value:0},uOrg:{value:.5},
     uRnd:{value:.5},uGF:{value:.45},
-    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},uFreeze:{value:0},uShake:{value:new THREE.Vector2(0,0)},
+    uZoom:{value:1},uSeed:{value:0},uKaleidoSeg:{value:0},uFreeze:{value:0},uClock:{value:0},uShake:{value:new THREE.Vector2(0,0)},
     uMouse:{value:new THREE.Vector2(.5,.5)},
     uRes:{value:new THREE.Vector2(320,180)},uAudio:{value:0},uTexCoverage:{value:new THREE.Vector2(1,1)}
   };
@@ -2558,7 +2558,7 @@ const Engine=(()=>{
     quad=new THREE.PlaneGeometry(2,2);
     asciiTex=makeAscii();
     FU.uAscii.value=asciiTex;
-    matMain=new THREE.ShaderMaterial({uniforms:U,vertexShader:VS_QUAD,fragmentShader:FRAG_MAIN,depthTest:false,depthWrite:false,extensions:{derivatives:true}});
+    matMain=new THREE.ShaderMaterial({uniforms:U,vertexShader:VS_QUAD,fragmentShader:FRAG_MAIN,depthTest:false,depthWrite:false});
     matBright=new THREE.ShaderMaterial({uniforms:BU1,vertexShader:VS_QUAD,fragmentShader:FRAG_BRIGHT,depthTest:false,depthWrite:false});
     matBlur=new THREE.ShaderMaterial({uniforms:BU2,vertexShader:VS_QUAD,fragmentShader:FRAG_BLURV,depthTest:false,depthWrite:false});
     matFinal=new THREE.ShaderMaterial({uniforms:FU,vertexShader:VS_QUAD,fragmentShader:FRAG_FINAL,depthTest:false,depthWrite:false});
@@ -2655,11 +2655,11 @@ const Engine=(()=>{
     U.uZoom.value=frame.zoom==null?1:frame.zoom;U.uSeed.value=frame.seed||0;U.uKaleidoSeg.value=frame.kaleidoSeg||0;
     U.uTexCoverage.value.set(src.covX,src.covY);
     U.uMouse.value.set(frame.mouse.x,frame.mouse.y);
-    U.uFreeze.value=frame.freeze||0;
+    U.uFreeze.value=firstFrame?0:(frame.freeze||0);U.uClock.value=performance.now()/1000%10000;
     if(frame.shake)U.uShake.value.set(frame.shake[0]||0,frame.shake[1]||0);else U.uShake.value.set(0,0);
     // overlay layer (clip text / waveform): a canvas texture owned by the clip module
     const ov=frame.overlay;
-    if(ov&&ov.tex){FU.uOver.value=ov.tex;FU.uOverOn.value=1}else{FU.uOverOn.value=0;if(!FU.uOver.value)FU.uOver.value=asciiTex}
+    if(ov&&ov.tex){FU.uOver.value=ov.tex;FU.uOverOn.value=1}else{FU.uOverOn.value=0;FU.uOver.value=asciiTex}
     const v=frame.fxVals;
     FX.forEach(f=>{U['u_'+f.id].value=v[f.id]||0});
     FU.uT.value=t;FU.uBloomAmt.value=(v.bloom||0)*1.7;FU.uDirt.value=v.dirt||0;
@@ -4562,34 +4562,17 @@ async function fluxGenerate(q){
     const d=await r.json().catch(()=>null);
     if(d&&d.error==='censored')throw Object.assign(new Error('censored'),{final:true});
     if(!r.ok||!d||typeof d.img!=='string'||d.img.length<200)throw Object.assign(new Error((d&&d.error)||('http'+r.status)),{status:r.status});
-    return 'data:image/jpeg;base64,'+d.img;
+    return {url:'data:image/jpeg;base64,'+d.img,id:/^[A-Za-z0-9_-]{8,32}$/.test(String(d.id||''))?d.id:null};
   }finally{clearTimeout(tm)}
-}
-// re-encode for the share store: WebP where the browser can make it, JPEG otherwise (both ≤ 1152 px)
-function shrinkForStore(url){
-  return new Promise(res=>{
-    const im=new Image();
-    im.onload=()=>{
-      try{
-        const k=Math.min(1,1152/Math.max(im.naturalWidth,im.naturalHeight));
-        const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
-        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-        let d=c.toDataURL('image/webp',.84);
-        if(d.indexOf('data:image/webp')!==0)d=c.toDataURL('image/jpeg',.86);
-        res(d);
-      }catch(e){res(url)}
-    };
-    im.onerror=()=>res(url);
-    im.src=url;
-  });
 }
 async function generateImage(q,onStatus){
   q=String(q||'').trim().slice(0,400);if(!q)return false;
   let url=null,meta=null;
   try{
     if(onStatus)onStatus({queue_position:0});
-    url=await shrinkForStore(await fluxGenerate(q));
-    meta={t:'gen',q,src:'flux',data:url};
+    const r=await fluxGenerate(q);url=r.url;
+    // stored by the worker itself: the share link opens exactly this picture
+    meta={t:'gen',q,src:'flux'};if(r.id)meta.id=r.id;
   }catch(e){
     if(e&&e.final)throw e;
     const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
@@ -4597,7 +4580,7 @@ async function generateImage(q,onStatus){
     url=await hordeGenerate(q,seed,w,h,onStatus);
     meta={t:'gen',q,seed,w,h,data:url};
   }
-  await loadRemoteImage(url,meta);preStore(meta);
+  await loadRemoteImage(url,meta);
   return url;
 }
 // a shared link re-renders the same prompt, seed and size (same image, give or take the GPU it lands on)
@@ -4605,7 +4588,7 @@ async function regenerateShared(sm){
   const q=String(sm.q).slice(0,400);
   // a FLUX picture has no seed to replay: draw the same idea again (close, not identical)
   if(sm.seed==null){
-    let url;try{url=await shrinkForStore(await fluxGenerate(q))}catch(e){if(e&&e.final)throw e}
+    let url;try{url=(await fluxGenerate(q)).url}catch(e){if(e&&e.final)throw e}
     if(url){await loadRemoteImage(url,{t:'gen',q,src:'flux',data:url});return}
   }
   const seed=Math.abs(+sm.seed|0);
@@ -4758,17 +4741,9 @@ function lookForLink(){
 // Generated images are stored by the rot-share worker (Cloudflare KV, content-addressed), so a link
 // opens the exact same picture instead of asking the AI to draw it again.
 const SHARE_API='https://rot-share.nicoflp.workers.dev';
-async function storeShot(meta){
-  if(meta.id)return meta.id;
-  const blob=await (await fetch(meta.data)).blob();
-  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
-  try{
-    const r=await fetch(SHARE_API+'/i',{method:'POST',headers:{'Content-Type':blob.type||'image/webp'},body:blob,signal:ctl.signal});
-    const d=await r.json().catch(()=>null);
-    if(!r.ok||!d||!d.id)throw new Error((d&&d.error)||('http'+r.status));
-    meta.id=d.id;delete meta.data;return d.id;
-  }finally{clearTimeout(tm)}
-}
+// Only the worker's /gen stores images (there is no upload route): a picture without an id is shared by
+// redrawing its prompt instead.
+async function storeShot(meta){if(meta.id)return meta.id;throw new Error('no_store')}
 // started as soon as an image is generated: by the time Share is pressed the id is usually ready
 function preStore(meta){
   if(meta&&meta.data&&!meta.id&&!meta.pending)meta.pending=storeShot(meta).catch(()=>{meta.failed=true}).finally(()=>{meta.pending=null});
@@ -6659,6 +6634,7 @@ const Music=(()=>{
     update:update,syncUI:syncUI,
     hasTrack:()=>loaded,isPlaying:()=>playing,
     currentTime:()=>el?el.currentTime:0,duration:()=>duration,
+    setRoutes:(r,react)=>{if(Array.isArray(r))settings.routes=r;if(react!=null)settings.reactOn=!!react;renderRoutes();syncUI();persist()},
     get settings(){return settings},get mods(){return out.mod},get signals(){return out},
     get media(){return el},get buffer(){return buffer},get beats(){return beatTimes},
     get hits(){return {kick:evKick,snare:evSnare,hat:evHat}}
@@ -7623,6 +7599,7 @@ function loop(now){
   }
   if(DATA.settings.reduce){
     FX.forEach(f=>{frame.fxVals[f.id]=Math.min(frame.fxVals[f.id],1.05)});
+    frame.fxVals.blackout=Math.min(frame.fxVals.blackout||0,.3);
   }
   frame.t=T;
   // hold-to-compare eases the wet mix down to the untouched source and back

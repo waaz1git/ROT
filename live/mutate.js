@@ -8,7 +8,9 @@
 const Mutation=(()=>{
   const S=Live.part('mut',{amount:.35,prob:.4,scope:'all',locks:[],auto:false,every:4,hist:[],pos:-1});
   if(!Array.isArray(S.locks))S.locks=[];
-  if(!Array.isArray(S.hist))S.hist=[];
+  S.hist=(Array.isArray(S.hist)?S.hist:[]).filter(h=>h&&h.g&&typeof h.g==='object'&&h.g.on&&h.g.fx&&h.g.m).slice(-30);
+  S.locks=S.locks.filter(x=>typeof x==='string');
+  if(!['all','active'].includes(S.scope))S.scope='all';
   S.pos=clamp(S.pos|0,-1,S.hist.length-1);
   const HEAVY=new Set(['liquid','fluid','kaleido','fish','mirror','melt','fracture','flesh']);
   const GROUPS={
@@ -54,14 +56,18 @@ const Mutation=(()=>{
     return g;
   }
 
+  const strip=g=>{g=deep(g);delete g.res;return g};
+  const same=(a,b)=>JSON.stringify(strip(a))===JSON.stringify(strip(b));
   function push(g,info){
+    g=strip(g);
     S.hist=S.hist.slice(0,S.pos+1);
     S.hist.push({g,seed:info.seed||0,kind:info.kind||'mut',at:Date.now()});
     if(S.hist.length>30)S.hist.shift();
     S.pos=S.hist.length-1;Live.save();render();
   }
-  function ensureBase(){if(S.pos<0||!S.hist.length)push(snapshotLook(),{kind:'base'})}
-  function apply(g){applyPreset(g,false);if(typeof markDirty==='function')markDirty()}
+  // the look on screen goes into the history first when you changed it by hand since the last generation
+  function ensureBase(){const cur=snapshotLook();if(S.pos<0||!S.hist.length)push(cur,{kind:'base'});else if(!same(S.hist[S.pos].g,cur))push(cur,{kind:'edit'})}
+  function apply(g){g=strip(g);applyPreset(g,false);if(typeof markDirty==='function')markDirty()}
 
   function mutate(opt){
     opt=opt||{};ensureBase();
@@ -71,11 +77,15 @@ const Mutation=(()=>{
     if(!opt.quiet){toast('<b>GENERATION '+S.pos+'</b> — seed '+seed.toString(36).toUpperCase());vibrate(6)}
     return seed;
   }
+  const edited=()=>!!(S.hist[S.pos]&&!same(S.hist[S.pos].g,snapshotLook()));
   function go(i){
     if(i<0||i>=S.hist.length)return false;
+    // hand edits since the last generation are kept as their own entry first (nothing to redo after them)
+    if(edited()){if(i>S.pos)return false;push(snapshotLook(),{kind:'edit'})}
     S.pos=i;apply(S.hist[i].g);Live.save();render();return true;
   }
-  const undo=()=>go(S.pos-1)||toast('<b>NOTHING TO UNDO</b>');
+  // undo after a hand edit goes back to the generation you edited
+  const undo=()=>{if(edited()){push(snapshotLook(),{kind:'edit'});return go(S.pos-1)}return go(S.pos-1)||toast('<b>NOTHING TO UNDO</b>')};
   const redo=()=>go(S.pos+1)||toast('<b>NOTHING TO REDO</b>');
 
   // ---- DNA: the look's share-link code
@@ -184,13 +194,13 @@ const Mutation=(()=>{
     if(!el.hist)return;
     el.hist.innerHTML='';
     S.hist.forEach((h,i)=>{
-      const b=Live.h('button',{type:'button',class:'mut-g'+(i===S.pos?' on':''),role:'listitem',title:(h.kind==='base'?'Base':h.kind==='hybrid'?'Hybrid':h.kind==='dna'?'DNA':'Seed '+(h.seed>>>0).toString(36).toUpperCase()),text:i===0&&h.kind==='base'?'B':String(i)});
+      const b=Live.h('button',{type:'button',class:'mut-g'+(i===S.pos?' on':''),role:'listitem',title:(h.kind==='base'?'Base':h.kind==='edit'?'Your edit':h.kind==='hybrid'?'Hybrid':h.kind==='dna'?'DNA':'Seed '+(h.seed>>>0).toString(36).toUpperCase()),text:i===0&&h.kind==='base'?'B':h.kind==='edit'?'✎':String(i)});
       b.style.setProperty('--h',hashHue(JSON.stringify(h.g.on))+'deg');
       b.addEventListener('click',()=>go(i));el.hist.appendChild(b);
     });
     setTxt(el.note,'G'+Math.max(0,S.pos)+' / '+S.hist.length);
-    const cur=S.hist[S.pos];if(el.seed&&cur&&cur.seed)el.seed.value=(cur.seed>>>0).toString(36).toUpperCase();
-    const on=el.hist.querySelector('.on');if(on&&on.scrollIntoView)on.scrollIntoView({block:'nearest',inline:'nearest'});
+    const cur=S.hist[S.pos];if(el.seed&&cur&&cur.seed&&document.activeElement!==el.seed)el.seed.value=(cur.seed>>>0).toString(36).toUpperCase();
+    const on=el.hist.querySelector('.on');if(on)el.hist.scrollLeft=Math.max(0,on.offsetLeft-el.hist.clientWidth+on.offsetWidth+8);
   }
   Live.on('recipes',fillParents);
 

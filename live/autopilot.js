@@ -7,6 +7,9 @@
 'use strict';
 const Autopilot=(()=>{
   const S=Live.part('ap',{on:false,mode:'follow',sens:1,react:.6,smooth:.5,amount:.7,thresh:.35,scenes:'phrase',phrase:8});
+  if(!['follow','direct','chaos'].includes(S.mode))S.mode='follow';
+  if(!['phrase','drops','off'].includes(S.scenes))S.scenes='phrase';
+  S.phrase=[4,8,16].includes(+S.phrase)?+S.phrase:8;
   // which effects each part of the music drives (FOLLOW / CHAOS)
   const BAND={OPTICAL:'bass',SIGNAL:'snare',LIGHT:'high',LAB:'energy'};
   const GEO=['liquid','fluid','ripple','fish','disp','flesh','melt','fracture','kaleido','mirror'];
@@ -32,7 +35,7 @@ const Autopilot=(()=>{
       grid={bar:mus.barIndex|0,beat:mus.beatIndex|0,down:!!mus.downbeat,bpm:+mus.bpm||120};
     }else if(DATA.settings.audioReact&&typeof AudioBus!=='undefined'&&AudioBus.audioAvailable()){
       st.src='input';
-      try{lv=AudioBus.analyze()}catch(e){lv=null}
+      try{lv=AudioBus.levels}catch(e){lv=null}
       if(lv){
         // onset = bass jumping above its own running mean
         st.mBass+=((lv.bass||0)-st.mBass)*.05;
@@ -70,14 +73,14 @@ const Autopilot=(()=>{
     st.build=sec==='build'?clamp(st.build+dt/(grid?(60/grid.bpm)*32:14),0,1):Math.max(0,st.build-dt*.8);
   }
 
-  const scenesReady=()=>!st.holdScenes&&typeof Scenes!=='undefined'&&Scenes.stored()>=2&&!Scenes.busy;
+  const scenesReady=()=>!st.holdScenes&&Scenes.stored()>=2&&!Scenes.busy;
   Live.on('scene',()=>{st.holdScenes=false});
   function onDrop(){
     const A=S.amount;
     if(S.mode!=='direct'){Live.trigger('flash',.75*A);Live.trigger('shake',.9*A)}
     Live.trigger('glitch',A);Live.trigger('zoom',.8*A);
     if(S.scenes!=='off'&&scenesReady())Live.run('scene:next');
-    else if(S.mode==='chaos'&&typeof Mutation!=='undefined')Mutation.mutate({amount:.45,quiet:true});
+    else if(S.mode==='chaos'&&!(typeof Scenes!=='undefined'&&Scenes.busy))Mutation.mutate({amount:.45,quiet:true});
   }
 
   // ---- phrases: every N bars (on the downbeat) the look moves on
@@ -87,7 +90,7 @@ const Autopilot=(()=>{
     if(S.mode==='chaos'&&(grid.bar-st.themeBar>=4||!st.theme.length))newTheme(grid.bar);
     if(grid.bar>0&&grid.bar%Math.max(1,S.phrase|0)===0&&st.section!=='drop'){
       if(S.scenes==='phrase'&&scenesReady())Live.run('scene:next');
-      else if(S.mode==='chaos'&&typeof Mutation!=='undefined')Mutation.mutate({amount:.3,quiet:true});
+      else if(S.mode==='chaos'&&!Scenes.busy)Mutation.mutate({amount:.3,quiet:true});
     }
   }
   // CHAOS theme: one shape, two signal, one light and one lab effect — enough variety, still one look
@@ -199,6 +202,6 @@ const Autopilot=(()=>{
   Live.addAction('ap:chaos','Autopilot CHAOS',()=>{setMode('chaos');setOn(true)});
   Live.addParam('ap:amount','Autopilot intensity','Live',()=>S.amount,v=>{S.amount=v;Live.save()});
   Live.addParam('ap:sens','Autopilot sensitivity','Live',()=>S.sens/2,v=>{S.sens=v*2;Live.save()});
-  Live.addKey('a',()=>{setOn(!S.on);toast(S.on?'<b>AUTOPILOT</b> — '+S.mode.toUpperCase():'<b>AUTOPILOT OFF</b>')});
+  Live.addKey('a',()=>{setOn(!S.on);toast(S.on?'<b>AUTOPILOT</b> — '+esc(S.mode.toUpperCase()):'<b>AUTOPILOT OFF</b>')});
   return {mount,setOn,setMode,get settings(){return S},get section(){return st.section},get theme(){return st.theme}};
 })();

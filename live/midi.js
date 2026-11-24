@@ -6,7 +6,12 @@
 const Midi=(()=>{
   const S=Live.part('midi',{profile:'Default',profiles:{Default:{maps:[]}},auto:false});
   if(!S.profiles||typeof S.profiles!=='object'||!Object.keys(S.profiles).length)S.profiles={Default:{maps:[]}};
-  Object.values(S.profiles).forEach(p=>{if(!Array.isArray(p.maps))p.maps=[]});
+  // keep only well-formed profiles and mappings (damaged saved data must not stop the page)
+  for(const k of Object.keys(S.profiles)){const p=S.profiles[k];
+    if(!p||typeof p!=='object'||!Array.isArray(p.maps)){S.profiles[k]={maps:[]};continue}
+    p.maps=p.maps.filter(m=>m&&(m.type==='cc'||m.type==='note')&&Number.isInteger(m.ch)&&Number.isInteger(m.num)&&typeof m.target==='string')}
+  if(!Object.keys(S.profiles).length)S.profiles={Default:{maps:[]}};
+  const runtime=new WeakMap(); // DOM rows and knob positions: never saved
   if(!S.profiles[S.profile])S.profile=Object.keys(S.profiles)[0];
   const supported=typeof navigator!=='undefined'&&typeof navigator.requestMIDIAccess==='function';
   let access=null,learning=null,lastMsgAt=0,status=supported?'off':'unsupported';
@@ -52,7 +57,7 @@ const Midi=(()=>{
       if(m.target.startsWith('p:'))setParam(m,v);
       else if(m.target.startsWith('a:')){
         // a knob fires its action when it crosses the middle going up
-        if(type==='cc'){const up=v>=.5&&!(m._last>=.5);m._last=v;if(!up)return}
+        if(type==='cc'){const rt=runtime.get(m)||{};const up=v>=.5&&!(rt.last>=.5);rt.last=v;runtime.set(m,rt);if(!up)return}
         Live.run(m.target.slice(2),type==='note'?Math.max(.3,v):1);
       }
       hit(m);
@@ -60,6 +65,7 @@ const Midi=(()=>{
   }
   function setParam(m,v){
     const p=Live.params.get(m.target.slice(2));if(!p)return;
+    if(typeof Scenes!=='undefined')Scenes.cancel();
     const lo=m.min==null?0:m.min,hi=m.max==null?1:m.max;
     p.set(lo+(hi-lo)*v);
     const id=m.target.slice(2);
@@ -160,11 +166,11 @@ const Midi=(()=>{
         Live.h('button',{type:'button',class:'icon-btn',title:'Learn again','aria-label':'Reassign '+srcLabel(m),text:'⟲',onclick:()=>startLearn(m.target,m)}),
         Live.h('button',{type:'button',class:'icon-btn',title:'Remove','aria-label':'Remove '+srcLabel(m),text:'✕',onclick:()=>{const i=list.indexOf(m);if(i>=0)list.splice(i,1);Live.save();render()}})
       ]);
-      m._row=row;el.list.appendChild(row);
+      runtime.set(m,Object.assign(runtime.get(m)||{},{row}));el.list.appendChild(row);
     });
     const s=el.prof&&el.prof.sel;if(s){s.innerHTML='';Object.keys(S.profiles).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;if(n===S.profile)o.selected=true;s.appendChild(o)})}
   }
-  function hit(m){const r=m._row;if(!r)return;r.classList.add('hit');clearTimeout(r._t);r._t=setTimeout(()=>r.classList.remove('hit'),160)}
+  function hit(m){const r=(runtime.get(m)||{}).row;if(!r)return;r.classList.add('hit');clearTimeout(r._t);r._t=setTimeout(()=>r.classList.remove('hit'),160)}
   function led(){if(!el.led)return;el.led.classList.add('on');clearTimeout(el.led._t);el.led._t=setTimeout(()=>el.led.classList.remove('on'),90)}
   function sync(){
     if(!el.enable)return;

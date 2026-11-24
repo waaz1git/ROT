@@ -65,7 +65,7 @@
   // the LIVE pane
   const pane=$id('paneLive');
   if(pane){
-    [Autopilot,Scenes,Seq,Mutation,Midi].forEach(m=>{try{m.mount(pane)}catch(e){console.warn('[live] mount',e)}});
+    [()=>Autopilot,()=>Scenes,()=>Seq,()=>Mutation,()=>Midi].forEach(get=>{try{get().mount(pane)}catch(e){console.warn('[live] mount',e)}});
     const first=pane.querySelector('.live-sec');if(first){first.style.marginTop='0';first.style.paddingTop='2px'}
   }
   // entry points
@@ -85,6 +85,9 @@
   addEventListener('blur',()=>{fHeld=false});
   Live.addKey('k',()=>Clip.open());
   Live.addKey('j',()=>Quick.open());
+
+  // a recipe, randomize, mutation or style takes over from a scene transition still running
+  ['applyPreset','randomizeLook'].forEach(n=>{const f=window[n];if(typeof f!=='function')return;window[n]=function(){try{Scenes.cancel()}catch(e){}return f.apply(this,arguments)}});
 
   Live.init();
   try{UiLoc.apply()}catch(e){}

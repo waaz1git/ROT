@@ -19,6 +19,7 @@ const Quick=(()=>{
   let dlg=null,step=0,style=null;const el={};
 
   function applyStyle(s){
+    if(typeof Scenes!=='undefined')Scenes.cancel();
     applyPreset({fx:s.fx,m:s.m,grade:s.grade},false);
     if(typeof cvFx==='function')cvFx('rx-in');
     DATA.activePreset=null;
@@ -90,7 +91,7 @@ const Quick=(()=>{
   }
   // move on by itself once the picked file has loaded
   function waitSource(){const t0=Engine.getSrc();let n=0;const iv=setInterval(()=>{const s=Engine.getSrc();if((s!==t0&&s&&!s.empty)||++n>120){clearInterval(iv);if(s!==t0&&dlg.classList.contains('on')&&step===0){step=1;render()}}},500)}
-  function waitTrack(){let n=0;const had=Music.hasTrack()&&Music.currentTime();const iv=setInterval(()=>{if((Music.hasTrack()&&!had)||++n>240){clearInterval(iv);if(Music.hasTrack()&&dlg.classList.contains('on')&&step===1){step=2;render()}}},500)}
+  function waitTrack(){let n=0;const had=Music.buffer;const iv=setInterval(()=>{if((Music.hasTrack()&&Music.buffer!==had)||++n>240){clearInterval(iv);if(Music.hasTrack()&&dlg.classList.contains('on')&&step===1){step=2;render()}}},500)}
   function open(at){
     if(!dlg)build();
     if(typeof closeGen==='function')closeGen();if(document.body.dataset.sheet)closeSheet();if(drawerOpen)closeDrawer(drawerOpen);
@@ -99,7 +100,7 @@ const Quick=(()=>{
     dlg.classList.add('on');dlg.setAttribute('aria-hidden','false');setTimeout(()=>glitchIn($id('qpTitle')),60);
   }
   function close(){if(!dlg)return;dlg.classList.remove('on');dlg.setAttribute('aria-hidden','true')}
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&dlg&&dlg.classList.contains('on')){e.preventDefault();e.stopPropagation();close()}},true);
+  window.addEventListener('keydown',e=>{if(!dlg||!dlg.classList.contains('on'))return;if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close()}else if(e.key.length===1&&!e.metaKey&&!e.ctrlKey)e.stopPropagation()},true);
   Live.addAction('quick','Quick play',()=>open());
   STYLES.forEach(s=>Live.addAction('style:'+s.id,'Style '+s.name,()=>{style=s;applyStyle(s)}));
   return {open,close,STYLES,applyStyle};

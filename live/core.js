@@ -10,7 +10,13 @@ const Live=(()=>{
   const state=(loaded&&typeof loaded==='object'&&!Array.isArray(loaded))?loaded:{};
   let saveT=0;
   function save(){clearTimeout(saveT);saveT=setTimeout(()=>storeSet(KEY,state),300)}
-  function part(name,def){if(!state[name]||typeof state[name]!=='object')state[name]=def;return state[name]}
+  // a module's saved state, merged with its defaults field by field (old or damaged data falls back per field)
+  function part(name,def){
+    let v=state[name];if(!v||typeof v!=='object'||Array.isArray(v))v={};
+    for(const k in def){const d=def[k],x=v[k];
+      if(x==null||(Array.isArray(d)?!Array.isArray(x):(typeof x!==typeof d||(typeof d==='number'&&!Number.isFinite(x)))))v[k]=JSON.parse(JSON.stringify(d))}
+    state[name]=v;return v;
+  }
 
   // ---- events
   const listeners={};
@@ -28,12 +34,14 @@ const Live=(()=>{
   function trigger(kind,amt,opt){
     amt=clamp(+amt||0,0,1);if(amt<=0)return;
     const now=performance.now();
-    if(kind==='flash'){
-      // photosensitivity: no flashes in safe mode, at most 3 a second (2 with reduced motion)
+    if(kind==='flash'||kind==='black'){
+      // photosensitivity: no flashes or blackouts in safe mode; together with the music's own flashes
+      // at most 3 a second (2 with reduced motion)
       if(safe())return;
       flashTimes=flashTimes.filter(t=>now-t<1000);
-      if(flashTimes.length>=(reduce()?2:3))return;
-      flashTimes.push(now);env.flash=Math.max(env.flash,amt);
+      const music=(typeof musicFlashTimes!=='undefined'?musicFlashTimes:[]).filter(t=>now-t<1000).length;
+      if(flashTimes.length+music>=(reduce()?2:3))return;
+      flashTimes.push(now);env[kind]=Math.max(env[kind],reduce()&&kind==='black'?amt*.4:amt);
     }else if(kind==='freeze'){freezeUntil=Math.max(freezeUntil,now+60+amt*420)}
     else if(kind==='fx'){const id=opt&&opt.id;if(id&&FXMAP[id])env.fx[id]=Math.max(env.fx[id]||0,amt)}
     else if(kind in env)env[kind]=Math.max(env[kind],amt);
@@ -194,7 +202,8 @@ const Live=(()=>{
   // ---- keys: digits, A, X, Z, F, Q, K belong to Live (see KEY_HELP)
   const keys=new Map();
   function addKey(k,fn){keys.set(k,fn)}
-  function key(k,e){if(/^Digit[0-9]$/.test(e.code||''))k=e.code.slice(5);const fn=keys.get(k);if(!fn)return false;e.preventDefault();fn(e);return true}
+  const HOLD=new Set(['f']);
+  function key(k,e){if(/^Digit[0-9]$/.test(e.code||'')&&!/^[\/?]$/.test(e.key))k=e.code.slice(5);const fn=keys.get(k);if(fn&&e.repeat&&!HOLD.has(k)){e.preventDefault();return true}if(!fn)return false;e.preventDefault();fn(e);return true}
 
   function init(){if(ready)return;ready=true;emit('ready')}
 

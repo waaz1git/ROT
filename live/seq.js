@@ -11,8 +11,12 @@ const Seq=(()=>{
   const blank=n=>new Array(n).fill(0);
   const S=Live.part('seq',{on:false,len:16,res:16,bpm:120,page:0,fx:'kaleido',lanes:{},patterns:{}});
   LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};else if(x.steps.length<32)x.steps=x.steps.concat(blank(32-x.steps.length))});
-  if(!S.patterns||typeof S.patterns!=='object')S.patterns={};
-  let clock=0,lastStep=-1,playing=false;
+  if(!S.lanes||typeof S.lanes!=='object')S.lanes={};
+  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||typeof x!=='object'||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};
+    else{x.steps=x.steps.slice(0,32).map(v=>v===1||v===2?v:0);while(x.steps.length<32)x.steps.push(0);x.int=clamp(Number.isFinite(+x.int)?+x.int:.8,0,1);x.prob=clamp(Number.isFinite(+x.prob)?+x.prob:1,0,1)}});
+  if(![8,16,32].includes(S.len))S.len=16;if(![8,16].includes(S.res))S.res=16;if(!FXMAP[S.fx])S.fx='kaleido';S.page=S.page===1?1:0;
+  if(!S.patterns||typeof S.patterns!=='object'||Array.isArray(S.patterns))S.patterns={};
+  let clock=0,lastStep=-1,lastPos=null,playing=false;
 
   function fire(lane,v){
     const L=S.lanes[lane];if(!L||Math.random()>L.prob)return;
@@ -26,25 +30,26 @@ const Seq=(()=>{
     const mus=ctx.mus,spb=S.res/4; // steps per beat
     let pos;
     if(mus&&mus.loaded){
-      if(!mus.playing){if(playing){playing=false;paint(-1)}return}
-      pos=Math.floor((+mus.beatFloat||0)*spb);
+      if(!mus.playing){if(playing){playing=false;lastPos=null;paint(-1)}return}
+      pos=Math.floor(((+mus.beatFloat||0)-(+Music.settings.barShift||0))*spb);
     }else{
       const bpm=clamp(+S.bpm||120,40,240);clock+=ctx.dt*bpm/60*spb;pos=Math.floor(clock);
     }
     playing=true;
-    const step=((pos%S.len)+S.len)%S.len;
-    if(step===lastStep)return;
-    lastStep=step;
-    LANES.forEach(l=>{const v=S.lanes[l.id].steps[step];if(v)fire(l.id,v===2?.5:1)});
-    paint(step);
+    if(pos===lastPos)return;
+    // a slow frame can jump several steps: play the ones in between too (up to 4, never a burst after a seek)
+    const from=lastPos==null||pos<lastPos||pos-lastPos>4?pos:lastPos+1;
+    for(let q=from;q<=pos;q++){const step=((q%S.len)+S.len)%S.len;LANES.forEach(l=>{const v=S.lanes[l.id].steps[step];if(v)fire(l.id,v===2?.5:1)})}
+    lastPos=pos;lastStep=((pos%S.len)+S.len)%S.len;
+    paint(lastStep);
   }
 
   // ---- pattern generation
   // k hits spread as evenly as possible over n steps, rotated
   const euclid=(k,n,rot)=>{const o=[];for(let i=0;i<n;i++)o.push(((i*k)%n)<k?1:0);const r=((rot%n)+n)%n;return o.slice(n-r).concat(o.slice(0,n-r))};
   function generate(style){
-    const n=S.len,q=n/16,set=(lane,arr)=>{const st=S.lanes[lane].steps;for(let i=0;i<32;i++)st[i]=i<n?(arr[i]||0):0};
-    const at=(idx,v)=>{const a=blank(n);idx.forEach(i=>{const j=Math.round(i*q);if(j<n)a[j]=v||1});return a};
+    const n=S.len,set=(lane,arr)=>{const st=S.lanes[lane].steps;for(let i=0;i<32;i++)st[i]=i<n?(arr.length>=n?arr[i]:(arr[i%16]||0))||0:0};
+    const at=(idx,v)=>{const a=blank(16);idx.forEach(i=>{if(i<16)a[i]=v||1});return a};
     const R=Math.random;
     if(style==='clear'){LANES.forEach(l=>set(l.id,[]))}
     else if(style==='four'){
@@ -54,14 +59,14 @@ const Seq=(()=>{
       set('zoom',at([0,6,10]));set('glitch',at([4,12,15],1));set('freeze',at([7],2));set('shake',at([3,11],2));
       set('flash',at([0]));set('black',at([13],2));set('fx',at([2,10],2));set('scene',[]);
     }else if(style==='trap'){
-      set('zoom',at([0,7,10]));set('glitch',at([8]));set('shake',blank(n).map((_,i)=>i%2===0?2:0));
+      set('zoom',at([0,7,10]));set('glitch',at([8]));set('shake',blank(16).map((_,i)=>i%2===0?2:0));
       set('freeze',at([14,15],2));set('flash',at([8]));set('black',[]);set('fx',at([3,11],2));set('scene',[]);
     }else if(style==='euclid'){
       LANES.forEach(l=>{if(l.id==='scene'||l.id==='flash')return set(l.id,[]);const k=1+Math.floor(R()*Math.min(7,n/2));set(l.id,euclid(k,n,Math.floor(R()*n)).map(v=>v?(R()<.7?1:2):0))});
       set('flash',at([0]));
     }else{ // random, weighted toward strong beats
       LANES.forEach(l=>{if(l.id==='scene')return set(l.id,[]);const d=l.id==='flash'||l.id==='black'?.06:l.id==='freeze'?.08:.22;
-        set(l.id,blank(n).map((_,i)=>{const strong=i%(4*q)===0?2.2:i%(2*q)===0?1.3:1;return R()<d*strong?(R()<.7?1:2):0}))});
+        set(l.id,blank(n).map((_,i)=>{const strong=i%16===0?2.4:i%4===0?2.2:i%2===0?1.3:1;return R()<d*strong?(R()<.7?1:2):0}))});
     }
     if(DATA.settings.safe){set('flash',[]);set('black',[])}
     Live.save();render();
@@ -74,8 +79,8 @@ const Seq=(()=>{
     const top=L.h('div',{class:'btn-grid'});
     el.play=L.btn('▶ RUN SEQUENCER',()=>setOn(!S.on),'full');top.appendChild(el.play);sec.appendChild(top);
     const opts=L.h('div',{class:'seq-opts'});
-    opts.appendChild(L.seg('Steps',[[8,'8'],[16,'16'],[32,'32']],S.len,v=>{S.len=+v;S.page=0;lastStep=-1;Live.save();render()}));
-    opts.appendChild(L.seg('Resolution',[[16,'1/16'],[8,'1/8']],S.res,v=>{S.res=+v;lastStep=-1;Live.save()}));
+    opts.appendChild(L.seg('Steps',[[8,'8'],[16,'16'],[32,'32']],S.len,v=>{S.len=+v;S.page=0;lastStep=-1;lastPos=null;Live.save();render()}));
+    opts.appendChild(L.seg('Resolution',[[16,'1/16'],[8,'1/8']],S.res,v=>{S.res=+v;lastStep=-1;lastPos=null;Live.save()}));
     sec.appendChild(opts);
     el.pages=L.seg('Page',[[0,'1–16'],[1,'17–32']],S.page,v=>{S.page=+v;render()});el.pages.classList.add('seq-pages');sec.appendChild(el.pages);
     el.grid=L.h('div',{class:'seq-grid',role:'grid','aria-label':'Sequencer steps'});sec.appendChild(el.grid);
@@ -135,7 +140,7 @@ const Seq=(()=>{
     el.grid.querySelectorAll('.seq-st.now').forEach(b=>b.classList.remove('now'));
     if(step>=0)el.grid.querySelectorAll('.seq-st[data-i="'+step+'"]').forEach(b=>b.classList.add('now'));
   }
-  function setOn(v){S.on=!!v;lastStep=-1;clock=0;Live.save();sync();if(!S.on)paint(-1)}
+  function setOn(v){S.on=!!v;lastStep=-1;lastPos=null;clock=0;Live.save();sync();if(!S.on)paint(-1)}
   function sync(){if(!el.play)return;el.play.textContent=S.on?'■ STOP SEQUENCER':'▶ RUN SEQUENCER';el.play.classList.toggle('acid',S.on);el.play.setAttribute('aria-pressed',String(S.on));setTxt(el.note,S.on?S.len+' STEPS':'OFF')}
 
   Live.addTicker(tick);

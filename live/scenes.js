@@ -9,7 +9,12 @@ const Scenes=(()=>{
   if(!Array.isArray(S.list))S.list=[];
   const NAMES='ABCDEFGHIJKL';
   if(!S.list.length)for(let i=0;i<4;i++)S.list.push({name:'Scene '+NAMES[i],look:null});
-  S.list=S.list.filter(x=>x&&typeof x==='object').slice(0,12);
+  // drop damaged entries; a stored look must have its effect maps
+  const okLook=l=>!!(l&&typeof l==='object'&&l.on&&typeof l.on==='object'&&l.fx&&typeof l.fx==='object');
+  S.list=S.list.filter(x=>x&&typeof x==='object').slice(0,12).map((x,i)=>({name:String(x.name||'Scene '+NAMES[i]).slice(0,20),look:okLook(x.look)?x.look:null,routes:Array.isArray(x.routes)?x.routes:null,react:x.react==null?null:!!x.react}));
+  if(!S.list.length)for(let i=0;i<4;i++)S.list.push({name:'Scene '+NAMES[i],look:null});
+  if(!['cut','smooth','glitch','flash','morph'].includes(S.trans))S.trans='smooth';
+  S.dur=clamp(+S.dur||1.2,.1,4);
   S.cur=clamp(S.cur|0,-1,S.list.length-1);
   let tr=null; // running transition {from,to,start,dur,type,i,swapped}
   let sel=Math.max(0,S.cur);
@@ -28,16 +33,16 @@ const Scenes=(()=>{
     if(!sc.look){capture(i);return true}
     type=type||S.trans;
     const to=Live.toLook(sc.look),from=snapshotLook(),dur=Math.max(.05,+S.dur||1)*1000;
-    if(sc.routes&&Array.isArray(sc.routes)){try{Music.settings.routes=deep(sc.routes);if(sc.react!=null)Music.settings.reactOn=sc.react;Music.syncUI()}catch(e){}}
+    if(sc.routes&&Array.isArray(sc.routes)){try{Music.setRoutes(deep(sc.routes),sc.react)}catch(e){}}
     S.cur=i;Live.save();render();Live.emit('scene',i);
-    if(type==='cut'||DATA.settings.reduce&&type!=='smooth'){finish(to);return true}
-    tr={from,to,start:performance.now(),dur,type,i,swapped:false};
+    const pix0=P.pix;
+    if(type==='cut'||DATA.settings.reduce&&type!=='smooth'){tr=null;finish(to,pix0);return true}
+    tr={from,to,start:performance.now(),dur,type,i,swapped:false,pix0};
     return true;
   }
-  function finish(to){
-    const pix=P.pix;
+  function finish(to,pix0){
     Live.writeLook(to);
-    if(Math.abs(pix-P.pix)>.001)Engine.resize();
+    if(Math.abs((pix0==null?P.pix:pix0)-P.pix)>.001)Engine.resize();
     syncUI();queueSaveLook();
     tr=null;
   }
@@ -59,7 +64,7 @@ const Scenes=(()=>{
         if(tr.type==='flash')Live.trigger('flash',.9);else Live.trigger('black',.6);
       }
     }
-    if(k>=1)finish(tr.to);
+    if(k>=1)finish(tr.to,tr.pix0);
   }
   function next(d){
     const n=S.list.length;if(stored()<1)return false;
@@ -75,7 +80,7 @@ const Scenes=(()=>{
     const ed=L.h('div',{class:'btn-grid scn-edit'});
     ed.appendChild(L.btn('● STORE',()=>capture(sel)));
     ed.appendChild(L.btn('RENAME',()=>{const sc=S.list[sel];if(!sc)return;const n=prompt(LANG==='it'?'Nome della scena':'Scene name',sc.name);if(n&&n.trim()){sc.name=n.trim().slice(0,20);Live.save();render()}}));
-    ed.appendChild(L.btn('DUPLICATE',()=>{const sc=S.list[sel];if(!sc||S.list.length>=12)return toast('<b>12 SCENES MAX</b>');S.list.splice(sel+1,0,{name:(sc.name+' 2').slice(0,20),look:sc.look?deep(sc.look):null,routes:sc.routes?deep(sc.routes):null,react:sc.react});sel++;Live.save();render()}));
+    ed.appendChild(L.btn('DUPLICATE',()=>{const sc=S.list[sel];if(!sc||S.list.length>=12)return toast('<b>12 SCENES MAX</b>');S.list.splice(sel+1,0,{name:(sc.name+' 2').slice(0,20),look:sc.look?deep(sc.look):null,routes:sc.routes?deep(sc.routes):null,react:sc.react});if(S.cur>sel)S.cur++;sel++;Live.save();render()}));
     ed.appendChild(L.btn('DELETE',()=>{if(S.list.length<=1)return;const sc=S.list[sel];if(sc.look&&!confirm((LANG==='it'?'Eliminare ':'Delete ')+sc.name+'?'))return;S.list.splice(sel,1);if(S.cur>=sel)S.cur--;sel=clamp(sel,0,S.list.length-1);Live.save();render()}));
     ed.appendChild(L.btn('◀ MOVE',()=>move(-1)));ed.appendChild(L.btn('MOVE ▶',()=>move(1)));
     ed.appendChild(L.btn('+ NEW SCENE',()=>{if(S.list.length>=12)return toast('<b>12 SCENES MAX</b>');S.list.push({name:'Scene '+NAMES[S.list.length],look:null});sel=S.list.length-1;Live.save();render()},'full'));
@@ -114,5 +119,6 @@ const Scenes=(()=>{
   Live.addAction('scene:store','Store into the current scene',()=>capture(Math.max(0,S.cur)));
   Live.addParam('scn:dur','Scene transition time','Live',()=>(S.dur-.1)/3.9,v=>{S.dur=.1+v*3.9;Live.save()});
   for(let i=1;i<=9;i++)Live.addKey(String(i),e=>{const j=i-1;if(!S.list[j])return;if(e.shiftKey)capture(j);else{sel=j;recall(j)}});
-  return {mount,recall,capture,next,stored,get list(){return S.list},get cur(){return S.cur},get busy(){return !!tr}};
+  function cancel(){if(tr){tr=null;syncUI()}}
+  return {mount,recall,capture,next,stored,cancel,get list(){return S.list},get cur(){return S.cur},get busy(){return !!tr}};
 })();
