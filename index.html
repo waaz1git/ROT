@@ -790,7 +790,7 @@ body.reduce-motion #dropZone .dz-frame,body.reduce-motion #dropZone .dz-icon{ani
 #gen.busy #genGo,#gen.busy #genIdea{opacity:.45;pointer-events:none}
 .gen-note{font:400 11px/1.4 var(--fd);color:var(--dim);margin:14px 0 0}
 .gen-note b{color:var(--mu);font-weight:600}
-#tour,#emptyHint,#dropZone,#keys,#gen{--tx:#f3f4ff;--mu:#adb2d0;--dim:#767c9f;--acc:#9b8cff;--acc-2:#c8bdff;--mint:#6ee7d2;--stroke:rgba(255,255,255,.13);--stroke-soft:rgba(255,255,255,.07)}
+#tour,#emptyHint,#dropZone,#keys,#gen,#gal{--tx:#f3f4ff;--mu:#adb2d0;--dim:#767c9f;--acc:#9b8cff;--acc-2:#c8bdff;--mint:#6ee7d2;--stroke:rgba(255,255,255,.13);--stroke-soft:rgba(255,255,255,.07)}
 #emptyHint .eh-actions #ehGen{flex-basis:100%;max-width:346px}
 @media(max-width:620px){#emptyHint .eh-actions #ehGen{max-width:none}}
 
@@ -838,6 +838,39 @@ body.touring #toasts{opacity:0;visibility:hidden}
 body.comparing #cmpBadge{opacity:1;transform:translate3d(-50%,0,0) scale(1)}
 body.comparing #btnCompare{color:#fff;background:linear-gradient(135deg,#2bb8a3,#159d8b);box-shadow:0 0 24px -6px rgba(110,231,210,.8)}
 #btnShare.busy{opacity:.5;pointer-events:none}
+.look-text{display:flex;gap:6px;margin:10px 0 2px}
+.look-text input{flex:1;min-width:0;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--stroke);background:rgba(255,255,255,.04);color:var(--tx);font:400 12px/1.3 var(--fd);outline:none;transition:border-color .2s}
+.look-text input:focus{border-color:var(--acc)}
+.look-text .btn{flex:none;min-height:38px;padding:0 14px}
+@media(pointer:coarse){.look-text input{font-size:16px}}
+#remixChip{position:fixed;left:50%;top:calc(84px + var(--safet,0px));z-index:40;display:flex;align-items:center;gap:10px;padding:7px 8px 7px 16px;border-radius:var(--pill);
+  border:1px solid rgba(155,140,255,.45);background:rgba(14,12,32,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 18px 50px -14px rgba(0,0,0,.8);
+  font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;color:#d9d3ff;opacity:0;visibility:hidden;transform:translate(-50%,-10px);transition:opacity .35s,transform .35s,visibility .35s}
+#remixChip.on{opacity:1;visibility:visible;transform:translate(-50%,0)}
+#remixChip #btnRemix{appearance:none;cursor:pointer;border:0;border-radius:var(--pill);padding:9px 14px;background:linear-gradient(135deg,#9b8cff,#ff5cb4);color:#fff;font:600 9px/1 var(--fm);letter-spacing:.18em;text-transform:uppercase}
+#remixChip #remixX{appearance:none;cursor:pointer;border:0;background:transparent;color:#9a9cc0;font-size:16px;line-height:1;padding:2px 6px}
+@media(max-width:900px){#remixChip{top:calc(72px + var(--safet,0px))}}
+#gal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgba(4,4,12,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+#gal.on{opacity:1;visibility:visible}
+.gal-card{width:min(980px,100%);max-height:calc(100vh - 40px);overflow:auto;border:1px solid var(--stroke);border-radius:var(--r-xl);padding:22px 22px 26px;
+  background:linear-gradient(155deg,rgba(30,28,62,.92),rgba(10,12,26,.95));box-shadow:0 50px 120px -30px rgba(2,2,12,.95)}
+.gal-card .ks-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
+.gal-card h2{font:800 26px/1 var(--fd);letter-spacing:-.035em;color:var(--tx);margin:0}
+.gal-card .ks-close{appearance:none;background:none;border:0;color:var(--dim);font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:6px 0;white-space:nowrap}
+.gal-card .ks-close:hover{color:var(--tx)}
+.gal-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}
+.gal-actions .btn{min-height:40px;padding:0 18px}
+.gal-actions .btn[disabled]{opacity:.45;pointer-events:none}
+.gal-note{font:500 9px/1.5 var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.gal-it{position:relative;appearance:none;padding:0;border:1px solid var(--stroke-soft);border-radius:var(--r-md);overflow:hidden;background:#0b0a18;cursor:pointer;aspect-ratio:1200/630;transition:transform .25s,border-color .25s}
+.gal-it:hover{transform:translateY(-2px);border-color:var(--acc)}
+.gal-it img{display:block;width:100%;height:100%;object-fit:cover}
+.gal-it .gal-rep{position:absolute;right:6px;top:6px;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.55);color:#cfd0ea;font-size:12px;opacity:0;transition:opacity .2s}
+.gal-it:hover .gal-rep,.gal-it:focus-visible .gal-rep{opacity:1}
+@media(pointer:coarse){.gal-it .gal-rep{opacity:.8}}
+.gal-it.gone{opacity:.15;pointer-events:none}
+.gal-empty{grid-column:1/-1;padding:40px 0;text-align:center;font:500 10px/1.6 var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--mu)}
 #btnCompare{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
 /* Overlays that sit straight on the (always dark) canvas keep the dark palette in both themes. */
@@ -998,6 +1031,10 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>
       <span data-i18n="share.btn">Share</span>
     </button>
+    <button class="tbtn" id="btnGallery" title="Made with ROT" aria-label="Open the gallery">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+      <span data-i18n="gal.btn">Gallery</span>
+    </button>
     <button class="tbtn" id="btnCompare" title="Hold to see the original (B)" aria-label="Hold to compare with the original">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 3v18"/><path d="M6.5 9.5l2 2.5-2 2.5" opacity=".6"/></svg>
       <span>Compare</span>
@@ -1095,6 +1132,10 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
           <div><div class="ba-t" style="font-size:14px">EXTREME</div><div class="ba-s">UNSTABLE FEED</div></div><div class="ba-k">E</div>
         </button>
       </div>
+      <form class="look-text" id="lookText" autocomplete="off">
+        <input type="text" id="lookTextIn" maxlength="120" data-i18n-ph="lt.ph" placeholder="describe a style: melting vhs, neon, glitch nightmare…" aria-label="Describe a style">
+        <button class="btn" type="submit" id="lookTextGo" data-i18n="lt.go">✦ Look</button>
+      </form>
       <div class="section">
         <div class="section-head"><div class="section-title"><b>RECIPES</b> <span class="line"></span></div><div class="section-note" id="presetCount">30 BUILT-IN</div></div>
         <div class="preset-grid" id="presetGrid"></div>
@@ -1149,6 +1190,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
         <div class="btn-grid" style="margin-top:10px">
           <button class="btn" id="btnPNG">FRAME PNG</button>
           <button class="btn hot" id="btnRec">● START REC</button>
+          <button class="btn full acid" id="btnStory" type="button" data-i18n="story.btn">▶ Story 9:16 · 8 s</button>
           <button class="btn full" id="btnShareLast" disabled>SHARE LAST EXPORT</button>
         </div>
         <div class="j-bar" style="margin-top:12px;height:3px"><i id="exportBar"></i></div>
@@ -1511,6 +1553,15 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <div class="gen-busy" id="genBusy" aria-live="polite"><i></i><span id="genBusyTxt"></span></div>
     <p class="gen-note" data-i18n="gen.note">Images are generated by the <b>AI Horde</b>, a free community network: your prompt is sent to it. No watermark.</p>
   </form>
+</div>
+<div id="remixChip" role="status" aria-live="polite"><span id="remixTxt"></span><button type="button" id="btnRemix" data-i18n="remix.btn">Remix</button><button type="button" id="remixX" aria-label="Close">×</button></div>
+<div id="gal" role="dialog" aria-modal="true" aria-labelledby="galTitle" aria-hidden="true">
+  <div class="gal-card">
+    <div class="ks-head"><h2 id="galTitle" data-i18n="gal.t">Made with ROT</h2><button class="ks-close" id="galClose" type="button" data-i18n="ks.close">Close · Esc</button></div>
+    <p class="gen-sub" data-i18n="gal.sub">Looks people chose to publish. Tap one to open it live, then remix it.</p>
+    <div class="gal-actions"><button class="btn hot" id="galPublish" type="button" data-i18n="gal.pub">Publish my look</button><span class="gal-note" id="galNote"></span></div>
+    <div class="gal-grid" id="galGrid"></div>
+  </div>
 </div>
 <div id="cmpBadge" aria-hidden="true"><i></i><span data-i18n="cmp.badge">Original</span></div>
 <div id="toasts" role="status" aria-live="polite"></div>
@@ -3126,6 +3177,12 @@ const I18N={
     'toast.copiedPrivate':'<b>LINK COPIED</b> — it carries the look; your own photo stays on your device',
     'toast.saving':'<b>PREPARING LINK…</b>',
     'toast.notStored':'<b>IMAGE NOT SAVED</b> — the link will redraw it (it may differ slightly)',
+    'gal.empty':'Nothing published yet — be the first','gal.loading':'Loading…','gal.fail':'Gallery unavailable right now',
+    'gal.need':'Generate an image first: only generated images can be published','gal.done':'<b>PUBLISHED</b> — your look is in the gallery',
+    'gal.pubFail':'<b>NOT PUBLISHED</b> — try again in a minute','gal.reported':'<b>THANKS</b> — reported','gal.report':'Report',
+    'remix.opened':'Shared look','remix.openedN':'Remix #{n}','remix.done':'<b>REMIX #{n}</b> — it is yours now, share it back',
+    'lt.done':'<b>LOOK FROM TEXT</b> — {w}','lt.rand':'<b>LOOK FROM TEXT</b> — no known words, so your text picked a look',
+    'story.go':'<b>STORY 9:16</b> — recording 8 seconds','story.busy':'<b>BUSY</b> — a take is already running',
     'toast.opened':'<b>SHARED LOOK</b> — opened from a link','toast.openedNoImg':'<b>SHARED LOOK</b> — the image could not be loaded, showing the sample',
     'tour.ok':'Nice — got it','tour.next':'Next','eh.up':'Upload file','dz.t':'DROP TO ROT IT',
     'toast.sample':'<b>SAMPLE SOURCE</b> — upload your own image or video any time',
@@ -3166,6 +3223,14 @@ const I18N={
     'toast.copiedPrivate':'<b>LINK COPIATO</b> — contiene il look; la tua foto resta sul tuo dispositivo',
     'toast.saving':'<b>PREPARO IL LINK…</b>',
     'toast.notStored':'<b>IMMAGINE NON SALVATA</b> — il link la ridisegnerà (potrebbe differire leggermente)',
+    'gal.btn':'Galleria','gal.t':'Fatte con ROT','gal.sub':'Look che le persone hanno scelto di pubblicare. Toccane uno per aprirlo dal vivo, poi remixalo.',
+    'gal.pub':'Pubblica il mio look','gal.empty':'Ancora niente — pubblica tu il primo','gal.loading':'Carico…','gal.fail':'Galleria non disponibile ora',
+    'gal.need':'Prima genera un\u2019immagine: si possono pubblicare solo immagini generate','gal.done':'<b>PUBBLICATO</b> — il tuo look è in galleria',
+    'gal.pubFail':'<b>NON PUBBLICATO</b> — riprova tra un minuto','gal.reported':'<b>GRAZIE</b> — segnalato','gal.report':'Segnala',
+    'remix.btn':'Remix','remix.opened':'Look condiviso','remix.openedN':'Remix #{n}','remix.done':'<b>REMIX #{n}</b> — ora è tuo, condividilo',
+    'lt.ph':'descrivi uno stile: vhs sciolto, neon, incubo glitch…','lt.go':'✦ Look',
+    'lt.done':'<b>LOOK DA TESTO</b> — {w}','lt.rand':'<b>LOOK DA TESTO</b> — nessuna parola nota, il tuo testo ha scelto un look',
+    'story.btn':'▶ Storia 9:16 · 8 s','story.go':'<b>STORIA 9:16</b> — registro 8 secondi','story.busy':'<b>OCCUPATO</b> — una ripresa è già in corso',
     'toast.opened':'<b>LOOK CONDIVISO</b> — aperto da un link','toast.openedNoImg':'<b>LOOK CONDIVISO</b> — immagine non disponibile, mostro l\u2019esempio',
     'kh.Generate an image from text':'Genera un\u2019immagine da un testo',
     'set.tour':'Come funziona ROT (tour)','set.keys':'Scorciatoie da tastiera','set.lang':'Lingua',
@@ -4153,10 +4218,53 @@ function linkSource(){
   if(srcMeta.t==='url')return {t:'url',u:srcMeta.u};
   return null;
 }
-function shareURL(){
+// Links go through the worker's /s/<id> page, whose preview card (og:image) is a frame of the look,
+// then forward to the site with the same #rot= part. Photos from the device never leave it: their
+// links skip the preview and point straight at the site.
+const SHARE_LINK='https://s.nicoflp.com/';
+const PV={payload:'',id:'',sent:false};
+let remixCount=0;
+function randId(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function privateSource(){return !Engine.getSrc().empty&&!srcMeta}
+function sharePayload(){
   const o={v:1,l:lookForLink()};
   const ls=linkSource();if(ls)o.s=ls;
-  return location.origin+location.pathname+'#rot='+b64u.enc(o);
+  if(remixCount>0)o.x=remixCount;
+  return b64u.enc(o);
+}
+function shareURL(){
+  const pl=sharePayload();
+  if(privateSource())return location.origin+location.pathname+'#rot='+pl;
+  if(PV.payload!==pl){PV.payload=pl;PV.id=randId(12);PV.sent=false}
+  return SHARE_LINK+PV.id+'#rot='+pl;
+}
+// the current frame, cover-cropped to 1200×630, as a JPEG under the worker's size cap
+async function snapPreview(){
+  const cv=$id('cv'),c=document.createElement('canvas');c.width=1200;c.height=630;
+  const g=c.getContext('2d',{willReadFrequently:true}),k=Math.max(1200/cv.width,630/cv.height),w=cv.width*k,h=cv.height*k;
+  // strobe / frame-skip looks can leave a black frame: take the next one in that case (a few tries)
+  for(let i=0;i<6;i++){
+    try{Engine.renderNow()}catch(e){}
+    g.fillStyle='#070812';g.fillRect(0,0,1200,630);g.drawImage(cv,(1200-w)/2,(630-h)/2,w,h);
+    const d=g.getImageData(0,0,1200,630).data;let sum=0;for(let j=0;j<d.length;j+=4*97)sum+=d[j]+d[j+1]+d[j+2];
+    if(sum/(d.length/(4*97))>24)break;
+    await new Promise(r=>requestAnimationFrame(()=>r()));
+  }
+  for(const q of [.74,.6,.46,.34]){
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',q));
+    if(b&&b.size<=210*1024)return b;
+  }
+  return null;
+}
+async function sendPreview(){
+  if(!PV.id||PV.sent)return PV.sent;
+  const id=PV.id;PV.sent=true;
+  try{
+    const b=await snapPreview();if(!b)throw new Error('size');
+    const r=await fetch(SHARE_API+'/p/'+id,{method:'PUT',headers:{'Content-Type':'image/jpeg'},body:b});
+    if(!(r.ok||r.status===409))throw new Error('http'+r.status);
+    return true;
+  }catch(e){if(PV.id===id)PV.sent=false;return false}
 }
 async function shareLook(){
   const btn=$id('btnShare');
@@ -4171,9 +4279,9 @@ async function shareLook(){
     if(srcMeta!==meta)return; // the source changed while uploading: don't share the wrong picture
     if(!meta.id)note=tr('toast.notStored');
   }
-  const url=shareURL();
+  const url=shareURL();if(!privateSource())sendPreview();
   // a photo loaded from the device never leaves it: the link carries the look only
-  const privateSrc=!Engine.getSrc().empty&&!srcMeta;
+  const privateSrc=privateSource();
   if(matchMedia('(pointer:coarse)').matches&&navigator.share){
     try{await navigator.share({title:'ROT',text:tr('share.text'),url});if(note)toast(note,5200);return}catch(e){if(e&&e.name==='AbortError')return}
   }
@@ -4187,7 +4295,7 @@ function readSharedLink(){
 }
 async function applySharedLink(){
   const o=readSharedLink();if(!o)return false;
-  sharedLook=true;
+  sharedLook=true;remixCount=clamp(Math.floor(+o.x||0),0,999);
   try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
   if(o.l){
     const l=o.l,num=v=>Number.isFinite(+v)?+v:0,m={};
@@ -4213,9 +4321,151 @@ async function applySharedLink(){
     else await loadSampleSource();
     toast(tr('toast.opened'));
   }catch(e){try{await loadSampleSource()}catch(_){}toast(tr('toast.openedNoImg'),4200)}
+  showRemixChip();
   return true;
 }
 (function bindShare(){const b=$id('btnShare');if(b)b.addEventListener('click',shareLook)})();
+function showRemixChip(){
+  const c=$id('remixChip');if(!c)return;
+  $id('remixTxt').textContent=remixCount>0?tr('remix.openedN').replace('{n}',remixCount):tr('remix.opened');
+  c.classList.add('on');clearTimeout(showRemixChip.t);showRemixChip.t=setTimeout(()=>c.classList.remove('on'),30000);
+}
+(function bindRemix(){
+  $id('btnRemix').addEventListener('click',()=>{
+    remixCount++;mutateLook();markDirty();
+    $id('remixChip').classList.remove('on');
+    setTimeout(()=>toast(tr('remix.done').replace('{n}',remixCount),4200),60);
+  });
+  $id('remixX').addEventListener('click',()=>$id('remixChip').classList.remove('on'));
+})();
+
+// ---- look from text: words (EN/IT) → effects, masters and grade; unknown text still picks a look
+const LOOK_WORDS=[
+  [/vhs|tape|nastro|cassett|retro|80s|anni ?80|vintage/,{vhs:.7,tear:.35,ca:.3,post:.2},{},4],
+  [/glitch|broken|rott|corrupt|corrot|error|datamosh|mosh|bug/,{glitch:.75,mosh:.55,comp:.45,rgb:.4,skip:.15},{gfreq:.75,chaos:.6}],
+  [/neon|cyber|synth|fluo|laser|club/,{edge:.7,bloom:.55,rgb:.3,glare:.35},{}],
+  [/liquid|melt|sciol|fus|water|acqua|wave|onda|fluid|flu/,{liquid:.75,fluid:.55,ripple:.4},{org:1.1}],
+  [/dream|sogn|soft|morbid|fog|nebbi|haze|ether|eter|angel/,{bloom:.6,ghost:.45,fb:.4,dirt:.2},{speed:.55}],
+  [/nightmare|incubo|horror|dark|buio|demon|hell|inferno|creepy/,{decay:.6,mosh:.4,tear:.4,fb:.5,ca:.45},{chaos:.8,intensity:1.5},2],
+  [/kaleid|caleid|mandala|psych|psich|trip|acid/,{kaleido:.8,prism:.5,mirror:.3},{},5],
+  [/mirror|specchi|simmetr|symmetr|twin|gemell/,{mirror:.8,kaleido:.25},{}],
+  [/pixel|8.?bit|game|videogioc|arcade|minecraft/,{sort:.5,post:.6,comp:.5},{},0,.5],
+  [/ascii|terminal|matrix|codice|code|hacker/,{ascii:.85,edge:.3},{}],
+  [/fisheye|lens|lente|bubble|bolla|wide/,{fish:.75,glare:.3},{}],
+  [/fire|fuoco|burn|bruci|heat|caldo|lava|sun|sole/,{bloom:.6,decay:.35,fluid:.4,glare:.45},{},3],
+  [/ice|ghiacc|frost|cold|fredd|glass|vetro|crystal|cristall/,{prism:.6,ca:.4,parallax:.3,edge:.3},{},1],
+  [/ghost|fantasm|echo|eco|trail|scia|memor/,{ghost:.75,fb:.55},{}],
+  [/cctv|security|sorveglian|surveillance|spy/,{vhs:.55,post:.3,tear:.3,dirt:.35},{},1],
+  [/chaos|caos|crazy|pazz|extreme|estrem|insane|folle|rave/,{glitch:.7,rgb:.6,mosh:.5,kaleido:.4,fluid:.5},{chaos:1,intensity:1.8,speed:2.2}],
+  [/calm|slow|lent|minimal|clean|pulit|subtle|soft ?touch|legger|zen/,{},{intensity:.6,speed:.4,chaos:.15}],
+  [/fast|veloce|rapid|frenetic|energ|speed/,{},{speed:2.4}],
+  [/space|spazio|cosm|galax|star|stell|orbit/,{prism:.45,bloom:.5,parallax:.5,ghost:.3},{zoom:1.15}],
+  [/paint|dipint|oil|olio|art|arte|watercolor|acquerell/,{fluid:.5,post:.45,liquid:.35},{org:.9}]
+];
+function lookFromText(text){
+  const t=String(text||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const fx={},m={},hits=[];let grade=0,pix=0;
+  LOOK_WORDS.forEach(([rx,f,mm,g,px])=>{
+    const hit=rx.exec(t);if(!hit)return;hits.push(hit[0]);
+    Object.keys(f).forEach(k=>{fx[k]=Math.min(1,(fx[k]||0)+f[k])});
+    Object.assign(m,mm);if(g!=null&&g)grade=g;if(px)pix=px;
+  });
+  if(!hits.length){ // any text still gives a look: a hash of it picks 3–4 effects
+    let h=2166136261;for(const ch of t)h=Math.imul(h^ch.charCodeAt(0),16777619)>>>0;
+    const ids=FX.map(f=>f.id);const n=3+(h%2);
+    for(let i=0;i<n;i++){h=Math.imul(h^i,2654435761)>>>0;fx[ids[h%ids.length]]=.35+(h%50)/100}
+    grade=h%6;
+  }
+  return {src:{fx,m,pix,grade},hits};
+}
+(function bindLookText(){
+  $id('lookText').addEventListener('submit',e=>{
+    e.preventDefault();
+    const inp=$id('lookTextIn'),v=inp.value.trim();if(!v){inp.focus();return}
+    const {src,hits}=lookFromText(v);
+    applyPreset(src,false);DATA.activePreset=null;syncUI();markDirty();
+    toast(hits.length?tr('lt.done').replace('{w}',esc([...new Set(hits)].slice(0,4).join(' · '))):tr('lt.rand'),3600);
+    inp.blur();
+  });
+})();
+
+// ---- one-tap vertical story: 1080×1920, 8 s, from the top of the track if one is loaded
+async function recordStory(){
+  if(REC.active||REC.starting||REC.stopping||REC.finalizing){toast(tr('story.busy'));return}
+  const prev={res:DATA.settings.exportRes,dur:DATA.settings.duration};
+  DATA.settings.exportRes='1080x1920';DATA.settings.duration=8;saveSettings();syncExportUI();
+  try{if(Music.hasTrack()&&!Music.settings.useRange)await Music.seekTo(0)}catch(e){}
+  toast(tr('story.go'),2600);
+  await startRecording();
+  const iv=setInterval(()=>{
+    if(REC.active||REC.starting||REC.stopping||REC.finalizing)return;
+    clearInterval(iv);DATA.settings.exportRes=prev.res;DATA.settings.duration=prev.dur;saveSettings();syncExportUI();
+  },500);
+}
+$id('btnStory').addEventListener('click',recordStory);
+
+// ---- gallery: looks people chose to publish (generated images only: they passed the AI Horde filter)
+const Gallery={items:[],open:false};
+function galCanPublish(){return !!(srcMeta&&(srcMeta.t==='gen'||srcMeta.t==='img')&&(srcMeta.id||srcMeta.pending||srcMeta.data))}
+function renderGallery(state){
+  const g=$id('galGrid');
+  if(state){g.innerHTML='<div class="gal-empty">'+esc(tr(state))+'</div>';return}
+  if(!Gallery.items.length){g.innerHTML='<div class="gal-empty">'+esc(tr('gal.empty'))+'</div>';return}
+  g.innerHTML=Gallery.items.map(it=>'<button type="button" class="gal-it" data-id="'+esc(it.id)+'"><img loading="lazy" alt="" src="'+esc(SHARE_API+'/p/'+it.p)+'"><span class="gal-rep" role="button" tabindex="0" title="'+esc(tr('gal.report'))+'" aria-label="'+esc(tr('gal.report'))+'">⚑</span></button>').join('');
+  $$('#galGrid img').forEach(im=>im.addEventListener('error',()=>{const b=im.closest('.gal-it');if(b)b.remove()}));
+}
+async function loadGallery(){
+  renderGallery('gal.loading');
+  try{const r=await fetch(SHARE_API+'/g',{cache:'no-store'});const d=await r.json();Gallery.items=Array.isArray(d.items)?d.items.filter(x=>x&&/^[A-Za-z0-9_-]+$/.test(x.p||'')&&/^[A-Za-z0-9_-]+$/.test(x.l||'')):[];renderGallery()}
+  catch(e){renderGallery('gal.fail')}
+}
+function syncGalPublish(){
+  const ok=galCanPublish(),b=$id('galPublish');b.disabled=!ok;
+  $id('galNote').textContent=ok?'':tr('gal.need');
+}
+function openGallery(){
+  if(document.body.dataset.sheet)closeSheet();
+  if(drawerOpen)closeDrawer(drawerOpen);
+  const g=$id('gal');g.classList.add('on');g.setAttribute('aria-hidden','false');Gallery.open=true;
+  syncGalPublish();loadGallery();setTimeout(()=>glitchIn($id('galTitle')),60);
+}
+function closeGallery(){const g=$id('gal');g.classList.remove('on');g.setAttribute('aria-hidden','true');Gallery.open=false}
+async function publishLook(){
+  const b=$id('galPublish');if(b.disabled)return;b.disabled=true;
+  try{
+    const meta=srcMeta;
+    if(meta.t==='gen'&&!meta.id){if(meta.pending)await meta.pending;if(!meta.id&&meta.data)await storeShot(meta)}
+    if(!meta.id)throw new Error('img');
+    const url=shareURL();const ok=await sendPreview();if(!ok)throw new Error('preview');
+    const r=await fetch(SHARE_API+'/g',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({img:meta.id,p:PV.id,l:url.split('#rot=')[1]})});
+    if(!r.ok)throw new Error('http'+r.status);
+    toast(tr('gal.done'),3600);await loadGallery();
+  }catch(e){toast(tr('gal.pubFail'),4200)}
+  syncGalPublish();
+}
+(function bindGallery(){
+  $id('btnGallery').addEventListener('click',openGallery);
+  $id('galClose').addEventListener('click',closeGallery);
+  $id('gal').addEventListener('click',e=>{if(e.target.id==='gal')closeGallery()});
+  $id('galPublish').addEventListener('click',publishLook);
+  $id('galGrid').addEventListener('click',async e=>{
+    const it=e.target.closest('.gal-it');if(!it)return;
+    const item=Gallery.items.find(x=>x.id===it.dataset.id);if(!item)return;
+    if(e.target.closest('.gal-rep')){
+      e.stopPropagation();it.classList.add('gone');
+      try{await fetch(SHARE_API+'/g/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:item.id})})}catch(_){}
+      toast(tr('gal.reported'));return;
+    }
+    closeGallery();
+    try{history.replaceState(null,'','#rot='+item.l)}catch(_){location.hash='rot='+item.l}
+    await applySharedLink();
+  });
+  window.addEventListener('keydown',e=>{
+    if(!Gallery.open)return;
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeGallery();return}
+    if(e.key.length===1&&!isTyping(e.target))e.stopPropagation();
+  },true);
+})();
 
 // ─── Keyboard shortcuts sheet ("?") ───
 const KEY_HELP=[
