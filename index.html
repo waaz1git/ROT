@@ -64,14 +64,32 @@
 }
 [data-theme="bone"]{
   color-scheme:light;
-  --bg:#e9e8f2;--bg-deep:#dcdbe9;--bg-lift:#f6f5fb;
-  --glass:rgba(255,255,255,.62);--glass-solid:rgba(250,249,255,.9);
-  --glass-soft:rgba(80,70,150,.045);--glass-faint:rgba(80,70,150,.02);
-  --stroke:rgba(55,45,110,.16);--stroke-soft:rgba(55,45,110,.09);--stroke-faint:rgba(55,45,110,.04);
-  --tx:#191834;--mu:#555276;--dim:#8885a7;
-  --acc:#7059e8;--acc-2:#9d8cf5;--acc-deep:#5842cf;
-  --hot:#e84f84;--mint:#159d8b;--lime:#5f8a2f;--amber:#a76d1f;
+  --bg:#efeae1;--bg-deep:#e5ded2;--bg-lift:#f8f5ef;
+  --glass:rgba(251,248,242,.74);--glass-solid:rgba(251,249,244,.94);
+  --glass-soft:rgba(60,45,25,.045);--glass-faint:rgba(60,45,25,.022);
+  --stroke:rgba(45,35,20,.16);--stroke-soft:rgba(45,35,20,.09);--stroke-faint:rgba(45,35,20,.045);
+  --tx:#1c1a17;--mu:#5c564c;--dim:#968e81;
+  --acc:#4f3bd6;--acc-2:#7a68ea;--acc-deep:#3b2ab5;
+  --hot:#e0336f;--mint:#0d8a79;--lime:#4f7a22;--amber:#9c6210;
+  --shadow:0 26px 70px -40px rgba(60,40,15,.45),0 1px 2px rgba(60,40,15,.08);
 }
+[data-theme="bone"] body{background:radial-gradient(ellipse at 20% 0%,#f7f2e9 0%,transparent 55%),radial-gradient(ellipse at 100% 100%,#e9e1d3 0%,transparent 60%),var(--bg-deep)}
+[data-theme="bone"] #aurora{mix-blend-mode:multiply}
+[data-theme="bone"] #aurora i:nth-child(1){background:radial-gradient(circle,rgba(110,90,230,.28),transparent 68%)}
+[data-theme="bone"] #aurora i:nth-child(2){background:radial-gradient(circle,rgba(20,160,150,.22),transparent 68%)}
+[data-theme="bone"] #aurora i:nth-child(3){background:radial-gradient(circle,rgba(230,60,110,.2),transparent 70%)}
+[data-theme="bone"] .panel{background:linear-gradient(160deg,rgba(255,253,248,.86),rgba(246,241,232,.8));box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.8)}
+[data-theme="bone"] .panel::before{background:linear-gradient(90deg,transparent,rgba(79,59,214,.35),transparent)}
+[data-theme="bone"] #topbar{background:linear-gradient(120deg,rgba(252,249,243,.88),rgba(244,238,228,.84));box-shadow:0 14px 40px -24px rgba(60,40,15,.45),inset 0 1px 0 rgba(255,255,255,.85)}
+[data-theme="bone"] .tbtn{color:#4a443b}
+[data-theme="bone"] .tbtn:hover{background:rgba(45,35,20,.07)}
+[data-theme="bone"] #ticker{color:#7d7568}
+[data-theme="bone"] .btn.dark{background:rgba(45,35,20,.06)}
+[data-theme="bone"] #fxPeek,[data-theme="bone"] .gal-card,[data-theme="bone"] #remixChip{background:linear-gradient(155deg,rgba(255,252,246,.97),rgba(244,238,228,.97));color:var(--tx)}
+[data-theme="bone"] #fxPeek span,[data-theme="bone"] #remixChip{color:#3b3530}
+[data-theme="bone"] .section-title b{background:rgba(79,59,214,.1)}
+[data-theme="bone"] #emptyHint .eh-t{text-shadow:none}
+[data-theme="bone"] ::selection{background:rgba(79,59,214,.2)}
 
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -515,6 +533,10 @@ details.adv .adv-body{padding:0 12px 12px;animation:paneIn .4s var(--ease) both}
 .intro-kicker b{color:var(--acc);font-weight:400}
 .logo-stage{position:relative;display:inline-block;line-height:.9;isolation:isolate}
 .logo-big{font:800 clamp(88px,17vw,220px)/.9 var(--fd);letter-spacing:-.055em;margin:0;color:var(--tx);position:relative;display:inline-block;text-shadow:0 0 90px rgba(155,140,255,.3);animation:logoBreathe 1.5s var(--snap) both}
+.logo-gl{position:absolute;left:-18%;top:-26%;width:136%;height:152%;pointer-events:none;opacity:0;transition:opacity .5s var(--ease)}
+.logo-stage.gl-on .logo-gl{opacity:1}
+.logo-stage.gl-on .logo-big{color:transparent;text-shadow:none}
+.logo-stage.gl-on .logo-big::before,.logo-stage.gl-on .logo-big::after{display:none}
 .logo-big::before,.logo-big::after{content:attr(data-text);position:absolute;inset:0;pointer-events:none;opacity:.55;filter:blur(.4px)}
 .logo-big::before{color:var(--acc);clip-path:inset(16% 0 56% 0);animation:logoDriftA 4.8s var(--ease) infinite alternate}
 .logo-big::after{color:var(--mint);clip-path:inset(58% 0 18% 0);animation:logoDriftB 5.6s var(--ease) infinite alternate}
@@ -628,6 +650,38 @@ body.cinema.peek #cv{cursor:auto}
   background:rgba(8,7,20,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
   font:500 9px/1 var(--fm);letter-spacing:.18em;text-transform:uppercase;color:#cfd0ea;opacity:0;pointer-events:none;transition:opacity .4s,transform .4s}
 #cinemaHint.on{opacity:1;transform:translate(-50%,0)}
+#fxPeek{position:fixed;z-index:35;left:0;top:0;width:236px;padding:6px 6px 9px;border-radius:14px;border:1px solid var(--stroke);
+  background:linear-gradient(155deg,rgba(30,28,62,.94),rgba(10,12,26,.96));box-shadow:0 30px 70px -24px rgba(0,0,0,.9);
+  opacity:0;visibility:hidden;transform:translate3d(var(--px,0),var(--py,0),0) scale(.96);transform-origin:left center;
+  transition:opacity .18s var(--ease),transform .22s var(--snap),visibility .18s;pointer-events:none}
+#fxPeek.on{opacity:1;visibility:visible;transform:translate3d(var(--px,0),var(--py,0),0)}
+#fxPeek canvas{display:block;width:224px;height:136px;border-radius:9px;background:#07060f}
+#fxPeek span{display:block;margin:8px 4px 0;font:500 9px/1 var(--fm);letter-spacing:.16em;text-transform:uppercase;color:#d9d3ff}
+body.cinema #fxPeek{display:none}
+/* --- airier panels: larger type, more breathing room */
+.section{padding:16px 0 6px;margin-top:10px}
+.section-title{font-size:9.5px;letter-spacing:.18em}
+.ctrl{margin:12px 0 16px}
+.ctrl-top{margin:0 0 8px}
+.ctrl-label{font-size:10px;letter-spacing:.08em}
+.ctrl-val{font-size:10px}
+.fx-row{padding:7px 6px;gap:9px}
+.fx-name{font-size:9.5px}
+.fx-val{font-size:9px}
+details.adv summary{font-size:9px;padding:12px 14px}
+details.adv>.adv-body{padding:2px 12px 8px}
+/* --- background breathes with the music */
+#aurora{--ap:0;transform:scale(calc(1 + var(--ap) * .08));opacity:calc(.5 + var(--ap) * .4)}
+[data-theme="bone"] #aurora{opacity:calc(.32 + var(--ap) * .3)}
+body.music-live #aurora{transition:none}
+/* --- recipe transition: venetian slices sweep across the picture */
+@property --blind{syntax:'<length>';inherits:false;initial-value:0px}
+@keyframes rxBlind{0%{--blind:0px;filter:none}30%{--blind:15px;filter:hue-rotate(40deg) saturate(1.5)}60%{--blind:6px;filter:contrast(1.3)}100%{--blind:0px;filter:none}}
+#cv.rx-in{animation:rxBlind .62s var(--ease) both;
+  -webkit-mask-image:repeating-linear-gradient(0deg,#000 0 calc(18px - var(--blind)),transparent calc(18px - var(--blind)) 18px);
+  mask-image:repeating-linear-gradient(0deg,#000 0 calc(18px - var(--blind)),transparent calc(18px - var(--blind)) 18px)}
+@media(prefers-reduced-motion:reduce){#cv.rx-in{animation:none;-webkit-mask-image:none;mask-image:none}}
+body.reduce-motion #cv.rx-in{-webkit-mask-image:none;mask-image:none}
 #hypnoExit{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:120;display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid var(--stroke);background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:var(--dim);border-radius:var(--pill);font:500 7px/1 var(--fm);letter-spacing:.14em;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity var(--t-slow) var(--ease),color var(--t),border-color var(--t),background var(--t)}
 #hypnoExit b{display:grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;border-radius:50%;font-weight:400;color:var(--acc)}
 #hypnoExit:hover,#hypnoExit:focus-visible{opacity:1!important;color:var(--tx);border-color:var(--acc);background:var(--glass-solid)}
@@ -1096,9 +1150,11 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
     <div class="section">
       <div class="section-head"><div class="section-title"><b>B</b> MASTER</div><button class="btn xs" id="btnResetMaster" title="Reset master sliders">RESET</button></div>
       <div id="masterSliders"></div>
+      <details class="adv" id="advQuality"><summary data-i18n="adv.q">Quality &amp; color</summary><div class="adv-body">
       <div id="qualityFields"></div>
       <label class="switch"><span>Adaptive resolution</span><input type="checkbox" id="autoQ" checked></label>
       <label class="switch"><span>Frame skip / strobe</span><input type="checkbox" id="skipAllowed" checked></label>
+      </div></details>
     </div>
 
     <div class="section">
@@ -1579,6 +1635,7 @@ body.reduce-motion .tc-body>*{animation-duration:.01s}
   </div>
 </div>
 <div id="cinemaHint" role="status" aria-live="polite"></div>
+<div id="fxPeek" aria-hidden="true"><canvas width="224" height="136"></canvas><span></span></div>
 <div id="cmpBadge" aria-hidden="true"><i></i><span data-i18n="cmp.badge">Original</span></div>
 <div id="toasts" role="status" aria-live="polite"></div>
 <noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#070812;color:#f3f4ff;font:14px monospace;text-align:center;padding:30px">ROT needs JavaScript and WebGL.<br>Please enable JavaScript for this instrument.</div></noscript>
@@ -2645,7 +2702,7 @@ function renderPresets(){
     btn.innerHTML='<span class="p-art"></span><canvas class="p-thumb" width="198" height="120" aria-hidden="true"></canvas><span class="p-glow" aria-hidden="true"></span><span class="p-num">'+String(i+1).padStart(2,'0')+'</span><span class="p-tag">'+esc(it.tag||'USER')+'</span><span class="p-name">'+esc(it.name)+'</span>'+(it.user?'<span class="p-del" role="button" aria-label="Delete preset">×</span>':'');
     btn.addEventListener('click',e=>{
       if(e.target.closest('.p-del')){if(confirm('Delete "'+it.name+'"?'))deleteCurrentPreset(it.name);return}
-      applyPreset(it.src,false);DATA.activePreset=it.name;
+      applyPreset(it.src,false);DATA.activePreset=it.name;cvFx('rx-in');
       $$('.preset').forEach(x=>x.classList.toggle('active',x.dataset.name===it.name));
       toast('<b>RECIPE</b> — '+esc(it.name));
       if(matchMedia('(max-width:900px)').matches)closeSheet();
@@ -2724,6 +2781,7 @@ const Thumbs=(()=>{
 // Cinema: every control fades out, only the picture stays. Moving the pointer shows the top bar
 // for a moment; C / Esc (or a double-tap on touch screens) brings everything back.
 const Cinema={on:false,peekT:0,hintT:0};
+const AUR={el:document.getElementById('aurora')||document.createElement('i'),v:0,last:0,live:false};
 function toggleCinema(force){
   const on=typeof force==='boolean'?force:!Cinema.on;
   if(on===Cinema.on)return;
@@ -2756,6 +2814,120 @@ setInterval(()=>{
   document.body.classList.toggle('perf-empty',empty);
 },600);
 document.body.classList.add('perf-empty');
+function cvFx(cls){
+  if(DATA.settings.reduce||motionQuery.matches||Engine.isExporting())return;
+  const cv=$id('cv');if(!cv)return;cv.classList.remove('rx-in','src-in');void cv.offsetWidth;cv.classList.add(cls);
+  clearTimeout(cvFx.t);cvFx.t=setTimeout(()=>cv.classList.remove(cls),700);
+}
+// Effect preview: hovering an effect (or dragging its slider on touch) shows that effect alone on the
+// current picture, animated, in a small card beside the panel.
+const FxPeek=(()=>{
+  const W=224,H=136;let id=null,raf=0,last=0,img=null,hideT=0;
+  const card=()=>$id('fxPeek');
+  function frameFor(fid){
+    const fxVals={};FX.forEach(f=>fxVals[f.id]=0);
+    const cur=+P.fx[fid]||0;fxVals[fid]=fid==='skip'?0:Math.max(.7,cur);
+    if(DATA.settings.safe)fxVals[fid]=Math.min(fxVals[fid],SAFE_LIMITS[fid]||1);
+    return {t:performance.now()/1000,mix:1,org:.5,rnd:.5,gfreq:.6,hue:0,audio:0,zoom:1,seed:0,kaleidoSeg:0,flash:0,mouse:{x:.5,y:.5},
+      fxVals,decay:fid==='decay'?.6:0,finish:1,asciiMode:P.asciiMode||0,grade:0,hue2:0};
+  }
+  function loop(now){
+    raf=requestAnimationFrame(loop);
+    if(now-last<80)return;last=now; // ~12 fps is plenty for a preview
+    if(!id||Engine.isExporting())return;
+    img=img||new ImageData(W,H);
+    let ok=false;try{ok=Engine.renderThumb(frameFor(id),W,H,360,220,img)}catch(e){}
+    if(ok)card().querySelector('canvas').getContext('2d').putImageData(img,0,0);
+  }
+  function show(fid,row){
+    if(Cinema.on||Engine.src.empty||!row)return;
+    const f=FX.find(x=>x.id===fid);if(!f)return;
+    clearTimeout(hideT);id=fid;
+    const c=card(),r=row.getBoundingClientRect(),panel=row.closest('.panel,.drawer')||row;
+    const pr=panel.getBoundingClientRect();
+    let x=pr.right+12,y=r.top+r.height/2-80;
+    if(x+240>innerWidth){x=Math.max(8,Math.min(innerWidth-244,r.left));y=r.top-170}
+    y=clamp(y,8,innerHeight-176);
+    c.style.setProperty('--px',Math.round(x)+'px');c.style.setProperty('--py',Math.round(y)+'px');
+    c.querySelector('span').textContent=(typeof uiIt==='function'&&LANG==='it')?uiIt(f.name):f.name;
+    c.classList.add('on');last=0;
+    if(!raf)raf=requestAnimationFrame(loop);
+  }
+  function hide(delay){
+    clearTimeout(hideT);
+    hideT=setTimeout(()=>{id=null;card().classList.remove('on');cancelAnimationFrame(raf);raf=0},delay||0);
+  }
+  const host=$id('effectList');
+  host.addEventListener('pointerover',e=>{if(e.pointerType==='touch')return;const row=e.target.closest('.fx-row');if(row)show(row.dataset.id,row)});
+  host.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')hide(60)});
+  host.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;const row=e.target.closest('.fx-row');if(row&&e.target.type==='range')show(row.dataset.id,row)});
+  window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&id)hide(900)},true);
+  window.addEventListener('scroll',()=>{if(id)hide(0)},true);
+  return {show,hide,get id(){return id}};
+})();
+// Intro: the ROT wordmark drawn through a small live shader (liquid drift, RGB split, glitch slices,
+// a ripple that follows the pointer). Falls back to the CSS logo without WebGL or with reduced motion.
+(function introShader(){
+  try{
+    if(motionQuery.matches||DATA.settings.reduce)return;
+    const intro=$id('intro'),h1=document.querySelector('.logo-big');if(!intro||!h1)return;
+    const stage=h1.parentElement,cv=document.createElement('canvas');cv.className='logo-gl';cv.setAttribute('aria-hidden','true');
+    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,powerPreference:'low-power'});if(!gl)return;
+    stage.appendChild(cv);
+    const vs='attribute vec2 p;varying vec2 v;void main(){v=p*.5+.5;gl_Position=vec4(p,0.,1.);}';
+    const fs=`precision mediump float;uniform sampler2D T;uniform float t,hit;uniform vec2 m;varying vec2 v;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){
+  vec2 uv=v;float d=distance(uv*vec2(1.6,1.),m*vec2(1.6,1.));
+  uv+=vec2(sin(uv.y*16.+t*2.1)*.006+sin(uv.x*9.-t*1.4)*.004,sin(uv.x*13.+t*1.8)*.004);
+  vec2 dir=normalize(uv-m+1e-4);uv+=dir*sin(d*46.-t*8.)*exp(-d*6.)*.016*(.35+hit);
+  float row=floor(uv.y*46.),g=step(.975,h(vec2(row,floor(t*8.))));uv.x+=g*(h(vec2(row,t))-.5)*.09;
+  float sp=.004+.018*exp(-d*4.)*(.4+hit)+g*.01;
+  float r=texture2D(T,uv+vec2(sp,0.)).a,c=texture2D(T,uv).a,b=texture2D(T,uv-vec2(sp,0.)).a;
+  float scan=.9+.1*sin(v.y*700.+t*3.);
+  vec3 col=vec3(.95,.95,1.)*c+vec3(1.,.28,.62)*max(r-c,0.)+vec3(.35,.9,.85)*max(b-c,0.);
+  float a=clamp(max(max(r,c),b),0.,1.);gl_FragColor=vec4(col*scan,a);
+}`;
+    const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+    const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);gl.useProgram(pr);
+    const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+    const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    const uT=gl.getUniformLocation(pr,'t'),uM=gl.getUniformLocation(pr,'m'),uH=gl.getUniformLocation(pr,'hit');
+    const tex=gl.createTexture();
+    function paintText(){
+      const r=cv.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);
+      cv.width=Math.max(2,Math.round(r.width*dpr));cv.height=Math.max(2,Math.round(r.height*dpr));
+      const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const x=c.getContext('2d');
+      const cs=getComputedStyle(h1);x.font=cs.fontWeight+' '+parseFloat(cs.fontSize)*dpr+'px '+cs.fontFamily;
+      x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';
+      try{x.letterSpacing=cs.letterSpacing==='normal'?'0px':(parseFloat(cs.letterSpacing)*dpr)+'px'}catch(e){}
+      x.fillText(h1.textContent.trim(),c.width/2,c.height/2+parseFloat(cs.fontSize)*dpr*.04);
+      gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.viewport(0,0,cv.width,cv.height);
+    }
+    let mx=.5,my=.5,tmx=.5,tmy=.5,hit=0,raf=0,t0=performance.now();
+    const onMove=e=>{const r=cv.getBoundingClientRect();const nx=(e.clientX-r.left)/r.width,ny=1-(e.clientY-r.top)/r.height;hit=Math.min(1.6,hit+Math.hypot(nx-tmx,ny-tmy)*6);tmx=nx;tmy=ny};
+    window.addEventListener('pointermove',onMove,{passive:true});
+    function frame(now){
+      if(intro.classList.contains('out')||!document.body.contains(cv)){
+        window.removeEventListener('pointermove',onMove);
+        setTimeout(()=>{try{const lose=gl.getExtension('WEBGL_lose_context');if(lose)lose.loseContext()}catch(e){}cv.remove()},900);
+        return;
+      }
+      raf=requestAnimationFrame(frame);
+      mx+=(tmx-mx)*.12;my+=(tmy-my)*.12;hit*=.94;
+      gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(uT,(now-t0)/1000);gl.uniform2f(uM,mx,my);gl.uniform1f(uH,hit);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    }
+    (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>{
+      if(intro.classList.contains('out'))return cv.remove();
+      paintText();stage.classList.add('gl-on');raf=requestAnimationFrame(frame);
+    });
+  }catch(e){const st=document.querySelector('.logo-stage');if(st)st.classList.remove('gl-on')}
+})();
 function renderPresetsSafe(){try{renderPresets()}catch(e){}}
 
 function bindControls(){
@@ -3024,7 +3196,7 @@ function applyTheme(theme,silent){
   DATA.settings.theme=theme==='bone'?'bone':'void';
   document.documentElement.dataset.theme=DATA.settings.theme;
   const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta)meta.setAttribute('content',DATA.settings.theme==='bone'?'#ded6ca':'#07060a');
+  if(meta)meta.setAttribute('content',DATA.settings.theme==='bone'?'#e5ded2':'#07060a');
   const sel=$id('setTheme');if(sel)sel.value=DATA.settings.theme;
   if(!silent)toast('<b>SURFACE</b> — '+DATA.settings.theme.toUpperCase());
 }
@@ -3364,6 +3536,7 @@ const I18N={
     'toast.notStored':'<b>IMMAGINE NON SALVATA</b> — il link la ridisegnerà (potrebbe differire leggermente)',
     'cin.on':'Cinema — premi C o Esc per riavere i comandi','cin.onm':'Cinema — doppio tocco per riavere i comandi',
     'kh.Cinema — hide the controls':'Cinema — nascondi i comandi',
+    'adv.q':'Qualità e colore',
     'gal.btn':'Galleria','gal.t':'Fatte con ROT','gal.sub':'Look che le persone hanno scelto di pubblicare. Toccane uno per aprirlo dal vivo, poi remixalo.',
     'gal.pub':'Pubblica il mio look','gal.empty':'Ancora niente — pubblica tu il primo','gal.loading':'Carico…','gal.fail':'Galleria non disponibile ora',
     'gal.need':'Prima genera un\u2019immagine: si possono pubblicare solo immagini generate','gal.done':'<b>PUBBLICATO</b> — il tuo look è in galleria',
@@ -7105,6 +7278,12 @@ function loop(now){
   }
 
   
+  // the background lights breathe with the track (bass + kicks), calm otherwise
+  {const live=!!(mus&&mus.loaded&&mus.active&&Music.isPlaying()&&!DATA.settings.reduce&&!DATA.settings.safe);
+   const tgt=live?clamp(Math.max(bass*.85,(mus.pulse&&mus.pulse.kick)||0),0,1):0;
+   AUR.v+=(tgt-AUR.v)*(tgt>AUR.v?.55:.1);
+   if(Math.abs(AUR.v-AUR.last)>.012||(AUR.v<.012&&AUR.last!==0)){const v=AUR.v<.012?0:AUR.v;AUR.el.style.setProperty('--ap',v.toFixed(3));AUR.last=v}
+   if(live!==AUR.live){AUR.live=live;document.body.classList.toggle('music-live',live)}}
   const dropPulse=mus?mus.pulse.drop||0:0;
   const extremePulse=mus?mus.pulse.extreme||0:0;
   if(mus&&mus.loaded){
