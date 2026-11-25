@@ -245,5 +245,5 @@ const Mutation=(()=>{
   Live.addKey('z',e=>e.shiftKey?redo():undo());
   Live.addAction('mut:more','Mutate more',()=>mutate({amount:Math.min(1,S.amount*1.8+.2),quiet:true}));
   Live.addAction('mut:less','Mutate less',()=>mutate({amount:S.amount*.4,quiet:true}));
-  return {mount,mutate,undo,redo,go,breed,preserve,reset,variations,dna,fromDna,child,get settings(){return S},get history(){return S.hist},get pos(){return S.pos}};
+  return {frameOf,mount,mutate,undo,redo,go,breed,preserve,reset,variations,dna,fromDna,child,get settings(){return S},get history(){return S.hist},get pos(){return S.pos}};
 })();

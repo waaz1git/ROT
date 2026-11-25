@@ -13,6 +13,7 @@
     'strong: kicks punch the camera, snares glitch, drops hit with flash and shake (within the safety limits).':'Forte: la cassa colpisce la camera, il rullante glitcha, i drop arrivano con flash e tremolio (nei limiti di sicurezza).',
     'mutate less':'muta di meno','mutate more':'muta di più','preserve':'preserva','reset':'reset','3 variations':'3 varianti','6 variations':'6 varianti',
     'quick':'quick','media':'media','beat sync':'sync al beat','⚄ random':'⚄ casuale','variations':'varianti','● export':'● esporta','mood…':'mood…','upload':'carica','distort':'distorci','explore':'esplora',
+    'device':'dispositivo','all devices':'tutti i dispositivi','smooth knob movements':'manopole fluide','reset mappings':'azzera mappature',
     'effect density':'densità effetti','beat response':'risposta al beat','drop intensity':'intensità dei drop','chaos level':'livello di chaos','reacts to':'reagisce a',
     'effects the autopilot never touches':'effetti che l’autopilota non tocca',
     'picks a small set of effects every 4 bars and mutates them on every hit. aggressive, but each phrase stays one look.':'Sceglie un piccolo gruppo di effetti ogni 4 battute e lo muta a ogni colpo. Aggressivo, ma ogni frase resta un look unico.',
