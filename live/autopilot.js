@@ -6,7 +6,9 @@
 // video sound falls back to energy + onset detection without a grid.
 'use strict';
 const Autopilot=(()=>{
-  const S=Live.part('ap',{on:false,mode:'follow',sens:1,react:.6,smooth:.5,amount:.7,thresh:.35,scenes:'phrase',phrase:8});
+  const S=Live.part('ap',{on:false,mode:'follow',sens:1,react:.6,smooth:.5,amount:.7,thresh:.35,scenes:'phrase',phrase:8,density:.5,beat:.7,drop:.8,chaos:.5,locks:[],cats:{kick:true,mid:true,high:true,drop:true,section:true}});
+  S.locks=S.locks.filter(id=>typeof id==='string'&&FXMAP[id]);
+  ['kick','mid','high','drop','section'].forEach(k=>{if(typeof S.cats[k]!=='boolean')S.cats[k]=true});
   if(!['follow','direct','chaos'].includes(S.mode))S.mode='follow';
   if(!['phrase','drops','off'].includes(S.scenes))S.scenes='phrase';
   S.phrase=[4,8,16].includes(+S.phrase)?+S.phrase:8;
@@ -76,8 +78,9 @@ const Autopilot=(()=>{
   const scenesReady=()=>!st.holdScenes&&Scenes.stored()>=2&&!Scenes.busy;
   Live.on('scene',()=>{st.holdScenes=false});
   function onDrop(){
-    const A=S.amount;
-    if(S.mode!=='direct'){Live.trigger('flash',.75*A);Live.trigger('shake',.9*A)}
+    if(!S.cats.drop)return;
+    const A=S.amount*(.3+clamp(S.drop,0,1)*.9);
+    if(S.mode!=='follow'){Live.trigger('flash',.75*A);Live.trigger('shake',.9*A)}
     Live.trigger('glitch',A);Live.trigger('zoom',.8*A);
     if(S.scenes!=='off'&&scenesReady())Live.run('scene:next');
     else if(S.mode==='chaos'&&!(typeof Scenes!=='undefined'&&Scenes.busy))Mutation.mutate({amount:.45,quiet:true});
@@ -118,31 +121,35 @@ const Autopilot=(()=>{
     st.hit.k=hitK?1:st.hit.k*.85;st.hit.s=hitS?1:st.hit.s*.85;st.hit.h=hitH?1:st.hit.h*.85;
     const add=(id,v)=>{if(v>.003&&FXMAP[id])out.fx[id]=(out.fx[id]||0)+v};
 
-    if(S.mode==='direct'){
-      // your look, breathing: each active effect follows its band, your sliders stay the base
-      FX.forEach(f=>{if(!P.on[f.id]||f.id==='skip')return;add(f.id,band(BAND[f.cat]||'energy')*.5*A*calm*boost*(.4+P.fx[f.id]))});
-      if(hitK)Live.trigger('zoom',.35*A*boost);
-      if(hitS&&(P.on.glitch||P.on.rgb))Live.trigger('glitch',.4*A*boost);
-    }else if(S.mode==='follow'){
-      add('liquid',band('bass')*.32*A*calm);add('disp',band('bass')*.12*A*calm);
-      add('edge',band('high')*.22*A*calm);add('prism',band('high')*.16*A*calm);
-      FX.forEach(f=>{if(P.on[f.id]&&f.id!=='skip')add(f.id,band(BAND[f.cat]||'energy')*.3*A*calm)});
-      if(hitK){Live.trigger('zoom',.42*A*boost*calm);Live.trigger('fx',.35*A*boost,{id:'bloom'});if(sec==='drop')Live.trigger('shake',.5*A)}
-      if(hitS)Live.trigger('glitch',.5*A*boost*calm);
-      if(hitH&&calm>.5)Live.trigger('fx',.18*A,{id:'ca'});
-    }else{ // chaos
-      const th2=st.theme.length?st.theme:['glitch','rgb','liquid','bloom','parasite'];
-      th2.forEach((id,i)=>add(id,(.25+.45*band(['bass','snare','snare','high','energy'][i%5]))*A*calm*boost));
-      if(hitK){Live.trigger('zoom',.55*A*boost);Live.trigger('fx',.6*A,{id:th2[0]});if(Math.random()<.3)Live.trigger('shake',.6*A)}
-      if(hitS){Live.trigger('fx',.7*A,{id:th2[1]||'glitch'});st.hueTarget+=(Math.random()<.5?-1:1)*Math.PI/3;
-        if(Math.random()<.22)Live.trigger('freeze',.25)}
-      if(hitH)Live.trigger('fx',.3*A,{id:th2[2]||'rgb'});
+    // FOLLOW: subtle, musical · DIRECT: strong hits on beats and drops · CHAOS: a mutating theme per phrase
+    const D=clamp(S.density,0,1),BR=clamp(S.beat,0,1)*1.4,CH=clamp(S.chaos,0,1),C=S.cats,lock=new Set(S.locks);
+    const addL=(id,v)=>{if(!lock.has(id))add(id,v)};
+    const trig=(k,a,o)=>{if(o&&o.id&&lock.has(o.id))return;if(k==='glitch'&&lock.has('glitch'))return;Live.trigger(k,a,o)};
+    const mk=S.mode==='follow'?.55:S.mode==='direct'?1.25:1,strong=S.mode==='direct';
+    // your active effects breathe with their part of the music in every mode
+    FX.forEach(f=>{if(P.on[f.id]&&f.id!=='skip')addL(f.id,band(BAND[f.cat]||'energy')*(.18+.25*D)*A*calm*mk)});
+    if(S.mode!=='chaos'){
+      // density brings in companions: the bass bends the picture, the highs light its edges
+      if(C.kick){addL('liquid',band('bass')*.32*D*A*calm*mk);addL('disp',band('bass')*.14*D*A*calm*mk)}
+      if(C.high){addL('edge',band('high')*.22*D*A*calm*mk);addL('prism',band('high')*.16*D*A*calm*mk)}
+      if(C.kick&&hitK){trig('zoom',(strong?.55:.22)*BR*A*boost*calm);trig('fx',(strong?.5:.18)*BR*A*boost,{id:'bloom'});if(strong&&sec==='drop')trig('shake',.6*A*S.drop)}
+      if(C.mid&&hitS)trig('glitch',(strong?.65:.22)*BR*A*boost*calm);
+      if(C.high&&hitH&&calm>.5)trig('fx',(strong?.3:.1)*BR*A,{id:'ca'});
+    }else{ // chaos: the level sets how many effects join the theme and how hard they hit
+      const th2=(st.theme.length?st.theme:['glitch','rgb','liquid','bloom','parasite']).slice(0,2+Math.round(CH*3)),g=.6+CH*.8;
+      th2.forEach((id,i)=>addL(id,(.2+.45*band(['bass','snare','snare','high','energy'][i%5]))*A*calm*boost*g*(.5+D*.5)));
+      if(C.kick&&hitK){trig('zoom',.55*A*boost*BR);trig('fx',.6*A*g,{id:th2[0]});if(Math.random()<.15+CH*.3)trig('shake',.6*A)}
+      if(C.mid&&hitS){trig('fx',.7*A*g,{id:th2[1]||'glitch'});st.hueTarget+=(Math.random()<.5?-1:1)*Math.PI/3*CH;
+        if(Math.random()<.1+CH*.2)trig('freeze',.25)}
+      if(C.high&&hitH)trig('fx',.3*A*g,{id:th2[2]||'rgb'});
       st.hueEnv+=(st.hueTarget-st.hueEnv)*(1-Math.exp(-dt*6));out.hue+=st.hueEnv*(DATA.settings.safe?.3:1);
     }
     // sections reshape the whole picture
-    if(sec==='breakdown'){add('ghost',.3*A);add('fb',.22*A);out.zoom+=Math.sin(ctx.now/2400)*.02}
-    else if(sec==='silence'){out.freeze=Math.max(out.freeze,.85)}
-    else if(sec==='build'){const b=st.build*A;add('rgb',b*.35);add('ca',b*.3);out.zoom+=b*.07;if(hitH)Live.trigger('shake',.2*b)}
+    if(C.section){
+      if(sec==='breakdown'){addL('ghost',.3*A);addL('fb',.22*A);out.zoom+=Math.sin(ctx.now/2400)*.02}
+      else if(sec==='silence'){out.freeze=Math.max(out.freeze,.85)}
+      else if(sec==='build'){const bb=st.build*A;addL('rgb',bb*.35);addL('ca',bb*.3);out.zoom+=bb*.07;if(hitH)trig('shake',.2*bb)}
+    }
     if(ctx.now-st.lastUi>100)ui(ctx);
   }
 
@@ -169,6 +176,19 @@ const Autopilot=(()=>{
     body.appendChild(L.range('Smoothing',0,1,.01,S.smooth,v=>{S.smooth=v;L.save()}));
     body.appendChild(L.range('Intensity',0,1,.01,S.amount,v=>{S.amount=v;L.save()}));
     body.appendChild(L.range('Trigger threshold',0,1,.01,S.thresh,v=>{S.thresh=v;L.save()}));
+    body.appendChild(L.range('Effect density',0,1,.01,S.density,v=>{S.density=v;L.save()}));
+    body.appendChild(L.range('Beat response',0,1,.01,S.beat,v=>{S.beat=v;L.save()}));
+    body.appendChild(L.range('Drop intensity',0,1,.01,S.drop,v=>{S.drop=v;L.save()}));
+    body.appendChild(L.range('Chaos level',0,1,.01,S.chaos,v=>{S.chaos=v;L.save()}));
+    const cats=L.h('div',{class:'live-seg ap-cats','aria-label':'Reacts to'});
+    [['kick','KICK / BASS'],['mid','SNARE / MIDS'],['high','HATS / HIGHS'],['drop','DROPS'],['section','BREAKDOWNS']].forEach(([k,t])=>{
+      const b=L.h('button',{type:'button',class:'chip'+(S.cats[k]?' on':''),text:t,'aria-pressed':String(S.cats[k])});
+      b.addEventListener('click',()=>{S.cats[k]=!S.cats[k];b.classList.toggle('on',S.cats[k]);b.setAttribute('aria-pressed',String(S.cats[k]));L.save()});cats.appendChild(b)});
+    body.appendChild(L.h('div',{class:'ctrl-top live-lbl'},[L.h('span',{class:'ctrl-label',text:'Reacts to'})]));body.appendChild(cats);
+    const lk=L.h('details',{class:'adv'},[L.h('summary',{text:'Effects the autopilot never touches'})]),lb=L.h('div',{class:'adv-body mut-single'});
+    FX.filter(f=>f.id!=='skip').forEach(f=>{const cb=L.h('input',{type:'checkbox'});cb.checked=S.locks.includes(f.id);
+      cb.addEventListener('change',()=>{S.locks=S.locks.filter(x=>x!==f.id);if(cb.checked)S.locks.push(f.id);L.save()});lb.appendChild(L.h('label',{class:'mut-lock'},[cb,L.h('span',{text:f.name})]))});
+    lk.appendChild(lb);body.appendChild(lk);
     body.appendChild(L.select('Scene switching',[['phrase','On phrases and drops'],['drops','On drops only'],['off','Never']],S.scenes,v=>{S.scenes=v;L.save()}));
     body.appendChild(L.select('Phrase length',[[4,'4 bars'],[8,'8 bars'],[16,'16 bars']],S.phrase,v=>{S.phrase=+v;L.save()}));
     adv.appendChild(body);sec.appendChild(adv);
@@ -176,8 +196,8 @@ const Autopilot=(()=>{
     Live.on('ap',sync);sync();
   }
   const DESC={
-    follow:'Reacts on its own: kicks punch the camera, snares glitch, hats sparkle, bass bends the picture. Breakdowns calm it, builds raise the tension, drops hit hard.',
-    direct:'Only moves the effects you switched on, on top of your own slider values. You stay in control; the music adds the motion.',
+    follow:'Subtle and musical: your look breathes with the bass and the highs, kicks nudge the camera. Breakdowns calm it, builds raise the tension.',
+    direct:'Strong: kicks punch the camera, snares glitch, drops hit with flash and shake (within the safety limits).',
     chaos:'Picks a small set of effects every 4 bars and mutates them on every hit. Aggressive, but each phrase stays one look.'
   };
   function sync(){

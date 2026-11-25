@@ -122,6 +122,34 @@ const Mutation=(()=>{
     return true;
   }
 
+  // ---- preserve / reset: pin a generation to come back to
+  function preserve(){ensureBase();S.hist.forEach(h=>delete h.keep);S.hist[S.pos].keep=true;Live.save();render();toast('<b>PRESERVED</b> — generation '+S.pos+' is your base')}
+  function reset(){ensureBase();let i=S.hist.findIndex(h=>h.keep);if(i<0)i=0;go(i);toast('<b>MUTATION RESET</b> — back to '+(S.hist[i].keep?'the preserved look':'the base'))}
+
+  // ---- variations: N children of the current look, rendered as small previews with the live engine
+  function frameOf(g){
+    const fxVals={};const inten=clamp(+g.m.intensity||1,0,2);
+    FX.forEach(f=>{let v=g.on[f.id]?clamp(+g.fx[f.id]||0,0,1)*inten:0;if(DATA.settings.safe)v=Math.min(v,SAFE_LIMITS[f.id]||1);fxVals[f.id]=f.id==='skip'?0:v});
+    const m=k=>(g.m[k]!=null?+g.m[k]:MASTERMAP[k].def);
+    return {t:4.2,mix:clamp(m('mix'),0,1),org:m('org'),rnd:m('rnd'),gfreq:m('gfreq'),hue:m('hueShift')*Math.PI/180,audio:0,zoom:clamp(m('zoom'),.05,3),seed:0,kaleidoSeg:0,flash:0,
+      mouse:{x:.5,y:.5},fxVals,decay:clamp((fxVals.decay||0)*.9,0,1),finish:1,asciiMode:g.asciiMode?1:0,grade:DATA.settings.safe?0:(+g.grade||0),hue2:0};
+  }
+  let vars=[];
+  function variations(n,host){
+    ensureBase();host=host||el.vars;
+    const parent=snapshotLook(),ar=innerWidth/Math.max(1,innerHeight),ow=ar>=1?168:Math.round(168*ar),oh=ar>=1?Math.round(168/ar):168;
+    vars=[];host.innerHTML='';host.style.setProperty('--vn',n>3?3:n);
+    for(let i=0;i<n;i++){
+      const seed=(Math.random()*4294967296)>>>0,g=child(parent,clamp(S.amount*(.7+i*.15),0,1),seed);
+      const cv=document.createElement('canvas');cv.width=ow;cv.height=oh;
+      let ok=false;try{const im=new ImageData(ow,oh);ok=Engine.renderThumb(frameOf(g),ow,oh,ow*2,oh*2,im);if(ok)cv.getContext('2d').putImageData(im,0,0)}catch(e){}
+      const b=Live.h('button',{type:'button',class:'mut-var'+(ok?'':' empty'),'aria-label':'Variation '+(i+1)},[cv,Live.h('span',{text:String(i+1)})]);
+      b.addEventListener('click',()=>{apply(g);push(snapshotLook(),{seed,kind:'mut'});host.innerHTML='';host.classList.remove('on');toast('<b>VARIATION '+(i+1)+'</b> — mutate on from here')});
+      vars.push(g);host.appendChild(b);
+    }
+    Motion.stagger(host,n);
+  }
+
   // continuous mutation: every N bars with a playing track, every N×2 s otherwise
   let lastBar=-1,lastAt=0;
   function tick(ctx){
@@ -138,8 +166,12 @@ const Mutation=(()=>{
     const g1=L.h('div',{class:'btn-grid'});
     g1.appendChild(L.btn('⟳ MUTATE',()=>mutate(),'hot'));
     g1.appendChild(L.btn('SAVE AS RECIPE',()=>{const n=prompt(LANG==='it'?'Nome della ricetta':'Recipe name','Gen '+S.pos);if(n&&saveCurrentPreset(n))Live.emit('recipes')}));
+    g1.appendChild(L.btn('MUTATE LESS',()=>mutate({amount:S.amount*.4})));g1.appendChild(L.btn('MUTATE MORE',()=>mutate({amount:Math.min(1,S.amount*1.8+.2)})));
     g1.appendChild(L.btn('↶ UNDO',undo));g1.appendChild(L.btn('↷ REDO',redo));
+    g1.appendChild(L.btn('PRESERVE',preserve));g1.appendChild(L.btn('RESET',reset));
+    g1.appendChild(L.btn('3 VARIATIONS',()=>variations(3)));g1.appendChild(L.btn('6 VARIATIONS',()=>variations(6)));
     sec.appendChild(g1);
+    el.vars=L.h('div',{class:'mut-vars','aria-label':'Variations: tap one to keep it'});sec.appendChild(el.vars);
     el.hist=L.h('div',{class:'mut-hist',role:'list','aria-label':'Mutation history'});sec.appendChild(el.hist);
     sec.appendChild(L.range('Mutation intensity',0,1,.01,S.amount,v=>{S.amount=v;L.save()}));
     sec.appendChild(L.range('Mutation probability',0,1,.01,S.prob,v=>{S.prob=v;L.save()}));
@@ -194,7 +226,7 @@ const Mutation=(()=>{
     if(!el.hist)return;
     el.hist.innerHTML='';
     S.hist.forEach((h,i)=>{
-      const b=Live.h('button',{type:'button',class:'mut-g'+(i===S.pos?' on':''),role:'listitem',title:(h.kind==='base'?'Base':h.kind==='edit'?'Your edit':h.kind==='hybrid'?'Hybrid':h.kind==='dna'?'DNA':'Seed '+(h.seed>>>0).toString(36).toUpperCase()),text:i===0&&h.kind==='base'?'B':h.kind==='edit'?'✎':String(i)});
+      const b=Live.h('button',{type:'button',class:'mut-g'+(i===S.pos?' on':''),role:'listitem',title:(h.kind==='base'?'Base':h.kind==='edit'?'Your edit':h.kind==='hybrid'?'Hybrid':h.kind==='dna'?'DNA':'Seed '+(h.seed>>>0).toString(36).toUpperCase()),text:h.keep?'★':i===0&&h.kind==='base'?'B':h.kind==='edit'?'✎':String(i)});
       b.style.setProperty('--h',hashHue(JSON.stringify(h.g.on))+'deg');
       b.addEventListener('click',()=>go(i));el.hist.appendChild(b);
     });
@@ -211,5 +243,7 @@ const Mutation=(()=>{
   Live.addParam('mut:amount','Mutation intensity','Live',()=>S.amount,v=>{S.amount=v;Live.save()});
   Live.addKey('x',()=>mutate());
   Live.addKey('z',e=>e.shiftKey?redo():undo());
-  return {mount,mutate,undo,redo,go,breed,dna,fromDna,child,get settings(){return S},get history(){return S.hist},get pos(){return S.pos}};
+  Live.addAction('mut:more','Mutate more',()=>mutate({amount:Math.min(1,S.amount*1.8+.2),quiet:true}));
+  Live.addAction('mut:less','Mutate less',()=>mutate({amount:S.amount*.4,quiet:true}));
+  return {mount,mutate,undo,redo,go,breed,preserve,reset,variations,dna,fromDna,child,get settings(){return S},get history(){return S.hist},get pos(){return S.pos}};
 })();
