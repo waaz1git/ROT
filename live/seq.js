@@ -6,22 +6,27 @@
 const Seq=(()=>{
   const LANES=[
     {id:'flash',label:'FLASH'},{id:'zoom',label:'ZOOM'},{id:'glitch',label:'GLITCH'},{id:'freeze',label:'FREEZE'},
-    {id:'shake',label:'SHAKE'},{id:'black',label:'BLACK'},{id:'fx',label:'FX'},{id:'scene',label:'SCENE'}
+    {id:'shake',label:'SHAKE'},{id:'black',label:'BLACK'},{id:'invert',label:'INVERT'},{id:'feedback',label:'FEEDBK'},
+    {id:'kaleido',label:'KALEIDO'},{id:'fx',label:'FX'},{id:'mutate',label:'MUTATE'},{id:'scene',label:'SCENE'}
   ];
+  // step values: 0 off, 1 full, 2 soft, 3 ghost · per-step probability in pr[] (1, .75, .5, .25)
+  const VEL=[0,1,.5,.25],PR=[1,.75,.5,.25];
   const blank=n=>new Array(n).fill(0);
   const S=Live.part('seq',{on:false,len:16,res:16,bpm:120,page:0,fx:'kaleido',lanes:{},patterns:{}});
-  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};else if(x.steps.length<32)x.steps=x.steps.concat(blank(32-x.steps.length))});
   if(!S.lanes||typeof S.lanes!=='object')S.lanes={};
-  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||typeof x!=='object'||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};
-    else{x.steps=x.steps.slice(0,32).map(v=>v===1||v===2?v:0);while(x.steps.length<32)x.steps.push(0);x.int=clamp(Number.isFinite(+x.int)?+x.int:.8,0,1);x.prob=clamp(Number.isFinite(+x.prob)?+x.prob:1,0,1)}});
-  if(![8,16,32].includes(S.len))S.len=16;if(![8,16].includes(S.res))S.res=16;if(!FXMAP[S.fx])S.fx='kaleido';S.page=S.page===1?1:0;
+  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||typeof x!=='object'||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),pr:Array(32).fill(1),int:.8,prob:1};
+    else{x.steps=x.steps.slice(0,32).map(v=>v===1||v===2||v===3?v:0);while(x.steps.length<32)x.steps.push(0);x.pr=(Array.isArray(x.pr)?x.pr:[]).slice(0,32).map(v=>PR.includes(+v)?+v:1);while(x.pr.length<32)x.pr.push(1);x.int=clamp(Number.isFinite(+x.int)?+x.int:.8,0,1);x.prob=clamp(Number.isFinite(+x.prob)?+x.prob:1,0,1)}});
+  if(![8,16,32].includes(S.len))S.len=16;if(![4,8,16,32].includes(S.res))S.res=16;if(!FXMAP[S.fx])S.fx='kaleido';S.page=S.page===1?1:0;
   if(!S.patterns||typeof S.patterns!=='object'||Array.isArray(S.patterns))S.patterns={};
   let clock=0,lastStep=-1,lastPos=null,playing=false;
 
-  function fire(lane,v){
-    const L=S.lanes[lane];if(!L||Math.random()>L.prob)return;
+  function fire(lane,v,step){
+    const L=S.lanes[lane];if(!L||Math.random()>L.prob*(L.pr?L.pr[step]:1))return;
     const a=v*L.int;
     if(lane==='fx')Live.trigger('fx',a,{id:S.fx});
+    else if(lane==='feedback')Live.trigger('fx',a,{id:'fb'});
+    else if(lane==='kaleido')Live.trigger('fx',a,{id:'kaleido'});
+    else if(lane==='mutate'){if(typeof Mutation!=='undefined'&&!(typeof Scenes!=='undefined'&&Scenes.busy))Mutation.mutate({amount:.15+.35*a,quiet:true})}
     else if(lane==='scene'){if(typeof Scenes!=='undefined'&&Scenes.stored()>=2&&!Scenes.busy)Live.run('scene:next')}
     else Live.trigger(lane,a);
   }
@@ -39,7 +44,7 @@ const Seq=(()=>{
     if(pos===lastPos)return;
     // a slow frame can jump several steps: play the ones in between too (up to 4, never a burst after a seek)
     const from=lastPos==null||pos<lastPos||pos-lastPos>4?pos:lastPos+1;
-    for(let q=from;q<=pos;q++){const step=((q%S.len)+S.len)%S.len;LANES.forEach(l=>{const v=S.lanes[l.id].steps[step];if(v)fire(l.id,v===2?.5:1)})}
+    for(let q=from;q<=pos;q++){const step=((q%S.len)+S.len)%S.len;LANES.forEach(l=>{const v=S.lanes[l.id].steps[step];if(v)fire(l.id,VEL[v],step)})}
     lastPos=pos;lastStep=((pos%S.len)+S.len)%S.len;
     paint(lastStep);
   }
@@ -80,7 +85,7 @@ const Seq=(()=>{
     el.play=L.btn('▶ RUN SEQUENCER',()=>setOn(!S.on),'full');top.appendChild(el.play);sec.appendChild(top);
     const opts=L.h('div',{class:'seq-opts'});
     opts.appendChild(L.seg('Steps',[[8,'8'],[16,'16'],[32,'32']],S.len,v=>{S.len=+v;S.page=0;lastStep=-1;lastPos=null;Live.save();render()}));
-    opts.appendChild(L.seg('Resolution',[[16,'1/16'],[8,'1/8']],S.res,v=>{S.res=+v;lastStep=-1;lastPos=null;Live.save()}));
+    opts.appendChild(L.seg('Resolution',[[4,'1/4'],[8,'1/8'],[16,'1/16'],[32,'1/32']],S.res,v=>{S.res=+v;lastStep=-1;lastPos=null;Live.save()}));
     sec.appendChild(opts);
     el.pages=L.seg('Page',[[0,'1–16'],[1,'17–32']],S.page,v=>{S.page=+v;render()});el.pages.classList.add('seq-pages');sec.appendChild(el.pages);
     el.grid=L.h('div',{class:'seq-grid',role:'grid','aria-label':'Sequencer steps'});sec.appendChild(el.grid);
@@ -102,13 +107,13 @@ const Seq=(()=>{
     body.appendChild(el.pat);
     body.appendChild(L.h('div',{class:'btn-grid'},[L.btn('LOAD',()=>load(el.pat.sel.value)),L.btn('DELETE',()=>{const n=el.pat.sel.value;if(n&&S.patterns[n]){delete S.patterns[n];Live.save();fillPatterns()}})]));
     det.appendChild(body);sec.appendChild(det);
-    sec.appendChild(L.h('p',{class:'section-desc',html:'Tap a step: off → full → soft. It follows the track’s beat grid; <kbd>Q</kbd> starts and stops it.'}));
+    sec.appendChild(L.h('p',{class:'section-desc',html:'Tap a step: off → full → soft → ghost; right-click (long-press on touch) sets its probability. It follows the track’s beat grid; <kbd>Q</kbd> starts and stops it.'}));
     host.appendChild(sec);fillPatterns();render();sync();
   }
   function load(n){
     const p=S.patterns[n];if(!p)return;
-    S.len=[8,16,32].includes(p.len)?p.len:16;S.res=p.res===8?8:16;if(p.fx&&FXMAP[p.fx])S.fx=p.fx;
-    LANES.forEach(l=>{const x=p.lanes&&p.lanes[l.id];if(x&&Array.isArray(x.steps))S.lanes[l.id]={steps:x.steps.slice(0,32).map(v=>v===1||v===2?v:0).concat(blank(Math.max(0,32-x.steps.length))),int:clamp(+x.int||.8,0,1),prob:clamp(x.prob==null?1:+x.prob,0,1)}});
+    S.len=[8,16,32].includes(p.len)?p.len:16;S.res=[4,8,16,32].includes(p.res)?p.res:16;if(p.fx&&FXMAP[p.fx])S.fx=p.fx;
+    LANES.forEach(l=>{const x=p.lanes&&p.lanes[l.id];if(x&&Array.isArray(x.steps))S.lanes[l.id]={steps:x.steps.slice(0,32).map(v=>v===1||v===2||v===3?v:0).concat(blank(Math.max(0,32-x.steps.length))),pr:(Array.isArray(x.pr)?x.pr.slice(0,32).map(v=>PR.includes(+v)?+v:1):[]).concat(new Array(32).fill(1)).slice(0,32),int:clamp(+x.int||.8,0,1),prob:clamp(x.prob==null?1:+x.prob,0,1)}});
     S.page=0;Live.save();render();
     const kids=el.grid&&el.grid.parentNode?el.grid.parentNode.querySelectorAll('.live-seg'):[];
     if(kids[0])kids[0].pick(S.len);if(kids[1])kids[1].pick(S.res);if(el.fx)el.fx.sel.value=S.fx;
@@ -127,9 +132,16 @@ const Seq=(()=>{
     LANES.forEach(l=>{
       el.grid.appendChild(Live.h('span',{class:'seq-lab',text:l.label}));
       for(let c=0;c<cols;c++){
-        const i=off+c,v=S.lanes[l.id].steps[i];
-        const b=Live.h('button',{type:'button',class:'seq-st'+(v===1?' on':v===2?' soft':'')+(i%4===0?' beat':''),'data-i':i,'aria-label':l.label+' step '+(i+1)+(v?(v===1?' full':' soft'):' off')});
-        b.addEventListener('click',()=>{const st=S.lanes[l.id].steps;st[i]=st[i]===0?1:st[i]===1?2:0;b.className='seq-st'+(st[i]===1?' on':st[i]===2?' soft':'')+(i%4===0?' beat':'');b.setAttribute('aria-label',l.label+' step '+(i+1)+(st[i]?(st[i]===1?' full':' soft'):' off'));Live.save()});
+        const i=off+c,x=S.lanes[l.id];
+        const look=()=>{const v=x.steps[i],pr=x.pr[i];b.className='seq-st'+(v===1?' on':v===2?' soft':v===3?' ghost':'')+(i%4===0?' beat':'')+(pr<1?' p'+Math.round(pr*100):'');
+          b.setAttribute('aria-label',l.label+' step '+(i+1)+' '+['off','full','soft','ghost'][v]+(pr<1?', '+Math.round(pr*100)+'%':''))};
+        const b=Live.h('button',{type:'button','data-i':i});look();
+        // tap: off → full → soft → ghost · right-click or long-press: probability 100 → 75 → 50 → 25 %
+        b.addEventListener('click',()=>{if(b._lp){b._lp=false;return}x.steps[i]=(x.steps[i]+1)%4;look();Live.save()});
+        const cyc=()=>{x.pr[i]=PR[(PR.indexOf(x.pr[i])+1)%PR.length];look();Live.save()};
+        b.addEventListener('contextmenu',e=>{e.preventDefault();cyc()});
+        b.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;clearTimeout(b._t);b._t=setTimeout(()=>{b._lp=true;cyc();vibrate(8)},450)});
+        ['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,()=>clearTimeout(b._t)));
         el.grid.appendChild(b);
       }
     });

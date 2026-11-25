@@ -92,6 +92,14 @@ const Scenes=(()=>{
     sec.appendChild(L.h('p',{class:'section-desc',html:'Tap a scene to fire it, tap an empty one to store the current look. Keys <kbd>1</kbd>–<kbd>9</kbd> fire, <kbd>Shift</kbd>+number stores.'}));
     host.appendChild(sec);render();
   }
+  // a preview of the scene's look on the current picture, drawn by the live engine
+  function thumb(b,look){
+    try{
+      const w=96,h=60,im=new ImageData(w,h);
+      if(!Engine.renderThumb(Mutation.frameOf(Live.toLook(look)),w,h,w*2,h*2,im))return;
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.className='scn-th';cv.getContext('2d').putImageData(im,0,0);b.prepend(cv);b.classList.add('has-th');
+    }catch(e){}
+  }
   function move(d){
     const j=sel+d;if(j<0||j>=S.list.length)return;
     [S.list[sel],S.list[j]]=[S.list[j],S.list[sel]];
@@ -104,7 +112,7 @@ const Scenes=(()=>{
       const b=Live.h('button',{type:'button',class:'scn'+(sc.look?'':' empty')+(i===S.cur?' cur':'')+(i===sel?' sel':''),role:'listitem',
         'aria-label':sc.name+(sc.look?'':' (empty)')+(i<9?' — key '+(i+1):'')},
         [Live.h('b',{text:i<9?String(i+1):'·'}),Live.h('span',{text:sc.name})]);
-      if(sc.look)b.style.setProperty('--h',hashHue(JSON.stringify(sc.look.on))+'deg');
+      if(sc.look){b.style.setProperty('--h',hashHue(JSON.stringify(sc.look.on))+'deg');thumb(b,sc.look)}
       b.addEventListener('click',()=>{sel=i;recall(i)});
       b.addEventListener('contextmenu',e=>{e.preventDefault();sel=i;render()});
       el.grid.appendChild(b);

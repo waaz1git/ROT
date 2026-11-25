@@ -1138,7 +1138,7 @@ body.lite .panel,body.lite .drawer,body.lite #timeline,body.lite #hud,body.lite 
 body.lite #topbar{background:linear-gradient(120deg,var(--glass-solid),var(--glass-solid))}
 body.lite #aurora i{animation-duration:90s}
 </style>
-<link rel="stylesheet" href="live/live.css?v=1">
+<link rel="stylesheet" href="live/live.css?v=2">
 </head>
 <body>
 
@@ -1328,6 +1328,7 @@ body.lite #aurora i{animation-duration:90s}
             <option value="1080x1920">1080P VERT · 1080 × 1920</option>
             <option value="1080x1350">1080 4:5 · 1080 × 1350</option>
             <option value="1080x1080">1080 SQUARE · 1080 × 1080</option>
+            <option value="orig">ORIGINAL · the source's own shape</option>
             <option value="1440x2560">1440P VERT · 1440 × 2560</option>
             <option value="2160x3840">2160P VERT · 2160 × 3840</option>
           </select>
@@ -2231,7 +2232,7 @@ void main(){
 const FRAG_FINAL=`varying vec2 vUv;
 uniform sampler2D uTex,uBloom,uAscii,uOver;
 uniform vec2 uOutRes;
-uniform float uOverOn,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
+uniform float uOverOn,uInvert,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 vec2 bufUV(vec2 u){
@@ -2295,6 +2296,7 @@ void main(){
  c=mix(c,vec3(lum(c))*vec3(1.1,.78,.72),dm*.22*smoothstep(.65,.15,edge));
  if(uSafe>.5){float l=lum(c);c=mix(c,vec3(l),.08);c=min(c,vec3(1.35));}
  if(abs(uHue2)>.0001){float l=lum(c);c=mix(c,vec3(l)*vec3(1.15,.85,.85),clamp(abs(uHue2)*.15,0.,.2));}
+ if(uInvert>.001)c=mix(c,1.-c,clamp(uInvert,0.,1.));
  if(uOverOn>.5){vec4 ov=texture2D(uOver,vUv);c=mix(c,ov.rgb,ov.a);}
  if(uFlash>.0001)c=mix(c,vec3(1.,.97,.92),clamp(uFlash,0.,1.));
  gl_FragColor=vec4(clamp(c,0.,1.),1.);
@@ -2404,7 +2406,7 @@ DATA.settings.safe=motionQuery.matches;
 DATA.settings.audioSrc='ambient'; // mic and file inputs cannot survive a reload
 
 const savedExportRes=String(DATA.settings.exportRes||EXPORT_DEFAULT);
-DATA.settings.exportRes=EXPORT_SIZES.some(s=>s.id===savedExportRes)?savedExportRes:EXPORT_DEFAULT;
+DATA.settings.exportRes=(savedExportRes==='orig'||EXPORT_SIZES.some(s=>s.id===savedExportRes))?savedExportRes:EXPORT_DEFAULT;
 DATA.settings.fps=60;
 DATA.settings.format='mp4';
 DATA.settings.duration=clamp(Math.round(+DATA.settings.duration||6),3,120);
@@ -2560,7 +2562,7 @@ const Engine=(()=>{
     uTex:{value:null},uBloom:{value:null},uAscii:{value:null},uOutRes:{value:new THREE.Vector2(2,2)},uBufAsp:{value:1.78},
     uT:{value:0},uBloomAmt:{value:.3},uDirt:{value:.2},uTear:{value:0},uDecay:{value:0},
     uAsciiAmt:{value:0},uAsciiMode:{value:0},uGrade:{value:0},uFinish:{value:1},uVig:{value:.82},uSafe:{value:0},
-    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uOver:{value:null}
+    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uInvert:{value:0},uOver:{value:null}
   };
 
   function makeRT(w,h,linear){
@@ -2682,7 +2684,7 @@ const Engine=(()=>{
     U.uZoom.value=frame.zoom==null?1:frame.zoom;U.uSeed.value=frame.seed||0;U.uKaleidoSeg.value=frame.kaleidoSeg||0;
     U.uTexCoverage.value.set(src.covX,src.covY);
     U.uMouse.value.set(frame.mouse.x,frame.mouse.y);
-    U.uFreeze.value=firstFrame?0:(frame.freeze||0);U.uClock.value=performance.now()/1000%10000;
+    U.uFreeze.value=firstFrame?0:(frame.freeze||0);FU.uInvert.value=frame.invert||0;U.uClock.value=performance.now()/1000%10000;
     if(frame.shake)U.uShake.value.set(frame.shake[0]||0,frame.shake[1]||0);else U.uShake.value.set(0,0);
     // overlay layer (clip text / waveform): a canvas texture owned by the clip module
     const ov=frame.overlay;
@@ -6767,6 +6769,9 @@ async function finalizeMp4(part){
 }
 function exportSizeDef(){
   const id=String(DATA.settings.exportRes||EXPORT_DEFAULT);
+  // ORIGINAL: the source's own shape, 1080 on its short side (even sizes for the encoder)
+  if(id==='orig'){const src=Engine.getSrc(),w0=src&&src.w||1920,h0=src&&src.h||1080,k=Math.min(1080/Math.max(1,Math.min(w0,h0)),3840/Math.max(1,w0,h0));
+    const ev=v=>Math.max(2,Math.round(v/2)*2);return {id:'orig',label:'ORIGINAL',w:ev(w0*k),h:ev(h0*k)}}
   return EXPORT_SIZES.find(s=>s.id===id)||EXPORT_SIZES.find(s=>s.id===EXPORT_DEFAULT)||EXPORT_SIZES[0];
 }
 function parseExportSize(){
@@ -6778,6 +6783,8 @@ function exportTag(def){
   const base=String(def.label||'').replace(/\s*VERT$/i,'');
   return base+'60'+(def.h>def.w?' VERT':'');
 }
+// the user's own file name (letters, digits, dashes) or rot-<kind>-<size>-<time>
+function exportBaseName(kind){const n=String(DATA.settings.fileName||'').trim().replace(/[^\w\- ]+/g,'').replace(/\s+/g,'-').slice(0,60);return n?n+'-'+exportTimestamp():'rot-'+kind+'-'+exportSlug()+'-'+exportTimestamp()}
 function exportSlug(){return exportTag().toLowerCase().replace(/\s+/g,'-')}
 function chooseMp4Mime(){
   return chooseRecorderMime();
@@ -6883,7 +6890,7 @@ async function exportPNG(){
     Engine.renderNow();
     await sleep(40);
     const blob=await canvasToBlob(Engine.getCanvas(),'image/png');
-    const name='rot-frame-'+exportSlug()+'-'+exportTimestamp()+'.png';
+    const name=exportBaseName('frame')+'.png';
     const url=URL.createObjectURL(blob);
     setExportProgress(1,'FRAME READY / '+byteSize(blob.size),'');
     openViewer({url,blob,name,type:'image/png',chainable:false,meta:'PNG / '+size.w+'×'+size.h+' / '+byteSize(blob.size)});
@@ -6941,7 +6948,7 @@ async function startRecording(){
     Engine.renderNow();
     REC.stream=buildRecordStream();
     if(!REC.stream)throw new Error('canvas.captureStream unavailable');
-    const bitrate=clamp(Math.round(size.w*size.h*EXPORT_FPS*.14),4e6,120e6);
+    const bitrate=clamp(Math.round(size.w*size.h*EXPORT_FPS*({std:.08,high:.14,max:.22}[DATA.settings.quality]||.14)),3e6,120e6);
     REC.part=createMp4Recorder(REC.stream,mime,bitrate);
     REC.part.rec.start(200);
     REC.active=true;REC.starting=false;
@@ -6991,9 +6998,11 @@ async function stopRecording(reason){
     toast('<b>EXPORT FAILED</b> — '+esc(String(e&&e.message||e).slice(0,160)));
   }
   try{stream&&stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}})}catch(e){}
+  if(blob&&REC.cancel){blob=null;setExportProgress(0,'CANCELLED','');toast('<b>RECORDING CANCELLED</b> — nothing was saved')}
+  REC.cancel=false;
   if(blob){
     try{
-      const name='rot-export-'+exportSlug()+'-'+exportTimestamp()+'.mp4';
+      const name=exportBaseName('export')+'.mp4';
       const url=URL.createObjectURL(blob);
       setExportProgress(1,'MP4 READY / '+byteSize(blob.size),'');
       openViewer({url,blob,name,type:'video/mp4',chainable:true,
@@ -7685,7 +7694,7 @@ function loop(now){
   frame.seed=mus&&mus.loaded&&!DATA.settings.safe?mus.seed:0;
   frame.kaleidoSeg=mus&&mus.loaded?mus.kaleidoSeg:0;
   frame.flash=DATA.settings.safe?0:clamp(musicFlash*(DATA.settings.reduce?.55:1),0,1);
-  frame.freeze=0;frame.shake=null;
+  frame.freeze=0;frame.shake=null;frame.invert=0;
   if(LV)LV.post(frame);
 
   
@@ -7909,15 +7918,18 @@ else startApp();
 
 </script>
 <!-- ROT Live: autopilot, mutation, MIDI, scenes, sequencer, quick clip, quick play (they use the globals above) -->
-<script src="live/core.js?v=1"></script>
-<script src="live/autopilot.js?v=1"></script>
-<script src="live/mutate.js?v=1"></script>
-<script src="live/scenes.js?v=1"></script>
-<script src="live/seq.js?v=1"></script>
-<script src="live/midi.js?v=1"></script>
-<script src="live/clip.js?v=1"></script>
-<script src="live/quick.js?v=1"></script>
-<script src="live/ui.js?v=1"></script>
-<script src="live/motion.js?v=1"></script>
+<script src="live/core.js?v=2"></script>
+<script src="live/autopilot.js?v=2"></script>
+<script src="live/mutate.js?v=2"></script>
+<script src="live/scenes.js?v=2"></script>
+<script src="live/seq.js?v=2"></script>
+<script src="live/midi.js?v=2"></script>
+<script src="live/clip.js?v=2"></script>
+<script src="live/quick.js?v=2"></script>
+<script src="live/ui.js?v=2"></script>
+<script src="live/presets.js?v=2"></script>
+<script src="live/export.js?v=2"></script>
+<script src="live/modes.js?v=2"></script>
+<script src="live/motion.js?v=2"></script>
 </body>
 </html>

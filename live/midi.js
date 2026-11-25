@@ -4,7 +4,7 @@
 // Browsers without Web MIDI (Safari, Firefox without the add-on) just show that it is unavailable.
 'use strict';
 const Midi=(()=>{
-  const S=Live.part('midi',{profile:'Default',profiles:{Default:{maps:[]}},auto:false});
+  const S=Live.part('midi',{profile:'Default',profiles:{Default:{maps:[]}},auto:false,device:'*',smooth:true});
   if(!S.profiles||typeof S.profiles!=='object'||!Object.keys(S.profiles).length)S.profiles={Default:{maps:[]}};
   // keep only well-formed profiles and mappings (damaged saved data must not stop the page)
   for(const k of Object.keys(S.profiles)){const p=S.profiles[k];
@@ -37,7 +37,8 @@ const Midi=(()=>{
     sync();
   }
   const inputs=()=>access?[...access.inputs.values()]:[];
-  function bindInputs(){inputs().forEach(i=>{i.onmidimessage=onMsg})}
+  // each input tags its messages with its name, so one device can be chosen
+  function bindInputs(){inputs().forEach(i=>{i.onmidimessage=e=>{if(S.device!=='*'&&i.name!==S.device)return;onMsg(e)}});fillDevices()}
 
   function onMsg(e){
     const d=e.data;if(!d||d.length<2)return;
@@ -67,7 +68,9 @@ const Midi=(()=>{
     const p=Live.params.get(m.target.slice(2));if(!p)return;
     if(typeof Scenes!=='undefined')Scenes.cancel();
     const lo=m.min==null?0:m.min,hi=m.max==null?1:m.max;
-    p.set(lo+(hi-lo)*v);
+    const id0=m.target.slice(2),to=lo+(hi-lo)*v;
+    // knobs glide to the new value over a few frames (a 7-bit CC jumps in steps of 1/127)
+    if(S.smooth&&m.type==='cc'){glide.set(id0,{p,to});if(!glide.has(id0+'#'))glide.set(id0+'#',p.get())}else p.set(to);
     const id=m.target.slice(2);
     const u=id.startsWith('m:')?UI.master&&UI.master[id.slice(2)]:id.startsWith('fx:')?UI.fx&&UI.fx[id.slice(3)]:null;
     const row=u&&(u.row||(u.input&&u.input.closest('.ctrl')));
@@ -139,6 +142,8 @@ const Midi=(()=>{
     el.led=L.h('i',{class:'midi-led','aria-hidden':'true'});sec.querySelector('.section-head').appendChild(el.led);
     el.enable=L.btn('ENABLE MIDI',enable,'full');sec.appendChild(L.h('div',{class:'btn-grid'},[el.enable]));
     el.devs=L.h('p',{class:'section-desc midi-devs'});sec.appendChild(el.devs);
+    el.dev=L.select('Device',[['*','All devices']],S.device,v=>{S.device=v;Live.save()});sec.appendChild(el.dev);
+    sec.appendChild(L.sw('Smooth knob movements',S.smooth,v=>{S.smooth=v;Live.save()}));
     // learn row
     el.target=L.h('select',{'aria-label':'MIDI target'});fillTargets();
     el.learn=L.btn('LEARN',()=>{if(learning){learning=null;sync();return}startLearn(el.target.value)},'hot');
@@ -148,7 +153,7 @@ const Midi=(()=>{
     el.prof=L.select('Profile',[],S.profile,v=>{S.profile=v;Live.save();render()});sec.appendChild(el.prof);
     const fileIn=L.h('input',{type:'file',accept:'.json,application/json',hidden:true});
     fileIn.addEventListener('change',()=>{if(fileIn.files[0])importProfile(fileIn.files[0]);fileIn.value=''});
-    sec.appendChild(L.h('div',{class:'btn-grid'},[L.btn('NEW',()=>newProfile(false)),L.btn('DUPLICATE',()=>newProfile(true)),L.btn('EXPORT',exportProfile),L.btn('IMPORT',()=>fileIn.click()),L.btn('DELETE PROFILE',delProfile,'full')]));
+    sec.appendChild(L.h('div',{class:'btn-grid'},[L.btn('NEW',()=>newProfile(false)),L.btn('DUPLICATE',()=>newProfile(true)),L.btn('EXPORT',exportProfile),L.btn('IMPORT',()=>fileIn.click()),L.btn('RESET MAPPINGS',()=>{if(!maps().length)return;if(!confirm(LANG==='it'?'Cancellare tutte le mappature di questo profilo?':'Remove every mapping of this profile?'))return;maps().length=0;Live.save();render();sync()}),L.btn('DELETE PROFILE',delProfile)]));
     sec.appendChild(fileIn);
     host.appendChild(sec);render();sync();
     if(supported&&S.auto&&navigator.permissions&&navigator.permissions.query){
@@ -182,6 +187,18 @@ const Midi=(()=>{
     el.learn.textContent=learning?'CANCEL':'LEARN';el.learn.classList.toggle('acid',!!learning);
     el.learn.disabled=!supported;
     setTxt(el.note,maps().length+' MAPS');
+  }
+  // CC smoothing: one glide per parameter, eased toward the last value received
+  const glide=new Map();
+  Live.addTicker(ctx=>{
+    if(!glide.size)return;const k=1-Math.exp(-ctx.dt*22);
+    for(const [id,g] of glide){if(id.endsWith('#'))continue;const cur=glide.get(id+'#');const nv=cur+(g.to-cur)*k;
+      if(Math.abs(g.to-nv)<.002){g.p.set(g.to);glide.delete(id);glide.delete(id+'#')}else{g.p.set(nv);glide.set(id+'#',nv)}}
+  });
+  function fillDevices(){
+    if(!el.dev)return;const s=el.dev.sel,names=[...new Set(inputs().map(i=>i.name))];s.innerHTML='';
+    [['*',LANG==='it'?'Tutti i dispositivi':'All devices']].concat(names.map(n=>[n,n])).forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;s.appendChild(o)});
+    s.value=names.includes(S.device)?S.device:'*';
   }
   return {mount,enable,startLearn,onMsg,get supported(){return supported},get maps(){return maps()},get settings(){return S}};
 })();
