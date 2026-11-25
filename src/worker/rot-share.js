@@ -48,6 +48,17 @@ function normalise(s) {
   return t;
 }
 const blockedWords = s => { const t = normalise(s); return BLOCK_RX.test(t) || (MINOR_RX.test(t) && BODY_RX.test(t)); };
+// Styles the site can ask for by name. The rewrite then only describes the subject and the style text is added
+// verbatim: a rewritten style drifts toward glossy photography.
+const STYLES = {
+  collage: 'crude digital drawing made in ms paint with smeared airbrush, flat cut-out paper-doll shapes with harsh outlines, ' +
+    'pale ghostly white figure with long messy white hair and black hollow eyes, collage pasted over a washed-out photo background, ' +
+    'faded greys and dirty whites with a few red accents, small stickers and doodles, creepy cute 2000s emo internet art, ' +
+    'naive outsider illustration, jpeg artifacts, low resolution, not photorealistic, not anime, not glossy'
+};
+const SUBJECT = `Describe only the subject and the setting of this idea for an image, in plain words, at most 35 words.
+No camera, lens, lighting, render or art-style words. If the idea asks for sexual or nude content, anything involving
+minors in a risky way, or graphic gore, answer with exactly: BLOCKED`;
 const ENHANCE = `You turn short ideas into image prompts for a text-to-image model.
 Rules:
 - If the idea asks for sexual or nude content, anything sexual involving minors, a real person in a compromising or
@@ -148,6 +159,20 @@ async function spend(env, kind, bytes, maxN, maxB) {
 }
 const exists = async (env, key) => !!(await env.SHOTS.get(key, { type: 'stream' }));
 
+// Edge cache (Cloudflare Cache API): one entry per path, filled in the background after a KV read.
+// It works on the custom domain (s.nicoflp.com); on *.workers.dev the cache is a no-op and KV answers.
+const cacheKey = url => new Request(url.origin + url.pathname, { method: 'GET' });
+async function edge(req, url) {
+  try {
+    const hit = typeof caches !== 'undefined' && (await caches.default.match(cacheKey(url)));
+    if (!hit) return null;
+    const r = new Response(hit.body, hit); r.headers.set('X-ROT-Cache', 'hit'); return r;
+  } catch (e) { return null; }
+}
+function remember(ctx, url, res) {
+  if (typeof caches === 'undefined' || !ctx || res.status !== 200) return;
+  try { ctx.waitUntil(caches.default.put(cacheKey(url), res.clone()).catch(() => {})); } catch (e) {}
+}
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function sharePage(origin, id, hasPreview) {
   const img = hasPreview ? origin + '/p/' + id : SITE + '/og.jpg';
@@ -168,7 +193,7 @@ function sharePage(origin, id, hasPreview) {
 
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const origin = req.headers.get('Origin');
     const path = url.pathname;
@@ -178,23 +203,32 @@ export default {
     // ---- reads
     let m;
     if (req.method === 'GET' && (m = path.match(/^\/(i|p)\/([A-Za-z0-9_-]{8,32})$/))) {
+      // stored pictures never change: served from Cloudflare's edge cache, KV is read once per location
+      const hit = await edge(req, url);
+      if (hit) return hit;
       const value = await env.SHOTS.get((m[1] === 'i' ? 'img:' : 'pv:') + m[2], { type: 'arrayBuffer' });
       if (!value) return json({ error: 'not_found' }, 404, origin);
-      return new Response(value, {
+      const res = new Response(value, {
         headers: {
           'Content-Type': m[1] === 'i' && new Uint8Array(value, 0, 1)[0] !== 0xff ? 'image/webp' : 'image/jpeg',
           'Cache-Control': 'public, max-age=31536000, immutable',
           'X-Content-Type-Options': 'nosniff',
           'Content-Security-Policy': "default-src 'none'",
-          ...cors(origin)
+          'Access-Control-Allow-Origin': '*' // public, immutable: one cached copy serves every origin
         }
       });
+      remember(ctx, url, res);
+      return res;
     }
     if (req.method === 'GET' && (m = path.match(/^\/(?:s\/)?([A-Za-z0-9_-]{12,32})$/))) {
+      const hit = await edge(req, url);
+      if (hit) return hit;
       const has = await exists(env, 'pv:' + m[1]);
-      return new Response(sharePage(url.origin, m[1], has), {
+      const res = new Response(sharePage(url.origin, m[1], has), {
         headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': has ? 'public, max-age=86400' : 'public, max-age=60', 'X-Content-Type-Options': 'nosniff' }
       });
+      remember(ctx, url, res);   // a page without its preview yet is kept only 60 s
+      return res;
     }
     if (req.method === 'GET' && path === '/g') return json({ items: [], closed: true }, 200, origin, { 'Cache-Control': 'public, max-age=300' });
 
@@ -227,6 +261,7 @@ export default {
       try { o = JSON.parse(new TextDecoder().decode(body || new Uint8Array(0))); } catch (e) {}
       const q = String((o && o.q) || '').replace(/\s+/g, ' ').trim().slice(0, 400);
       if (!q) return json({ error: 'bad_request' }, 400, origin);
+      const style = Object.prototype.hasOwnProperty.call(STYLES, String(o.s || '')) ? STYLES[o.s] : '';
       if (blockedWords(q)) return json({ error: 'censored' }, 422, origin);
       if (!(await spend(env, 'gen', 0, DAY_MAX_GEN, 1))) return json({ error: 'budget' }, 429, origin);
       // Llama Guard decides on the request; an error or an unclear answer is a refusal (the site then uses the Horde)
@@ -237,15 +272,23 @@ export default {
       if (!/^safe/.test(verdict)) return json({ error: 'unavailable' }, 503, origin);
       let prompt = q;
       try {
-        const r = await env.AI.run(LLM, { messages: [{ role: 'system', content: ENHANCE }, { role: 'user', content: q }], max_tokens: 140, temperature: 0.6 });
+        const r = await env.AI.run(LLM, { messages: [{ role: 'system', content: style ? SUBJECT : ENHANCE }, { role: 'user', content: q }], max_tokens: 140, temperature: 0.6 });
         const t = String((r && r.response) || '').replace(/[*_`#>]/g, '').replace(/^["'\s]+|["'\s]+$/g, '').replace(/\s+/g, ' ');
         // a refusal in any wording counts, not only a reply that starts with BLOCKED
         if (/\bBLOCKED\b/i.test(t) || /^(i'?m sorry|sorry|i can(?:no|')t|i cannot|i won'?t|i'?m (?:not able|unable)|as an ai)/i.test(t)) return json({ error: 'censored' }, 422, origin);
         if (t.length >= 12 && t.length <= 700 && !blockedWords(t)) prompt = t;
       } catch (e) { /* the guard passed: draw the words as typed */ }
+      if (style) prompt = prompt.replace(/[.\s]+$/, '') + ', ' + style;
       let out;
-      try { out = await env.AI.run(FLUX, { prompt, steps: 6 }); } // FLUX schnell here takes no seed
-      catch (e) { return json({ error: 'model' }, 502, origin); }
+      // FLUX schnell here takes no seed; a busy model gets one more try
+      for (let attempt = 0; attempt < 2 && !out; attempt++) {
+        try { out = await env.AI.run(FLUX, { prompt: prompt.slice(0, 1800), steps: 6 }); }
+        catch (e) {
+          const msg = String(e && e.message || e);
+          if (/nsfw|3030|8007/i.test(msg)) return json({ error: 'censored' }, 422, origin); // the model's own filter
+          if (attempt) return json({ error: 'model' }, 502, origin);
+        }
+      }
       if (!out || typeof out.image !== 'string' || out.image.length < 200) return json({ error: 'model' }, 502, origin);
       // a one-time ticket to store this picture (the site sends it back re-encoded, ~10× smaller than FLUX's JPEG)
       const t = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(15)))).replace(/\+/g, '-').replace(/\//g, '_');
