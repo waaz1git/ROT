@@ -4512,7 +4512,8 @@ window.addEventListener('paste',e=>{
 // Where the current picture came from, so a shared link can rebuild it:
 // {t:'gen',q,seed,w,h} (generated), {t:'url',u} (image link), {t:'sample'}; null = a local file, which stays private.
 var srcMeta=null; // var: read by source loaders that can run before this line is reached
-const GEN_STYLES=[['photo','photographic, cinematic lighting, 35mm'],['neon','neon glow, synthwave, dark background'],['anime','anime illustration, vibrant'],['3d','3D render, glossy, studio light'],['paint','oil painting, thick brush strokes']];
+// collage: the worker knows this style by name (its text is added after the subject, never rewritten); a ROT look follows
+const GEN_STYLES=[['collage','crude ms paint digital collage, pale ghostly cut-out figure, washed-out colours, creepy cute emo internet art, jpeg artifacts','collage'],['photo','photographic, cinematic lighting, 35mm'],['neon','neon glow, synthwave, dark background'],['anime','anime illustration, vibrant'],['3d','3D render, glossy, studio light'],['paint','oil painting, thick brush strokes']];
 const GEN_IDEAS=['a neon jellyfish drifting in a dark ocean','a melting chrome skull on a velvet throne','a rainy tokyo street at night, reflections','a cathedral made of glass and smoke','an astronaut floating in a field of sunflowers','a tiger made of liquid gold','a vaporwave greek statue with headphones','a burning piano in the desert at dusk'];
 function loadRemoteImage(url,meta){
   return new Promise((resolve,reject)=>{
@@ -4582,10 +4583,10 @@ function hordeStatusText(c){
 // First choice: FLUX.1 schnell through the rot-share worker (Workers AI). It rewrites the idea into a richer
 // prompt, draws a 1024 px picture in a few seconds and refuses unsafe requests. Any other failure
 // (quota, outage, timeout) falls back to the AI Horde.
-async function fluxGenerate(q){
+async function fluxGenerate(q,s){
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),45000);
   try{
-    const r=await fetch(SHARE_API+'/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q}),signal:ctl.signal});
+    const r=await fetch(SHARE_API+'/gen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(s?{q,s}:{q}),signal:ctl.signal});
     const d=await r.json().catch(()=>null);
     if(d&&d.error==='censored')throw Object.assign(new Error('censored'),{final:true});
     if(!r.ok||!d||typeof d.img!=='string'||d.img.length<200)throw Object.assign(new Error((d&&d.error)||('http'+r.status)),{status:r.status});
@@ -4611,20 +4612,22 @@ function shrinkForStore(url){
   });
 }
 
-async function generateImage(q,onStatus){
+// sty: optional [key, text, serverKey] from GEN_STYLES
+async function generateImage(q,onStatus,sty){
   q=String(q||'').trim().slice(0,400);if(!q)return false;
+  const full=sty?(q+', '+sty[1]).slice(0,400):q;
   let url=null,meta=null;
   try{
     if(onStatus)onStatus({queue_position:0});
-    const r=await fluxGenerate(q);url=await shrinkForStore(r.url);
+    const r=sty&&sty[2]?await fluxGenerate(q,sty[2]):await fluxGenerate(full);url=await shrinkForStore(r.url);
     // stored with the worker's one-time ticket: the share link opens exactly this picture
-    meta={t:'gen',q,src:'flux',data:url,ticket:r.ticket};
+    meta={t:'gen',q:full,src:'flux',data:url,ticket:r.ticket};
   }catch(e){
     if(e&&e.final)throw e;
     const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));
     const seed=Math.floor(Math.random()*1e9);
-    url=await hordeGenerate(q,seed,w,h,onStatus);
-    meta={t:'gen',q,seed,w,h,data:url};
+    url=await hordeGenerate(full,seed,w,h,onStatus);
+    meta={t:'gen',q:full,seed,w,h,data:url};
   }
   await loadRemoteImage(url,meta);if(meta.ticket)preStore(meta);
   return url;
@@ -4748,9 +4751,11 @@ function closeGen(){const g=$id('gen');GenFx.stop();g.classList.remove('on','bus
     scrambleTo($id('genBusyTxt'),isImageLink(raw)?tr('gen.loading'):tr('gen.busy'),18);
     try{
       if(isImageLink(raw)){await loadRemoteImage(raw,{t:'url',u:raw});toast(tr('toast.linkImg'))}
-      else{const sty=style?GEN_STYLES.find(x=>x[0]===style)[1]:'';let last='';
+      else{const sty=style?GEN_STYLES.find(x=>x[0]===style):null;let last='';
         const {w,h}=hordeSize(clamp(innerWidth/Math.max(1,innerHeight),.5,2.2));GenFx.start(w/h,raw);
-        const url=await generateImage(sty?raw+', '+sty:raw,c=>{GenFx.phase(c&&c.queue_position>0?'queue':'gen');const t=hordeStatusText(c);if(t!==last){last=t;$id('genBusyTxt').textContent=t}});
+        const url=await generateImage(raw,c=>{GenFx.phase(c&&c.queue_position>0?'queue':'gen');const t=hordeStatusText(c);if(t!==last){last=t;$id('genBusyTxt').textContent=t}},sty);
+        // the collage style comes with its own ROT look: flat colours, crushed blocks, faded edges
+        if(sty&&sty[0]==='collage'){applyPreset({fx:{post:.32,comp:.22,collapse:.14,dirt:.25,decay:.25,edge:.12},m:{speed:.6,chaos:.25,intensity:.9}},false);if(typeof cvFx==='function')cvFx('rx-in')}
         await GenFx.reveal(url);toast(tr('toast.gen'))}
       closeGen();
     }catch(err){
@@ -4786,7 +4791,7 @@ function lookForLink(){
 }
 // Generated images are stored by the rot-share worker (Cloudflare KV, content-addressed), so a link
 // opens the exact same picture instead of asking the AI to draw it again.
-const SHARE_API='https://rot-share.nicoflp.workers.dev';
+const SHARE_API='https://s.nicoflp.com'; // the worker on the custom domain, where its edge cache works
 // A FLUX picture is stored with the one-time ticket /gen gave for it; anything else (Horde fallback, links)
 // has no ticket and is shared by redrawing its prompt instead.
 async function storeShot(meta){
