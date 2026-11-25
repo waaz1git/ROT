@@ -196,3 +196,4 @@ body[data-mode="quick"] #quickDock{display:block;position:fixed;left:50%;bottom:
 .rec-cats .chip{font-size:7px;min-height:26px;padding:0 8px}
 .rec-acts .btn{min-height:34px;font-size:7.5px}
 .rec-note:empty{display:none}
+.exp-sup{margin:4px 0 8px}.exp-sup.ok{color:var(--mint)}.exp-sup.warn{color:#ffb38a}

@@ -21,6 +21,7 @@ const CORE = [
   'live/quick.js?v=1',
   'live/ui.js?v=1',
   'live/presets.js?v=1',
+  'live/export.js?v=1',
   'live/modes.js?v=1',
   'live/motion.js?v=1'
 ];
