@@ -189,3 +189,10 @@ body[data-mode="quick"] #quickDock{display:block;position:fixed;left:50%;bottom:
 .seq-st.ghost{background:rgba(155,140,255,.2);border-color:rgba(155,140,255,.4)}
 .seq-st.p75{opacity:.85}.seq-st.p50{opacity:.62}.seq-st.p25{opacity:.42}
 .seq-st.p75::after,.seq-st.p50::after,.seq-st.p25::after{content:"";display:block;width:3px;height:3px;margin:auto;border-radius:50%;background:var(--mint)}
+
+/* recipes 2.2 */
+.rec-bar{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+.rec-cats{margin:0;gap:4px}
+.rec-cats .chip{font-size:7px;min-height:26px;padding:0 8px}
+.rec-acts .btn{min-height:34px;font-size:7.5px}
+.rec-note:empty{display:none}

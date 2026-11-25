@@ -15,6 +15,7 @@
     'quick':'quick','media':'media','beat sync':'sync al beat','⚄ random':'⚄ casuale','variations':'varianti','● export':'● esporta','mood…':'mood…','upload':'carica','distort':'distorci','explore':'esplora',
     'device':'dispositivo','all devices':'tutti i dispositivi','smooth knob movements':'manopole fluide','reset mappings':'azzera mappature',
     'tap a step: off → full → soft → ghost; right-click (long-press on touch) sets its probability. it follows the track’s beat grid; <kbd>q</kbd> starts and stops it.':'Tocca uno step: spento → pieno → morbido → fantasma; tasto destro (pressione lunga) ne imposta la probabilità. Segue la griglia del brano; <kbd>Q</kbd> lo avvia e lo ferma.',
+    'search recipes':'cerca ricette','mine':'mie','⚄ random':'⚄ casuale',
     'effect density':'densità effetti','beat response':'risposta al beat','drop intensity':'intensità dei drop','chaos level':'livello di chaos','reacts to':'reagisce a',
     'effects the autopilot never touches':'effetti che l’autopilota non tocca',
     'picks a small set of effects every 4 bars and mutates them on every hit. aggressive, but each phrase stays one look.':'Sceglie un piccolo gruppo di effetti ogni 4 battute e lo muta a ogni colpo. Aggressivo, ma ogni frase resta un look unico.',
