@@ -24,9 +24,9 @@ const Live=(()=>{
   function emit(ev,a,b){(listeners[ev]||[]).forEach(fn=>{try{fn(a,b)}catch(e){console.warn('[live]',ev,e)}})}
 
   // ---- per-frame output and the trigger envelopes behind it
-  const out={fx:Object.create(null),zoom:0,hue:0,flash:0,freeze:0,shake:[0,0],overlay:null,applyFx,post};
-  const env={flash:0,zoom:0,glitch:0,shake:0,black:0,fx:Object.create(null)};
-  const DECAY={flash:10,zoom:7,glitch:5.5,shake:9,black:12};
+  const out={fx:Object.create(null),zoom:0,hue:0,flash:0,invert:0,freeze:0,shake:[0,0],overlay:null,applyFx,post};
+  const env={flash:0,zoom:0,glitch:0,shake:0,black:0,invert:0,fx:Object.create(null)};
+  const DECAY={flash:10,zoom:7,glitch:5.5,shake:9,black:12,invert:9};
   let freezeUntil=0,flashTimes=[];
   const safe=()=>!!DATA.settings.safe,reduce=()=>!!DATA.settings.reduce;
 
@@ -34,7 +34,7 @@ const Live=(()=>{
   function trigger(kind,amt,opt){
     amt=clamp(+amt||0,0,1);if(amt<=0)return;
     const now=performance.now();
-    if(kind==='flash'||kind==='black'){
+    if(kind==='flash'||kind==='black'||kind==='invert'){
       // photosensitivity: no flashes or blackouts in safe mode; together with the music's own flashes
       // at most 3 a second (2 with reduced motion)
       if(safe())return;
@@ -54,7 +54,7 @@ const Live=(()=>{
   let ready=false;
 
   function frame(dt,mus,T,now){
-    out.fx=Object.create(null);out.zoom=0;out.hue=0;out.flash=0;out.freeze=0;out.shake[0]=out.shake[1]=0;
+    out.fx=Object.create(null);out.zoom=0;out.hue=0;out.flash=0;out.invert=0;out.freeze=0;out.shake[0]=out.shake[1]=0;
     ctx.dt=dt;ctx.now=now;ctx.T=T;ctx.mus=mus;
     for(const fn of tickers){try{fn(ctx)}catch(e){console.warn('[live] ticker',e)}}
     // envelopes → output
@@ -64,7 +64,7 @@ const Live=(()=>{
     add('blackout',env.black);
     for(const id in env.fx){env.fx[id]*=Math.exp(-dt*5);add(id,env.fx[id]);if(env.fx[id]<.002)delete env.fx[id]}
     out.zoom+=env.zoom*.14;
-    out.flash+=env.flash*.8;
+    out.flash+=env.flash*.8;out.invert=env.invert>.02?env.invert:0;
     if(env.shake>.003){const a=Math.random()*TAU,m=env.shake*.022;out.shake[0]=Math.cos(a)*m;out.shake[1]=Math.sin(a)*m}
     if(performance.now()<freezeUntil)out.freeze=1;
     return out;
@@ -77,6 +77,7 @@ const Live=(()=>{
     frame.hue+=out.hue;
     if(!safe())frame.flash=Math.max(frame.flash,clamp(out.flash*(reduce()?.45:1),0,1));
     frame.freeze=out.freeze;
+    frame.invert=safe()?0:clamp(out.invert*(reduce()?.4:1),0,1);
     const sk=safe()?0:(reduce()?.3:1);
     frame.shake=sk?[out.shake[0]*sk,out.shake[1]*sk]:null;
     frame.overlay=out.overlay;
@@ -111,6 +112,7 @@ const Live=(()=>{
   addAction('shake','Shake',v=>trigger('shake',v));
   addAction('freeze','Freeze',v=>trigger('freeze',v));
   addAction('black','Blackout hit',v=>trigger('black',v));
+  addAction('invert','Invert hit',v=>trigger('invert',v));
   addAction('randomize','Randomize look',()=>{randomizeLook(true);if(typeof markDirty==='function')markDirty()});
   addAction('extreme','Extreme on/off',()=>toggleExtreme());
   addAction('hypno','Hypnosis on/off',()=>toggleHypnosis());

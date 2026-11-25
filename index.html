@@ -2231,7 +2231,7 @@ void main(){
 const FRAG_FINAL=`varying vec2 vUv;
 uniform sampler2D uTex,uBloom,uAscii,uOver;
 uniform vec2 uOutRes;
-uniform float uOverOn,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
+uniform float uOverOn,uInvert,uFinish,uBufAsp,uT,uBloomAmt,uDirt,uTear,uDecay,uAsciiAmt,uAsciiMode,uGrade,uVig,uSafe,uAudio,uHue2,uFlash;
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float lum(vec3 c){return dot(c,vec3(.3,.59,.11));}
 vec2 bufUV(vec2 u){
@@ -2295,6 +2295,7 @@ void main(){
  c=mix(c,vec3(lum(c))*vec3(1.1,.78,.72),dm*.22*smoothstep(.65,.15,edge));
  if(uSafe>.5){float l=lum(c);c=mix(c,vec3(l),.08);c=min(c,vec3(1.35));}
  if(abs(uHue2)>.0001){float l=lum(c);c=mix(c,vec3(l)*vec3(1.15,.85,.85),clamp(abs(uHue2)*.15,0.,.2));}
+ if(uInvert>.001)c=mix(c,1.-c,clamp(uInvert,0.,1.));
  if(uOverOn>.5){vec4 ov=texture2D(uOver,vUv);c=mix(c,ov.rgb,ov.a);}
  if(uFlash>.0001)c=mix(c,vec3(1.,.97,.92),clamp(uFlash,0.,1.));
  gl_FragColor=vec4(clamp(c,0.,1.),1.);
@@ -2560,7 +2561,7 @@ const Engine=(()=>{
     uTex:{value:null},uBloom:{value:null},uAscii:{value:null},uOutRes:{value:new THREE.Vector2(2,2)},uBufAsp:{value:1.78},
     uT:{value:0},uBloomAmt:{value:.3},uDirt:{value:.2},uTear:{value:0},uDecay:{value:0},
     uAsciiAmt:{value:0},uAsciiMode:{value:0},uGrade:{value:0},uFinish:{value:1},uVig:{value:.82},uSafe:{value:0},
-    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uOver:{value:null}
+    uAudio:{value:0},uHue2:{value:0},uFlash:{value:0},uOverOn:{value:0},uInvert:{value:0},uOver:{value:null}
   };
 
   function makeRT(w,h,linear){
@@ -2682,7 +2683,7 @@ const Engine=(()=>{
     U.uZoom.value=frame.zoom==null?1:frame.zoom;U.uSeed.value=frame.seed||0;U.uKaleidoSeg.value=frame.kaleidoSeg||0;
     U.uTexCoverage.value.set(src.covX,src.covY);
     U.uMouse.value.set(frame.mouse.x,frame.mouse.y);
-    U.uFreeze.value=firstFrame?0:(frame.freeze||0);U.uClock.value=performance.now()/1000%10000;
+    U.uFreeze.value=firstFrame?0:(frame.freeze||0);FU.uInvert.value=frame.invert||0;U.uClock.value=performance.now()/1000%10000;
     if(frame.shake)U.uShake.value.set(frame.shake[0]||0,frame.shake[1]||0);else U.uShake.value.set(0,0);
     // overlay layer (clip text / waveform): a canvas texture owned by the clip module
     const ov=frame.overlay;
@@ -7685,7 +7686,7 @@ function loop(now){
   frame.seed=mus&&mus.loaded&&!DATA.settings.safe?mus.seed:0;
   frame.kaleidoSeg=mus&&mus.loaded?mus.kaleidoSeg:0;
   frame.flash=DATA.settings.safe?0:clamp(musicFlash*(DATA.settings.reduce?.55:1),0,1);
-  frame.freeze=0;frame.shake=null;
+  frame.freeze=0;frame.shake=null;frame.invert=0;
   if(LV)LV.post(frame);
 
   
