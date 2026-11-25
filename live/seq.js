@@ -13,9 +13,8 @@ const Seq=(()=>{
   const VEL=[0,1,.5,.25],PR=[1,.75,.5,.25];
   const blank=n=>new Array(n).fill(0);
   const S=Live.part('seq',{on:false,len:16,res:16,bpm:120,page:0,fx:'kaleido',lanes:{},patterns:{}});
-  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};else if(x.steps.length<32)x.steps=x.steps.concat(blank(32-x.steps.length))});
   if(!S.lanes||typeof S.lanes!=='object')S.lanes={};
-  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||typeof x!=='object'||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),int:.8,prob:1};
+  LANES.forEach(l=>{const x=S.lanes[l.id];if(!x||typeof x!=='object'||!Array.isArray(x.steps))S.lanes[l.id]={steps:blank(32),pr:Array(32).fill(1),int:.8,prob:1};
     else{x.steps=x.steps.slice(0,32).map(v=>v===1||v===2||v===3?v:0);while(x.steps.length<32)x.steps.push(0);x.pr=(Array.isArray(x.pr)?x.pr:[]).slice(0,32).map(v=>PR.includes(+v)?+v:1);while(x.pr.length<32)x.pr.push(1);x.int=clamp(Number.isFinite(+x.int)?+x.int:.8,0,1);x.prob=clamp(Number.isFinite(+x.prob)?+x.prob:1,0,1)}});
   if(![8,16,32].includes(S.len))S.len=16;if(![4,8,16,32].includes(S.res))S.res=16;if(!FXMAP[S.fx])S.fx='kaleido';S.page=S.page===1?1:0;
   if(!S.patterns||typeof S.patterns!=='object'||Array.isArray(S.patterns))S.patterns={};
@@ -113,7 +112,7 @@ const Seq=(()=>{
   }
   function load(n){
     const p=S.patterns[n];if(!p)return;
-    S.len=[8,16,32].includes(p.len)?p.len:16;S.res=p.res===8?8:16;if(p.fx&&FXMAP[p.fx])S.fx=p.fx;
+    S.len=[8,16,32].includes(p.len)?p.len:16;S.res=[4,8,16,32].includes(p.res)?p.res:16;if(p.fx&&FXMAP[p.fx])S.fx=p.fx;
     LANES.forEach(l=>{const x=p.lanes&&p.lanes[l.id];if(x&&Array.isArray(x.steps))S.lanes[l.id]={steps:x.steps.slice(0,32).map(v=>v===1||v===2||v===3?v:0).concat(blank(Math.max(0,32-x.steps.length))),pr:(Array.isArray(x.pr)?x.pr.slice(0,32).map(v=>PR.includes(+v)?+v:1):[]).concat(new Array(32).fill(1)).slice(0,32),int:clamp(+x.int||.8,0,1),prob:clamp(x.prob==null?1:+x.prob,0,1)}});
     S.page=0;Live.save();render();
     const kids=el.grid&&el.grid.parentNode?el.grid.parentNode.querySelectorAll('.live-seg'):[];
