@@ -192,8 +192,9 @@ body[data-mode="quick"] #quickDock{display:block;position:fixed;left:50%;bottom:
 
 /* recipes 2.2 */
 .rec-bar{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
-.rec-cats{margin:0;gap:4px}
-.rec-cats .chip{font-size:7px;min-height:26px;padding:0 8px}
-.rec-acts .btn{min-height:34px;font-size:7.5px}
+.rec-cats,.rec-acts{margin:0;gap:4px;display:flex!important;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.rec-cats::-webkit-scrollbar,.rec-acts::-webkit-scrollbar{display:none}
+.rec-cats .chip{font-size:7px;min-height:26px;padding:0 8px;flex:0 0 auto}
+.rec-acts .btn{min-height:30px;font-size:7.5px;flex:0 0 auto;width:auto;padding:0 10px}
 .rec-note:empty{display:none}
 .exp-sup{margin:4px 0 8px}.exp-sup.ok{color:var(--mint)}.exp-sup.warn{color:#ffb38a}
