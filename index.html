@@ -6770,8 +6770,8 @@ async function finalizeMp4(part){
 function exportSizeDef(){
   const id=String(DATA.settings.exportRes||EXPORT_DEFAULT);
   // ORIGINAL: the source's own shape, 1080 on its short side (even sizes for the encoder)
-  if(id==='orig'){const src=Engine.getSrc(),w0=src&&src.w||1920,h0=src&&src.h||1080,k=1080/Math.max(1,Math.min(w0,h0));
-    const ev=v=>Math.max(2,Math.round(v/2)*2);return {id:'orig',label:'ORIGINAL',w:ev(Math.min(3840,w0*k)),h:ev(Math.min(3840,h0*k))}}
+  if(id==='orig'){const src=Engine.getSrc(),w0=src&&src.w||1920,h0=src&&src.h||1080,k=Math.min(1080/Math.max(1,Math.min(w0,h0)),3840/Math.max(1,w0,h0));
+    const ev=v=>Math.max(2,Math.round(v/2)*2);return {id:'orig',label:'ORIGINAL',w:ev(w0*k),h:ev(h0*k)}}
   return EXPORT_SIZES.find(s=>s.id===id)||EXPORT_SIZES.find(s=>s.id===EXPORT_DEFAULT)||EXPORT_SIZES[0];
 }
 function parseExportSize(){
