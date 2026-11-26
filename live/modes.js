@@ -18,7 +18,8 @@ const Modes=(()=>{
       const t=$('.tab[data-tab="live"]');if(t&&!t.classList.contains('on'))t.click();
     }else if(m==='live'){const chip=$('#fxFilters .chip[data-cat="ALL"]');if(chip&&!chip.classList.contains('on'))chip.click()}
     if(m==='quick'){sync();Motion.stagger(el.dock.querySelector('.qd-row'))}
-    if(!quiet)toast('<b>'+m.toUpperCase()+' MODE</b>'+(m==='quick'?' — upload, distort, explore, export':m==='lab'?' — experimental effects':' — the full instrument'));
+    if(!quiet){const it=LANG==='it',d=m==='quick'?(it?'carica, distorci, esplora, esporta':'upload, distort, explore, export'):m==='lab'?(it?'effetti sperimentali':'experimental effects'):(it?'lo strumento completo':'the full instrument');
+      toast('<b>'+(it?'MODALITÀ ':'')+m.toUpperCase()+(it?'':' MODE')+'</b> — '+d)}
   }
 
   function build(){

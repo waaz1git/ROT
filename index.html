@@ -396,6 +396,7 @@ input::placeholder,textarea::placeholder{color:var(--dim);opacity:.8}
 .fx-val{font:400 7.5px/1 var(--fm);color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
 .fx-row.new .fx-name::after{content:"NEW";font-size:5.5px;color:var(--lime);border:1px solid rgba(203,245,166,.3);padding:1px 3px;margin-left:4px;border-radius:4px;letter-spacing:.08em}
 .fx-row input[type=range]{height:15px}
+@media (pointer:coarse){input[type=checkbox]{width:20px;height:20px}.fx-row input[type=checkbox]{width:22px;height:22px;flex:0 0 22px}}
 .fx-row input[type=range]::-webkit-slider-thumb{width:10px;height:10px;margin-top:-3px}
 .fx-empty{font:400 8px var(--fm);color:var(--dim);padding:18px 0;text-align:center;letter-spacing:.1em;text-transform:uppercase}
 
@@ -1138,7 +1139,7 @@ body.lite .panel,body.lite .drawer,body.lite #timeline,body.lite #hud,body.lite 
 body.lite #topbar{background:linear-gradient(120deg,var(--glass-solid),var(--glass-solid))}
 body.lite #aurora i{animation-duration:90s}
 </style>
-<link rel="stylesheet" href="live/live.css?v=2">
+<link rel="stylesheet" href="live/live.css?v=3">
 </head>
 <body>
 
@@ -2541,7 +2542,7 @@ const Engine=(()=>{
   let rtScene=[],rtBloom=[];
   let cur=0,firstFrame=true;
   let stageW=2,stageH=2,cssW=2,cssH=2;
-  let internalW=320,internalH=180,quality=1;
+  let internalW=320,internalH=180,quality=1,qFloor=.5,weak=false;
   let exporting=false,exportW=0,exportH=0;
   let asciiTex=null,lastFrame=null;
   const src={texture:null,w:1280,h:720,video:null,empty:true,label:'NO SOURCE',covX:1,covY:1};
@@ -2580,9 +2581,15 @@ const Engine=(()=>{
     const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;t.needsUpdate=true;return t;
   }
   function init(){
-    R=new THREE.WebGLRenderer({canvas:cv,preserveDrawingBuffer:true,antialias:false,alpha:false,powerPreference:'high-performance'});
+    R=new THREE.WebGLRenderer({canvas:cv,preserveDrawingBuffer:false,antialias:false,alpha:false,powerPreference:'high-performance'});
     R.setPixelRatio(1);
     R.setClearColor(0x050409,1);
+    // weak GPUs (software rendering, older integrated chips, few cores or little memory) start lighter
+    // and may go lower: a steady picture beats a sharp one that stutters
+    try{const gl=R.getContext(),e=gl.getExtension('WEBGL_debug_renderer_info'),rn=e?String(gl.getParameter(e.UNMASKED_RENDERER_WEBGL)||''):'';
+      weak=/swiftshader|llvmpipe|softpipe|intel.*(hd|uhd) graphics|mali-[gt]?[0-7]|adreno[^0-9]*[3-5]\d\d|powervr|videocore/i.test(rn)||(navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4;
+    }catch(e){}
+    if(weak){qFloor=.35;quality=.75;document.body.classList.add('lite')}
     cam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     quad=new THREE.PlaneGeometry(2,2);
     asciiTex=makeAscii();
@@ -2658,7 +2665,7 @@ const Engine=(()=>{
     }
   }
   function setQuality(q){
-    quality=clamp(q,.5,1);
+    quality=clamp(q,qFloor,1);
     if(!exporting)fit(true);
   }
   function setSource(tex,w,h,opts){
@@ -2744,7 +2751,7 @@ const Engine=(()=>{
   }
   function endExport(){
     if(!exporting)return;
-    exporting=false;quality=1;
+    exporting=false;quality=weak?.75:1;
     fit(true);
   }
   function isExporting(){return exporting}
@@ -2779,12 +2786,13 @@ const Engine=(()=>{
     return true;
   }
   function getQuality(){return quality}
+  function getFloor(){return qFloor}
   function getCanvas(){return cv}
   function getRenderer(){return R}
   function resize(){fit(true)}
 
   return {init,fit,resize,setQuality,setSource,getSrc,uploadFrame,draw,renderNow,beginExport,endExport,isExporting,
-    getSize,getQuality,getCanvas,getRenderer,renderThumb,get src(){return src},get uniforms(){return U}};
+    getSize,getQuality,getFloor,get weak(){return weak},getCanvas,getRenderer,renderThumb,get src(){return src},get uniforms(){return U}};
 })();
 
 
@@ -2858,6 +2866,8 @@ function buildEffects(){
       cb.addEventListener('change',()=>{P.on[f.id]=cb.checked;row.classList.toggle('off',!cb.checked);updateFxCount();markDirty();queueSaveLook();vibrate(4)});
       rng.addEventListener('input',()=>{P.fx[f.id]=+rng.value;val.textContent=P.fx[f.id].toFixed(2);fillRange(rng);markDirty();queueSaveLook()});
       name.addEventListener('dblclick',e=>{e.preventDefault();FX.forEach(g=>P.on[g.id]=(g.id===f.id));syncUI();queueSaveLook();toast('<b>SOLO</b> — '+esc(f.name))});
+      // a finger that lands on the row next to the small switch still flips it (the slider and its value keep their own job)
+      row.addEventListener('click',e=>{if(e.target!==row&&e.target!==val)return;cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'))});
       host.appendChild(row);fillRange(rng);
       UI.fx[f.id]={cb,rng,val,row};
     });
@@ -2971,7 +2981,7 @@ const Thumbs=(()=>{
     const key=s&&!s.empty&&s.texture?s.texture.uuid+':'+(s.video?'v':'i')+':'+DATA.settings.safe:null;
     if(key!==srcKey){srcKey=key;queueAll(true)}
     if(!key){$$('#presetGrid .p-thumb.on').forEach(c=>c.classList.remove('on'));return schedule(700)}
-    if(!queue.length||!visible()||Engine.isExporting()||(typeof REC!=='undefined'&&(REC.active||REC.starting)))return schedule(queue.length?400:900);
+    if(!queue.length||!visible()||Engine.isExporting()||(typeof VIEW!=='undefined'&&VIEW.fps30)||(typeof REC!=='undefined'&&(REC.active||REC.starting)))return schedule(queue.length?400:900);
     const name=queue.shift();
     const card=$$('#presetGrid .preset').find(c=>c.dataset.name===name),p=presetFor(name);
     if(card&&p){
@@ -3331,7 +3341,7 @@ function updateSourceInfo(){
   syncRenderResUI();
 }
 // Procedural demo picture: colour, hard edges, rings and type give every effect something to chew on.
-async function loadSampleSource(){
+async function loadSampleSource(quiet){
   const token=++sourceToken;
   try{if(document.fonts&&document.fonts.load)await document.fonts.load('800 200px Manrope')}catch(e){}
   if(token!==sourceToken)return;
@@ -3373,7 +3383,7 @@ async function loadSampleSource(){
     Engine.setSource(t,pot.realW,pot.realH,{demo:false,label:'IMAGE',coverage:pot.coverage});
     updateSourceInfo();
     srcMeta={t:'sample'};
-    toast(tr('toast.sample'));
+    if(!quiet)toast(tr('toast.sample'));
   }catch(e){toast('<b>SAMPLE ERROR</b> — could not prepare texture')}
 }
 function bindSource(){
@@ -3381,6 +3391,10 @@ function bindSource(){
   $id('btnUpload').addEventListener('click',()=>fi.click());
   const ehUp=$id('ehUpload');if(ehUp)ehUp.addEventListener('click',()=>fi.click());
   const ehSample=$id('ehSample');if(ehSample)ehSample.addEventListener('click',()=>loadSampleSource());
+  // the sample is drawn at the screen's shape: redraw it when a phone turns, instead of leaving a narrow strip
+  let rotT=0;window.addEventListener('resize',()=>{clearTimeout(rotT);rotT=setTimeout(()=>{
+    const s=Engine.src;if(!srcMeta||srcMeta.t!=='sample'||!s||s.empty||Engine.isExporting())return;
+    const va=innerWidth/Math.max(1,innerHeight),sa=s.w/Math.max(1,s.h);if(Math.abs(Math.log(va/sa))>.25)loadSampleSource(true)},450)},{passive:true});
   const clear=$id('btnClearSource');if(clear)clear.addEventListener('click',()=>setPlaceholderSource());
   $id('dropMini').addEventListener('click',()=>fi.click());
   $id('dropMini').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click()}});
@@ -6887,8 +6901,9 @@ async function exportPNG(){
   try{
     Engine.beginExport(size.w,size.h);
     await sleep(180);
-    Engine.renderNow();
     await sleep(40);
+    // draw and read in the same task: the drawing buffer is not kept between frames (cheaper on every GPU)
+    Engine.renderNow();
     const blob=await canvasToBlob(Engine.getCanvas(),'image/png');
     const name=exportBaseName('frame')+'.png';
     const url=URL.createObjectURL(blob);
@@ -7491,7 +7506,7 @@ function toggleHypnosis(){
 
 
 function adaptQuality(now){
-  if(!P.autoQ||Engine.isExporting())return;
+  if(!P.autoQ||Engine.isExporting()){VIEW.fps30=false;return}
   // a still picture with every effect at zero is cheap to draw, and any resolution step on it shows
   // up as edges shimmering; keep it at full resolution and don't adapt
   const still=!EXTREME.on&&!(Engine.src&&Engine.src.video)&&!FX.some(f=>(frame.fxVals[f.id]||0)>0);
@@ -7500,19 +7515,24 @@ function adaptQuality(now){
   if(now-VIEW.adaptiveAt<500)return;
   VIEW.adaptiveAt=now;
   // budget = one 60 fps frame, or the display's own interval on screens slower than 60 Hz
-  const budget=Math.max(1000/60,Math.min(40,VIEW.minFrame||16.7));
+  const budget=VIEW.fps30?1000/30:Math.max(1000/60,Math.min(40,VIEW.minFrame||16.7));
+  // after 20 s at 30 fps, try 60 again (the scene may be lighter now)
+  if(VIEW.fps30&&now>VIEW.fps30Until){VIEW.fps30=false;VIEW.slowN=0;return}
   if(now-(VIEW.minAt||0)>5000){VIEW.minAt=now;VIEW.minFrame=100}
   const q=Engine.getQuality(),janks=VIEW.janks;VIEW.janks=0;
   // one slow half-second (a GC pause, a tab switch, a toast) is noise: step down only after two in a row,
   // or at once on a heavy burst of missed frames
   const slow=VIEW.drawEMA>budget*1.17||janks>=3;
   VIEW.slowN=slow?(VIEW.slowN||0)+1:0;
-  if(slow&&q>.5&&(VIEW.slowN>=2||janks>=6)){
-    Engine.setQuality(Math.max(.5,q-.1));VIEW.upAt=now+4000;VIEW.slowN=0;
+  const floor=Engine.getFloor();
+  if(slow&&q>floor+.001&&(VIEW.slowN>=2||janks>=6)){
+    Engine.setQuality(Math.max(floor,q-(VIEW.drawEMA>budget*1.8?.2:.1)));VIEW.upAt=now+4000;VIEW.slowN=0;
     // the GPU is struggling: drop the frosted-glass blur behind the panels for the rest of the visit
     if(q-.1<.75&&!document.body.classList.contains('lite'))document.body.classList.add('lite');
     return;
   }
+  // at the lowest quality and still missing frames: hold a steady 30 fps instead of a ragged 40-50
+  if(slow&&!VIEW.fps30&&q<=floor+.001&&VIEW.slowN>=2){VIEW.fps30=true;VIEW.fps30Until=now+20000;VIEW.slowN=0;VIEW.drawEMA=1000/30;return}
   if(VIEW.drawEMA<budget*1.04&&janks===0&&q<1&&now>VIEW.upAt){Engine.setQuality(Math.min(1,q+.05));VIEW.upAt=now+2500}
 }
 
@@ -7707,15 +7727,15 @@ function loop(now){
 
   if(!document.hidden){
     
-    const frameMs=1000/60;
     const exporting=Engine.isExporting();
+    const frameMs=VIEW.fps30&&!exporting?1000/30:1000/60;
     if(exporting||now>=VIEW.nextDraw-1){
       // Advance on a 60 fps schedule, whatever the display refresh rate.
       VIEW.nextDraw=Math.max(VIEW.nextDraw+frameMs,now);
       Engine.uploadFrame(frame);
       if(VIEW.hold<=0||exporting){
         // real drawn-frame cadence (the rAF rate hides dropped frames on 120-165 Hz screens)
-        if(VIEW.drawLast){const gap=now-VIEW.drawLast;if(gap<1500){VIEW.drawEMA+=(Math.min(gap,120)-VIEW.drawEMA)*.12;if(gap>Math.max(24,(VIEW.minFrame||16.7)*1.45))VIEW.janks++}} // >1.5 s is a paused tab, not a slow GPU
+        if(VIEW.drawLast){const gap=now-VIEW.drawLast;if(gap<1500){VIEW.drawEMA+=(Math.min(gap,120)-VIEW.drawEMA)*.12;if(gap>Math.max(VIEW.fps30?45:24,(VIEW.minFrame||16.7)*1.45))VIEW.janks++}} // >1.5 s is a paused tab, not a slow GPU
         VIEW.drawLast=now;
         Engine.draw();
         if(exporting&&typeof pumpRecordedFrame==='function')pumpRecordedFrame(now);
@@ -7918,18 +7938,18 @@ else startApp();
 
 </script>
 <!-- ROT Live: autopilot, mutation, MIDI, scenes, sequencer, quick clip, quick play (they use the globals above) -->
-<script src="live/core.js?v=2"></script>
-<script src="live/autopilot.js?v=2"></script>
-<script src="live/mutate.js?v=2"></script>
-<script src="live/scenes.js?v=2"></script>
-<script src="live/seq.js?v=2"></script>
-<script src="live/midi.js?v=2"></script>
-<script src="live/clip.js?v=2"></script>
-<script src="live/quick.js?v=2"></script>
-<script src="live/ui.js?v=2"></script>
-<script src="live/presets.js?v=2"></script>
-<script src="live/export.js?v=2"></script>
-<script src="live/modes.js?v=2"></script>
-<script src="live/motion.js?v=2"></script>
+<script src="live/core.js?v=3"></script>
+<script src="live/autopilot.js?v=3"></script>
+<script src="live/mutate.js?v=3"></script>
+<script src="live/scenes.js?v=3"></script>
+<script src="live/seq.js?v=3"></script>
+<script src="live/midi.js?v=3"></script>
+<script src="live/clip.js?v=3"></script>
+<script src="live/quick.js?v=3"></script>
+<script src="live/ui.js?v=3"></script>
+<script src="live/presets.js?v=3"></script>
+<script src="live/export.js?v=3"></script>
+<script src="live/modes.js?v=3"></script>
+<script src="live/motion.js?v=3"></script>
 </body>
 </html>
