@@ -175,8 +175,12 @@ body[data-mode="quick"] #quickDock{display:block;position:fixed;left:50%;bottom:
 .qd-vars:not(.on){display:none}
 @media(max-width:620px){
   body[data-mode="quick"] #quickDock{bottom:calc(8px + var(--safeb,0px));padding:8px}
-  .qd-row{display:grid;grid-template-columns:repeat(3,1fr)}
-  .qd-sel,.qd-int{grid-column:span 3}
+  .qd-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+  .qd-int{grid-column:1/-1;min-width:0;order:1}
+  .qd-row>.qd-b.tog,.qd-row>.qd-b.tog~.qd-b{order:2}
+  .qd-b,.qd-sel{min-height:36px;min-width:0;overflow:hidden;line-height:1.15}
+  .qd-sel{white-space:nowrap;text-overflow:ellipsis}
+  .qd-sel{padding:0 6px;font-size:8px}
   .qd-b{padding:0 6px;font-size:8px;letter-spacing:.08em}
   .qd-flow{font-size:7px;letter-spacing:.12em}
 }
@@ -198,3 +202,8 @@ body[data-mode="quick"] #quickDock{display:block;position:fixed;left:50%;bottom:
 .rec-acts .btn{min-height:30px;font-size:7.5px;flex:0 0 auto;width:auto;padding:0 10px}
 .rec-note:empty{display:none}
 .exp-sup{margin:4px 0 8px}.exp-sup.ok{color:var(--mint)}.exp-sup.warn{color:#ffb38a}
+
+/* quick mode: messages sit under the mode switch, never on top of the dock */
+body[data-mode="quick"] #toasts{bottom:auto;top:calc(128px + var(--safet,0px))}
+/* phones: panels a little more solid so the text stays readable over bright pictures */
+@media(max-width:760px){.panel{background:var(--glass-solid)}}

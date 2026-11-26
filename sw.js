@@ -1,7 +1,7 @@
 // ROT service worker: lets the installed app start offline.
 // Pages are network-first (a new deploy shows up as soon as you are online);
 // static files are served from cache and refreshed in the background.
-const CACHE = 'rot-v3';
+const CACHE = 'rot-v4';
 const CORE = [
   './',
   'index.html',
@@ -10,20 +10,20 @@ const CORE = [
   'icon-192.png',
   'icon-512.png',
   'apple-touch-icon.png',
-  'live/live.css?v=2',
-  'live/core.js?v=2',
-  'live/autopilot.js?v=2',
-  'live/mutate.js?v=2',
-  'live/scenes.js?v=2',
-  'live/seq.js?v=2',
-  'live/midi.js?v=2',
-  'live/clip.js?v=2',
-  'live/quick.js?v=2',
-  'live/ui.js?v=2',
-  'live/presets.js?v=2',
-  'live/export.js?v=2',
-  'live/modes.js?v=2',
-  'live/motion.js?v=2'
+  'live/live.css?v=3',
+  'live/core.js?v=3',
+  'live/autopilot.js?v=3',
+  'live/mutate.js?v=3',
+  'live/scenes.js?v=3',
+  'live/seq.js?v=3',
+  'live/midi.js?v=3',
+  'live/clip.js?v=3',
+  'live/quick.js?v=3',
+  'live/ui.js?v=3',
+  'live/presets.js?v=3',
+  'live/export.js?v=3',
+  'live/modes.js?v=3',
+  'live/motion.js?v=3'
 ];
 
 self.addEventListener('install', e => {
